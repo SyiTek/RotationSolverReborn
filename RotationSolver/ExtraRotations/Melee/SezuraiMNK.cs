@@ -3,9 +3,9 @@ using RotationSolver.Updaters;
 
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("Churin MNK", CombatType.PvE, GameVersion = "7.4", Description = "An eye for an eye. A tooth for a tooth. An eye and a tooth for a loaf of bread. Eyes and teeth are the new currency.")]
-[SourceCode(Path = "main/ExtraRotations/Melee/ChurinMNK.cs")]
-public sealed class ChurinMNK : MonkRotation
+[Rotation("Sezurai", CombatType.PvE, GameVersion = "7.4", Description = "The one who holds all weight.")]
+[SourceCode(Path = "main/ExtraRotations/Melee/SezuraiMNK.cs")]
+public sealed class SezuraiMNK : MonkRotation
 {
     #region Properties
 
