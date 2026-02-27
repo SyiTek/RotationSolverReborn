@@ -443,6 +443,7 @@ public sealed class ChurinMNK : MonkRotation
 
         return  TryGenerateNadi(out act)
             || TryUseMasterfulBlitz(out act)
+            || TryUseSixSidedStar(out act)
             || TryUseFiller(out act)
             || TryUseMeditations(out act)
             || base.GeneralGCD(out act);
@@ -679,26 +680,38 @@ public sealed class ChurinMNK : MonkRotation
             }
         }
 
+        // Safety fallback: if Fire's Rumination is about to expire, use after any Opo GCD
+        if (HasFiresRumination && !HasPerfectBalance && !HasBlitzReady && IsLastGCDOpo)
+        {
+            if (StatusHelper.PlayerWillStatusEnd(5, true, StatusID.FiresRumination))
+            {
+                return FiresReplyPvE.CanUse(out act);
+            }
+        }
+
         return false;
     }
     private bool TryUseWindsReply(out IAction? act)
     {
         act = null;
-        if (!HasWindsRumination || HasPerfectBalance) return false;
+        if (!HasWindsRumination || HasPerfectBalance || HasBlitzReady) return false;
 
         if (WindsReplyPvE.CanUse(out act))
         {
-            if (IsBurst && !HasBlitzReady && IsLastGCDOpo)
+            // Safety: if Wind's Rumination is about to expire, use immediately
+            if (StatusHelper.PlayerWillStatusEnd(5, true, StatusID.WindsRumination))
             {
                 return true;
             }
 
-            if (!IsBurst && HasRiddleOfFire && IsLastGCDOpo)
+            // Preferred: use after an Opo GCD
+            if (IsLastGCDOpo)
             {
                 return true;
             }
 
-            if (!IsBurst && !HasRiddleOfFire && IsLastGCDOpo)
+            // Acceptable: use after a Masterful Blitz GCD
+            if (IsLastGCDMasterfulBlitz)
             {
                 return true;
             }
@@ -860,6 +873,12 @@ public sealed class ChurinMNK : MonkRotation
             {
                 return true;
             }
+
+            // Fallback: don't let RoW drift -- use on cooldown outside PB
+            if (!HasPerfectBalance)
+            {
+                return true;
+            }
         }
 
         return false;
@@ -868,7 +887,10 @@ public sealed class ChurinMNK : MonkRotation
     {
         act = null;
 
-                if (Chakra < 5 || !EnoughWeaveTime || ((IsReadySoon(BrotherhoodPvE, 1) || IsReadySoon(RiddleOfFirePvE, 1)) && !IsOpenerStart)) return false;
+        var holdForBurst = (IsReadySoon(BrotherhoodPvE, 1) || IsReadySoon(RiddleOfFirePvE, 1)) && !IsOpenerStart;
+        if (HasBrotherhood) holdForBurst = false;
+
+        if (Chakra < 5 || !EnoughWeaveTime || holdForBurst) return false;
 
         // AoE Check
         if (EnlightenmentPvE.CanUse(out act)) return true;
