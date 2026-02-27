@@ -191,6 +191,20 @@ public sealed class SezuraiDRG : DragoonRotation
             }
         }
 
+        // Life Surge overcap prevention: if at max charges, use on next HT/Drakesbane
+        // even outside buff windows. Guide: "should almost never reach a full 2 stacks"
+        {
+            bool lsOvercapHit = nextGCD.IsTheSameTo(true, HeavensThrustPvE, DrakesbanePvE, CoerthanTormentPvE);
+            if (!lsOvercapHit && !HeavensThrustPvE.EnoughLevel && !DrakesbanePvE.EnoughLevel)
+                lsOvercapHit = nextGCD.IsTheSameTo(true, FullThrustPvE);
+
+            if (lsOvercapHit && LifeSurgePvE.Cooldown.CurrentCharges >= 2)
+            {
+                if (LifeSurgePvE.CanUse(out act))
+                    return true;
+            }
+        }
+
         // === GEIRSKOGUL: enters Life of the Dragon (15% damage buff for 20s) ===
         // Guide: "used last to ensure its own potency is buffed by all our personal buffs"
         // Gate behind HasLanceCharge so it fires AFTER Lance Charge is applied.
