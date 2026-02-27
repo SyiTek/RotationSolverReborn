@@ -155,13 +155,12 @@ public sealed class SezuraiDRG : DragoonRotation
         // === BUFF APPLICATION (burst enabled, in combat, hostiles in range) ===
         if (CanBurst && InCombat && HasHostilesInRange)
         {
-            // 1. Lance Charge: use on cooldown (60s), gate behind BL timing on even minutes
-            // Guide: "use this button as soon as it is available"
-            if ((!BattleLitanyPvE.Cooldown.ElapsedAfter(60) || !BattleLitanyPvE.EnoughLevel)
-                && LanceChargePvE.CanUse(out act))
-            {
+            // 1. Lance Charge: use on cooldown (60s)
+            // Guide: "always press this button as soon as it is available"
+            // LC is checked first so it fires before BL, matching the standard opener
+            // (GCD2 → LC, GCD3 → BL + Geirskogul)
+            if (LanceChargePvE.CanUse(out act))
                 return true;
-            }
 
             // 2. Battle Litany: raid buff, align with 2-minute party bursts
             if (BattleLitanyPvE.CanUse(out act))
