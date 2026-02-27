@@ -711,6 +711,18 @@ public sealed class SezuraiVPR : ViperRotation
                     return true;
             }
 
+            // Emergency buff refresh: if a buff is about to drop, prioritize that path
+            if (WillHunterEnd && !WillSwiftEnd)
+            {
+                if (HuntersStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+                    return true;
+            }
+            if (WillSwiftEnd && !WillHunterEnd)
+            {
+                if (SwiftskinsStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+                    return true;
+            }
+
             if (HasHunterAndSwift)
             {
                 if (HasHind || HasFlank)
