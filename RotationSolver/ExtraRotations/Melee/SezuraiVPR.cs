@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("Sezurai", CombatType.PvE, GameVersion = "7.41", Description = "Balance-aligned VPR with burst timing, 10-second rule, and opener.")]
+[Rotation("Sezurai", CombatType.PvE, GameVersion = "7.41", Description = "Balance-aligned VPR with burst timing, 10-second rule, and opener. Start at REAR for opener.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiVPR.cs")]
 [ExtraRotation]
 public sealed class SezuraiVPR : ViperRotation
@@ -80,6 +80,25 @@ public sealed class SezuraiVPR : ViperRotation
     /// </summary>
     private bool ShouldBlockVicewinder => SerpentsIrePvE.EnoughLevel
         && IsPreBurst && !InActiveBurst && !DreadActive && !PitActive;
+
+    /// <summary>
+    /// True when Ire was used very recently (within ~3s / 1 GCD).
+    /// Used to insert one filler GCD between Ire and the first Reawaken
+    /// per Balance intermediate guide: "execute one dual wield combo GCD,
+    /// then immediately chain two full Reawakens."
+    /// </summary>
+    private bool IreJustFired => SerpentsIrePvE.EnoughLevel
+        && SerpentsIrePvE.Cooldown.IsCoolingDown
+        && SerpentsIrePvE.Cooldown.JustUsedAfter(3);
+
+    /// <summary>
+    /// Pre-burst coil dump: spend Rattling Coils before Ire fires to avoid
+    /// overcapping when Ire grants a new coil. Keep 1 for movement safety.
+    /// Balance basic: "spend them before using Serpent's Ire as it will grant another."
+    /// </summary>
+    private bool ShouldDumpCoilsPreBurst => SerpentsIrePvE.EnoughLevel
+        && IsPreBurst && !InActiveBurst
+        && RattlingCoilStacks > 1;
 
     #endregion
 
@@ -335,18 +354,21 @@ public sealed class SezuraiVPR : ViperRotation
         UpdateOpenerState();
 
         // 4. Reawaken Entry (burst-aligned)
+        // Balance intermediate: "Press Ire, execute one dual wield combo GCD, then chain two Reawakens."
+        // We delay Reawaken by one GCD after Ire fires for raid buff alignment (~6.5s application).
         if (LiveComboTime > GCDTime(6) && SwiftTime > SwiftTimer && HuntersTime > HuntersTimer)
         {
-            // ReadyToReawaken from Ire -> always use immediately (this IS the burst trigger)
-            if (HasReadyToReawaken && ReawakenPvE.CanUse(out act, skipComboCheck: true))
-                return true;
-
-            // Overcap protection at 100 gauge -> always use
+            // Overcap protection at 100 gauge -> always use regardless of burst state
             if (SerpentOffering == 100 && ReawakenPvE.CanUse(out act, skipComboCheck: true))
                 return true;
 
-            // Double Reawaken during active burst: spend gauge >= 50
-            if (SerpentOffering >= 50 && InActiveBurst && CanBurst && ReawakenPvE.CanUse(out act, skipComboCheck: true))
+            // ReadyToReawaken from Ire: delay one GCD for buff alignment, then use
+            if (HasReadyToReawaken && !IreJustFired && ReawakenPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+
+            // Double Reawaken: chain second Reawaken immediately after first completes
+            if (SerpentOffering >= 50 && InActiveBurst && CanBurst
+                && !HasReadyToReawaken && ReawakenPvE.CanUse(out act, skipComboCheck: true))
                 return true;
 
             // Below level for Ire: use Reawaken freely when gauge is sufficient
@@ -380,6 +402,14 @@ public sealed class SezuraiVPR : ViperRotation
             if (InActiveBurst && !HasReawakenedActive && !HasReadyToReawaken
                 && (RattlingCoilStacks > 1 || !BurstUncoiledFuryHold)
                 && NoAbilityReady)
+            {
+                if (UncoiledFuryPvE.CanUse(out act, usedUp: true))
+                    return true;
+            }
+
+            // Pre-burst coil dump: spend excess coils before Ire grants another
+            // Balance basic: "spend them before using Serpent's Ire as it will grant another"
+            if (ShouldDumpCoilsPreBurst && !HasReadyToReawaken && NoAbilityReady)
             {
                 if (UncoiledFuryPvE.CanUse(out act, usedUp: true))
                     return true;
