@@ -17,8 +17,8 @@ public sealed class SezuraiVPR : ViperRotation
     public bool UFGhosting { get; set; } = true;
 
     [Range(1, 3, ConfigUnitType.None, 1)]
-    [RotationConfig(CombatType.PvE, Name = "How many charges of Uncoiled Fury before using outside burst (3 = hold for burst/movement only)")]
-    public int MaxUncoiledStacksUser { get; set; } = 3;
+    [RotationConfig(CombatType.PvE, Name = "Uncoiled Fury stacks before using outside burst (2 = optimal filler DPS, 3 = hold for burst only)")]
+    public int MaxUncoiledStacksUser { get; set; } = 2;
 
     [Range(1, 30, ConfigUnitType.None, 1)]
     [RotationConfig(CombatType.PvE, Name = "How long on the status time for Swift needs to be to allow reawaken use (setting this too low can lead to dropping buff)")]
@@ -35,11 +35,15 @@ public sealed class SezuraiVPR : ViperRotation
     [RotationConfig(CombatType.PvE, Name = "Enable Balance opener (Swiftscaled first, delay Vicewinder)")]
     public bool UseOpener { get; set; } = true;
 
-    [RotationConfig(CombatType.PvE, Name = "Experimental Pot Usage (used up to 5 seconds before Serpent's Ire comes off cooldown)")]
-    public bool BurstMed { get; set; } = false;
+    [RotationConfig(CombatType.PvE, Name = "Auto Pot Usage (Gemdraught 5s before Serpent's Ire + pre-pull in countdown)")]
+    public bool BurstMed { get; set; } = true;
 
     [RotationConfig(CombatType.PvE, Name = "Restrict GCD use if Serpent's Tail, Twinblood, or Twinfang oGCDs can be used")]
     public bool AbilityPrio2 { get; set; } = true;
+
+    [Range(0f, 0.25f, ConfigUnitType.Percent)]
+    [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
+    public float ActionAheadOverride { get; set; } = 0f;
 
     #endregion
 
@@ -139,19 +143,81 @@ public sealed class SezuraiVPR : ViperRotation
 
     #endregion
 
+    #region Weave Helpers
+
+    /// <summary>
+    /// Late-weave window: last ~45% of GCD where a single oGCD fits without clipping.
+    /// </summary>
+    private static float LateWeaveWindow => WeaponTotal * 0.45f;
+
+    /// <summary>
+    /// True when there's enough remaining GCD time to safely weave an oGCD.
+    /// </summary>
+    private static bool EnoughWeaveTime => WeaponRemain >= 0.6f;
+
+    /// <summary>
+    /// True when in the late-weave window and weaving is safe.
+    /// </summary>
+    private static bool CanLateWeave => WeaponRemain <= LateWeaveWindow && EnoughWeaveTime;
+
+    #endregion
+
+    #region Countdown
+
+    protected override IAction? CountDownAction(float remainTime)
+    {
+        // Reset opener state for fresh pull
+        OpenerCompleted = false;
+
+        // Pre-pull medicine at ~2s (pot animation takes ~1s, lands before first GCD)
+        if (BurstMed && remainTime <= 2f && UseBurstMedicine(out var act))
+            return act;
+
+        return base.CountDownAction(remainTime);
+    }
+
+    #endregion
+
+    #region UpdateInfo
+
+    protected override void UpdateInfo()
+    {
+        DataCenter.RotationActionAheadOverride = ActionAheadOverride > 0f ? ActionAheadOverride : null;
+    }
+
+    #endregion
+
     #region Status Display
 
     public override void DisplayRotationStatus()
     {
-        ImGui.Text($"No Last Combo Action: {IsNoActionCombo()}");
+        ImGui.Text($"--- Burst State ---");
         ImGui.Text($"InBurstWindow: {InBurstWindow}");
         ImGui.Text($"InActiveBurst: {InActiveBurst}");
         ImGui.Text($"IsPreBurst: {IsPreBurst}");
+        ImGui.Text($"IreJustFired: {IreJustFired}");
         ImGui.Text($"ShouldBlockVicewinder: {ShouldBlockVicewinder}");
+        ImGui.Text($"ShouldDumpCoilsPreBurst: {ShouldDumpCoilsPreBurst}");
+        ImGui.Text($"--- Opener ---");
         ImGui.Text($"InOpener: {InOpener}");
         ImGui.Text($"OpenerCompleted: {OpenerCompleted}");
+        ImGui.Text($"OpenerBlockVicewinder: {OpenerBlockVicewinder}");
+        ImGui.Text($"--- Gauge ---");
         ImGui.Text($"SerpentOffering: {SerpentOffering}");
-        ImGui.Text($"RattlingCoilStacks: {RattlingCoilStacks}");
+        ImGui.Text($"RattlingCoilStacks: {RattlingCoilStacks}/{MaxRattling}");
+        ImGui.Text($"AnguineTribute: {AnguineTributeStacks}");
+        ImGui.Text($"--- Buffs ---");
+        ImGui.Text($"SwiftTime: {SwiftTime:F1}s | HuntersTime: {HuntersTime:F1}s");
+        ImGui.Text($"HasHunterAndSwift: {HasHunterAndSwift}");
+        ImGui.Text($"HasReadyToReawaken: {HasReadyToReawaken}");
+        ImGui.Text($"Medicated: {StatusHelper.PlayerHasStatus(true, StatusID.Medicated)}");
+        ImGui.Text($"--- Combo ---");
+        ImGui.Text($"LiveComboTime: {LiveComboTime:F1}s");
+        ImGui.Text($"NoCombo: {IsNoActionCombo()} | DreadActive: {DreadActive} | PitActive: {PitActive}");
+        ImGui.Text($"--- Weave ---");
+        ImGui.Text($"WeaponRemain: {WeaponRemain:F2}s | WeaponTotal: {WeaponTotal:F2}s");
+        ImGui.Text($"CanLateWeave: {CanLateWeave} | EnoughWeaveTime: {EnoughWeaveTime}");
+        ImGui.Text($"IreCD: {(SerpentsIrePvE.Cooldown.IsCoolingDown ? $"{SerpentsIrePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
     }
 
     #endregion
@@ -355,8 +421,9 @@ public sealed class SezuraiVPR : ViperRotation
 
         // 4. Reawaken Entry (burst-aligned)
         // Balance intermediate: "Press Ire, execute one dual wield combo GCD, then chain two Reawakens."
-        // We delay Reawaken by one GCD after Ire fires for raid buff alignment (~6.5s application).
-        if (LiveComboTime > GCDTime(6) && SwiftTime > SwiftTimer && HuntersTime > HuntersTimer)
+        // Reawaken does NOT break dual wield combos, so we only need buff timers to be safe.
+        // Allow entry when: no combo active OR enough combo time remaining for safety.
+        if ((IsNoActionCombo() || LiveComboTime > GCDTime(2)) && SwiftTime > SwiftTimer && HuntersTime > HuntersTimer)
         {
             // Overcap protection at 100 gauge -> always use regardless of burst state
             if (SerpentOffering == 100 && ReawakenPvE.CanUse(out act, skipComboCheck: true))
@@ -377,7 +444,9 @@ public sealed class SezuraiVPR : ViperRotation
         }
 
         // 5. Uncoiled Fury (burst-aligned)
-        if (LiveComboTime > GCDTime(1) && !WillSwiftEnd && !WillHunterEnd)
+        // UF is 343 PPS vs ~189 PPS for combo — always better as filler.
+        // Allow when: not mid-combo (safe) OR enough combo time remaining.
+        if ((IsNoActionCombo() || LiveComboTime > GCDTime(1)) && !WillSwiftEnd && !WillHunterEnd)
         {
             bool isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
             bool isTargetDying = CurrentTarget?.IsDying() ?? false;
@@ -482,8 +551,8 @@ public sealed class SezuraiVPR : ViperRotation
                 return true;
         }
 
-        // 7. AOE Vicepit (with 10-second rule block)
-        if (!ShouldBlockVicewinder && LiveComboTime > GCDTime(3) && IsSwift && VicepitPvE.Cooldown.CurrentCharges > 0)
+        // 7. AOE Vicepit (with 10-second rule + opener block)
+        if (!ShouldBlockVicewinder && !OpenerBlockVicewinder && LiveComboTime > GCDTime(3) && IsSwift && VicepitPvE.Cooldown.CurrentCharges > 0)
         {
             if (VicepitPvE.Cooldown.CurrentCharges == 1 && VicepitPvE.Cooldown.RecastTimeRemainOneCharge < 10)
             {

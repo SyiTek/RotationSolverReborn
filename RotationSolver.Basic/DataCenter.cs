@@ -713,9 +713,16 @@ internal static class DataCenter
 	public static float DefaultGCDElapsed => ActionManagerHelper.GetDefaultRecastTimeElapsed();
 
 	/// <summary>
-	/// Calculates the action ahead time based on the default GCD total and minimum animation lock.
+	/// Per-rotation override for Action Ahead. Set by individual rotations via UpdateInfo().
+	/// When null, falls back to the global Service.Config.Action6Head value.
 	/// </summary>
-	public static float CalculatedActionAhead => DefaultGCDTotal * Service.Config.Action6Head;
+	public static float? RotationActionAheadOverride { get; set; }
+
+	/// <summary>
+	/// Calculates the action ahead time based on the default GCD total and minimum animation lock.
+	/// Uses per-rotation override if set, otherwise falls back to global config.
+	/// </summary>
+	public static float CalculatedActionAhead => DefaultGCDTotal * (RotationActionAheadOverride ?? Service.Config.Action6Head);
 
 	/// <summary>
 	/// Calculates the total GCD time for a given number of GCDs and an optional offset.

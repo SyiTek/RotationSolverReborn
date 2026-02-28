@@ -334,7 +334,7 @@ internal partial class Configs : IPluginConfiguration
     [JobConfig, UI("Only used automatically if coded into the rotation",
     Description = "This setting is only used if the rotation specifically supports automatic tincture usage.",
     Filter = AutoActionUsage, PvPFilter = JobFilterType.NoJob)]
-    private readonly TinctureUseType _TinctureType = TinctureUseType.Nowhere;
+    private readonly TinctureUseType _TinctureType = TinctureUseType.InHighEndDuty;
 
     [ConditionBool, UI("Automatically use Anti-Knockback role actions (Arms Length, Surecast)",
     Description = "Enable to automatically use anti-knockback abilities when needed based on anti-knockback action list in List menu.",

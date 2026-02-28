@@ -21,6 +21,10 @@ public sealed class SezuraiDRG : DragoonRotation
     [RotationConfig(CombatType.PvE, Name = "Experimental Pot Usage (during Battle Litany windows)")]
     public bool BurstMed { get; set; } = false;
 
+    [Range(0f, 0.25f, ConfigUnitType.Percent)]
+    [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
+    public float ActionAheadOverride { get; set; } = 0f;
+
     #endregion
 
     #region Burst State
@@ -40,6 +44,15 @@ public sealed class SezuraiDRG : DragoonRotation
     /// True when Life of the Dragon is active (15% damage buff from Geirskogul).
     /// </summary>
     private bool InLOTD => LOTDTime > 0;
+
+    #endregion
+
+    #region UpdateInfo
+
+    protected override void UpdateInfo()
+    {
+        DataCenter.RotationActionAheadOverride = ActionAheadOverride > 0f ? ActionAheadOverride : null;
+    }
 
     #endregion
 
