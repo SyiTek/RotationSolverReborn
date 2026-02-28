@@ -1,3 +1,6 @@
+using Dalamud.Game.ClientState.JobGauge.Types;
+using ECommons.DalamudServices;
+
 namespace RotationSolver.ExtraRotations.Ranged;
 
 [Rotation("SezuraiBRD", CombatType.PvE, GameVersion = "7.41",
@@ -87,7 +90,7 @@ public sealed class SezuraiBRD : BardRotation
     /// How many unique Coda (song types) we have stored for Radiant Finale.
     /// More Coda = stronger buff (1 = 2%, 2 = 4%, 3 = 6%).
     /// </summary>
-    private static int CodaCount => JobGauge.Coda.Count(s => s != Song.None);
+    private static int CodaCount => Svc.Gauges.Get<BRDGauge>().Coda.Count(s => s != Song.None);
 
     /// <summary>
     /// Whether Resonant Arrow proc is available (granted by Barrage).

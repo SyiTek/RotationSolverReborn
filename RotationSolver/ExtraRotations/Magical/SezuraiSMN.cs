@@ -87,7 +87,7 @@ public sealed class SezuraiSMN : SummonerRotation
         get
         {
             if (!InDemiSummon) return 0;
-            float raw = SummonTimeRaw;
+            float raw = SummonTime;
             if (raw <= 0) return 0;
             float gcdLen = RuinPvE.Cooldown.RecastTime;
             if (gcdLen <= 0) gcdLen = 2.5f;
