@@ -1,0 +1,669 @@
+namespace RotationSolver.ExtraRotations.Melee;
+
+[Rotation("SezuraiSAM", CombatType.PvE, GameVersion = "7.41",
+    Description = "Balance-aligned SAM with Tendo burst, Higanbana management, and Kenki optimization.")]
+[SourceCode(Path = "main/ExtraRotations/Melee/SezuraiSAM.cs")]
+[ExtraRotation]
+public sealed class SezuraiSAM : SamuraiRotation
+{
+    #region Config Options
+
+    [Range(0f, 0.25f, ConfigUnitType.Percent)]
+    [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
+    public float ActionAheadOverride { get; set; } = 0f;
+
+    [RotationConfig(CombatType.PvE, Name = "Auto Pot Usage (Gemdraught during Ikishoten burst windows + pre-pull)")]
+    public bool BurstMed { get; set; } = false;
+
+    [RotationConfig(CombatType.PvE, Name = "Prevent Higanbana use if there is more than one target")]
+    public bool HiganbanaTargets { get; set; } = true;
+
+    [Range(10, 60, ConfigUnitType.Seconds, 1)]
+    [RotationConfig(CombatType.PvE, Name = "Minimum time-to-kill for Higanbana application (seconds)")]
+    public int HiganbanaMinTime { get; set; } = 48;
+
+    [Range(25, 75, ConfigUnitType.None, 5)]
+    [RotationConfig(CombatType.PvE, Name = "Kenki threshold for Shinten/Kyuten during filler (save for burst below this)")]
+    public int KenkiSpendThreshold { get; set; } = 50;
+
+    #endregion
+
+    #region Burst State
+
+    /// <summary>
+    /// Whether the user has burst enabled in the framework.
+    /// </summary>
+    private bool CanBurst => MergedStatus.HasFlag(AutoStatus.Burst);
+
+    /// <summary>
+    /// True when Ikishoten has a charge ready OR was recently used (within 30s).
+    /// This covers the broad burst-is-available/active window for the 120s cycle.
+    /// </summary>
+    private bool InBurstWindow => IkishotenPvE.EnoughLevel
+        && (IkishotenPvE.Cooldown.HasOneCharge || IkishotenPvE.Cooldown.JustUsedAfter(30));
+
+    /// <summary>
+    /// True during the big 120s burst: Ikishoten was recently used, or we have
+    /// Ogi Namikiri / Zanshin buffs active. This is the window for maximum damage.
+    /// </summary>
+    private bool IsBigBurst => IkishotenPvE.EnoughLevel
+        && (IkishotenPvE.Cooldown.JustUsedAfter(30) || HasOgiNamikiri || HasZanshinReady);
+
+    /// <summary>
+    /// True during odd-minute mini-burst: Senei is available but Ikishoten is not.
+    /// The 60s window uses Meikyo + Midare/Tendo but no Ogi Namikiri.
+    /// </summary>
+    private bool IsMiniBurst => HissatsuSeneiPvE.EnoughLevel
+        && HissatsuSeneiPvE.Cooldown.HasOneCharge
+        && !IsBigBurst;
+
+    /// <summary>
+    /// True when we are within 10s of Ikishoten coming off cooldown.
+    /// Used to conserve Kenki for the upcoming burst.
+    /// </summary>
+    private bool IsPreBurst => IkishotenPvE.EnoughLevel
+        && IkishotenPvE.Cooldown.IsCoolingDown
+        && !IkishotenPvE.Cooldown.HasOneCharge
+        && IkishotenPvE.Cooldown.RecastTimeRemain <= 10;
+
+    #endregion
+
+    #region Weave Helpers
+
+    /// <summary>
+    /// Late-weave window: last ~45% of GCD where a single oGCD fits without clipping.
+    /// </summary>
+    private static float LateWeaveWindow => WeaponTotal * 0.45f;
+
+    /// <summary>
+    /// True when there's enough remaining GCD time to safely weave an oGCD.
+    /// </summary>
+    private static bool EnoughWeaveTime => WeaponRemain >= 0.6f;
+
+    /// <summary>
+    /// True when in the late-weave window and weaving is safe.
+    /// </summary>
+    private static bool CanLateWeave => WeaponRemain <= LateWeaveWindow && EnoughWeaveTime;
+
+    #endregion
+
+    #region Countdown
+
+    protected override IAction? CountDownAction(float remainTime)
+    {
+        // Meikyo Shisui at ~14s: grants 3 stacks to skip combo for opener Sen generation
+        // Also grants Tendo buff for first Tendo Setsugekka
+        if (remainTime <= 14 && MeikyoShisuiPvE.CanUse(out IAction? act))
+            return act;
+
+        // True North at ~5s: positional freedom for opener Gekko (rear)
+        if (remainTime <= 5 && TrueNorthPvE.CanUse(out act))
+            return act;
+
+        // Pre-pull medicine at ~2s: pot animation lands before first GCD
+        if (BurstMed && remainTime <= 2f && UseBurstMedicine(out act))
+            return act;
+
+        return base.CountDownAction(remainTime);
+    }
+
+    #endregion
+
+    #region UpdateInfo
+
+    protected override void UpdateInfo()
+    {
+        DataCenter.RotationActionAheadOverride = ActionAheadOverride > 0f ? ActionAheadOverride : null;
+    }
+
+    #endregion
+
+    #region Status Display
+
+    public override void DisplayRotationStatus()
+    {
+        ImGui.Text("--- Burst State ---");
+        ImGui.Text($"CanBurst: {CanBurst}");
+        ImGui.Text($"InBurstWindow: {InBurstWindow}");
+        ImGui.Text($"IsBigBurst: {IsBigBurst}");
+        ImGui.Text($"IsMiniBurst: {IsMiniBurst}");
+        ImGui.Text($"IsPreBurst: {IsPreBurst}");
+        ImGui.Text("--- Sen ---");
+        ImGui.Text($"SenCount: {SenCount} | Getsu: {HasGetsu} | Ka: {HasKa} | Setsu: {HasSetsu}");
+        ImGui.Text("--- Gauge ---");
+        ImGui.Text($"Kenki: {Kenki} | Meditation: {MeditationStacks}");
+        ImGui.Text("--- Buffs ---");
+        ImGui.Text($"Fugetsu: {(HasFugetsu ? $"{FugetsuTime:F1}s" : "None")} | Fuka: {(HasFuka ? $"{FukaTime:F1}s" : "None")}");
+        ImGui.Text($"HasFugetsuAndFuka: {HasFugetsuAndFuka}");
+        ImGui.Text($"WillFugetsuEnd: {WillFugetsuEnd} | WillFukaEnd: {WillFukaEnd}");
+        ImGui.Text($"HasMeikyoShisui: {HasMeikyoShisui} | HasTendo: {HasTendo}");
+        ImGui.Text($"HasOgiNamikiri: {HasOgiNamikiri} | HasZanshinReady: {HasZanshinReady}");
+        ImGui.Text($"HasTsubamegaeshiReady: {HasTsubamegaeshiReady}");
+        ImGui.Text($"Medicated: {StatusHelper.PlayerHasStatus(true, StatusID.Medicated)}");
+        ImGui.Text("--- Iaijutsu State ---");
+        ImGui.Text($"HiganbanaReady: {HiganbanaReady} | TenkaGokenReady: {TenkaGokenReady}");
+        ImGui.Text($"MidareReady: {MidareSetsugekkaReady} | TendoSetsugekkaReady: {TendoSetsugekkaReady}");
+        ImGui.Text($"TendoGokenReady: {TendoGokenReady}");
+        ImGui.Text("--- Kaeshi State ---");
+        ImGui.Text($"KaeshiSetsugekka: {KaeshiSetsugekkaReady} | KaeshiGoken: {KaeshiGokenReady}");
+        ImGui.Text($"KaeshiNamikiri: {KaeshiNamikiriReady}");
+        ImGui.Text($"TendoKaeshiSetsugekka: {TendoKaeshiSetsugekkaReady} | TendoKaeshiGoken: {TendoKaeshiGokenReady}");
+        ImGui.Text("--- Weave ---");
+        ImGui.Text($"WeaponRemain: {WeaponRemain:F2}s | WeaponTotal: {WeaponTotal:F2}s");
+        ImGui.Text($"CanLateWeave: {CanLateWeave} | EnoughWeaveTime: {EnoughWeaveTime}");
+        ImGui.Text($"IkishotenCD: {(IkishotenPvE.Cooldown.IsCoolingDown ? $"{IkishotenPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"SeneiCD: {(HissatsuSeneiPvE.Cooldown.IsCoolingDown ? $"{HissatsuSeneiPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"MeikyoCharges: {MeikyoShisuiPvE.Cooldown.CurrentCharges}");
+    }
+
+    #endregion
+
+    #region Additional oGCD Logic
+
+    [RotationDesc(ActionID.HissatsuGyotenPvE)]
+    protected override bool MoveForwardAbility(IAction nextGCD, out IAction? act)
+    {
+        if (HissatsuGyotenPvE.CanUse(out act))
+            return true;
+        return base.MoveForwardAbility(nextGCD, out act);
+    }
+
+    [RotationDesc]
+    protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        if (SecondWindPvE.CanUse(out act))
+            return true;
+        if (BloodbathPvE.CanUse(out act))
+            return true;
+        return base.HealSingleAbility(nextGCD, out act);
+    }
+
+    [RotationDesc(ActionID.FeintPvE, ActionID.TengentsuPvE, ActionID.ThirdEyePvE)]
+    protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
+    {
+        // Don't use defensive oGCDs when Zanshin is ready (it shares the oGCD slot)
+        if (!HasZanshinReady)
+        {
+            if (FeintPvE.CanUse(out act))
+                return true;
+        }
+        return base.DefenseAreaAbility(nextGCD, out act);
+    }
+
+    [RotationDesc(ActionID.TengentsuPvE, ActionID.ThirdEyePvE)]
+    protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        if (!HasZanshinReady)
+        {
+            if (TengentsuPvE.CanUse(out act))
+                return true;
+            if (ThirdEyePvE.CanUse(out act))
+                return true;
+        }
+        return base.DefenseSingleAbility(nextGCD, out act);
+    }
+
+    [RotationDesc]
+    protected sealed override bool AntiKnockbackAbility(IAction nextGCD, out IAction? act)
+    {
+        if (ArmsLengthPvE.CanUse(out act))
+            return true;
+        return base.AntiKnockbackAbility(nextGCD, out act);
+    }
+
+    [RotationDesc]
+    protected sealed override bool InterruptAbility(IAction nextGCD, out IAction? act)
+    {
+        if (LegSweepPvE.CanUse(out act))
+            return true;
+        return base.InterruptAbility(nextGCD, out act);
+    }
+
+    #endregion
+
+    #region Emergency Ability
+
+    [RotationDesc]
+    protected override bool EmergencyAbility(IAction nextGCD, out IAction? act)
+    {
+        // Medicine: use when Ikishoten burst is about to start (within 5s) or during Ogi window
+        if (BurstMed && InCombat)
+        {
+            // Pre-burst: Ikishoten coming off CD soon
+            if (IkishotenPvE.EnoughLevel
+                && IkishotenPvE.Cooldown.IsCoolingDown
+                && IkishotenPvE.Cooldown.RecastTimeRemain <= 5
+                && UseBurstMedicine(out act))
+                return true;
+
+            // During burst: Ogi or Zanshin is active
+            if ((HasOgiNamikiri || HasZanshinReady) && UseBurstMedicine(out act))
+                return true;
+        }
+
+        return base.EmergencyAbility(nextGCD, out act);
+    }
+
+    #endregion
+
+    #region oGCD Logic
+
+    protected override bool AttackAbility(IAction nextGCD, out IAction? act)
+    {
+        bool isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
+        bool isTargetDying = CurrentTarget?.IsDying() ?? false;
+
+        // ============================================================
+        // 1. MEIKYO SHISUI: grants 3 combo-skip stacks + Tendo buff
+        // Use during burst, after Tsubamegaeshi follow-ups, or to maintain buffs.
+        // Balance guide: one charge for burst Tendo, one for filler/realignment.
+        // ============================================================
+        if (CanBurst && HasHostilesInRange && HasFugetsuAndFuka)
+        {
+            // During burst: use after Kaeshi follow-ups to set up next Tendo Setsugekka
+            if (TsubamegaeshiActionReady || IsLastAction(false, TendoKaeshiSetsugekkaPvE, KaeshiSetsugekkaPvE, KaeshiNamikiriPvE, TendoKaeshiGokenPvE, KaeshiGokenPvE))
+            {
+                if (MeikyoShisuiPvE.CanUse(out act, usedUp: true))
+                    return true;
+            }
+
+            // At 0 Sen after burst finishes: use to quickly rebuild 3 Sen
+            if (SenCount == 0 && !HasMeikyoShisui && !TsubamegaeshiActionReady)
+            {
+                if (MeikyoShisuiPvE.CanUse(out act, usedUp: EnhancedMeikyoShisuiTrait.EnoughLevel && MeikyoShisuiPvE.Cooldown.WillHaveXChargesGCD(2, 1)))
+                    return true;
+            }
+        }
+
+        // Meikyo outside burst: use when both buffs are up and we have 0 Sen,
+        // or when a buff is about to fall off (emergency)
+        if (!HasMeikyoShisui && !TsubamegaeshiActionReady && SenCount == 0)
+        {
+            if (!HasFugetsuAndFuka || (isTargetBoss && isTargetDying))
+            {
+                if (MeikyoShisuiPvE.CanUse(out act))
+                    return true;
+            }
+        }
+
+        // Overcap prevention: if at 2 charges and burst is not imminent
+        if (EnhancedMeikyoShisuiTrait.EnoughLevel
+            && MeikyoShisuiPvE.Cooldown.CurrentCharges >= 2
+            && !HasMeikyoShisui && !TsubamegaeshiActionReady)
+        {
+            if (MeikyoShisuiPvE.CanUse(out act, usedUp: true))
+                return true;
+        }
+
+        // ============================================================
+        // 2. ZANSHIN: HIGHEST priority oGCD when ready (50 Kenki)
+        // Massive damage, granted by Ikishoten. Use immediately.
+        // ============================================================
+        if (ZanshinPvE.CanUse(out act))
+            return true;
+
+        // ============================================================
+        // 3. IKISHOTEN: grants Ogi Namikiri Ready + Zanshin Ready + 50 Kenki
+        // 120s cooldown. Use in burst window after establishing buffs.
+        // Note: base class ActionCheck requires Kenki >= 50 and InCombat.
+        // ============================================================
+        if (CanBurst && !HasZanshinReady && HasFugetsuAndFuka && !CombatElapsedLessGCD(2))
+        {
+            if (IkishotenPvE.CanUse(out act))
+                return true;
+        }
+
+        // ============================================================
+        // 4. SHOHA: at 3 Meditation stacks (generated by Iaijutsu/Ogi)
+        // Prefer during burst or before next Iaijutsu to avoid overcap.
+        // ============================================================
+        {
+            bool nextGCDIsIaijutsu = nextGCD.IsTheSameTo(true,
+                ActionID.OgiNamikiriPvE, ActionID.HiganbanaPvE,
+                ActionID.TenkaGokenPvE, ActionID.MidareSetsugekkaPvE,
+                ActionID.TendoGokenPvE, ActionID.TendoSetsugekkaPvE);
+
+            // Use Shoha when Meditation is full and we won't waste the oGCD window on Zanshin
+            if (!HasZanshinReady && (nextGCDIsIaijutsu || IkishotenPvE.Cooldown.RecastTimeElapsed < 30))
+            {
+                if (ShohaPvE.CanUse(out act))
+                    return true;
+            }
+        }
+
+        // ============================================================
+        // 5. SENEI / GUREN: 25 Kenki nuke on 60s CD
+        // Senei = single target, Guren = AoE (3+ targets).
+        // Use when Ikishoten is on cooldown (don't use before first Ikishoten).
+        // ============================================================
+        if (!HasZanshinReady && !CombatElapsedLessGCD(2))
+        {
+            if (IkishotenPvE.Cooldown.IsCoolingDown || !IkishotenPvE.EnoughLevel)
+            {
+                if (HissatsuGurenPvE.CanUse(out act, skipAoeCheck: !HissatsuSeneiPvE.EnoughLevel))
+                    return true;
+                if (HissatsuSeneiPvE.CanUse(out act))
+                    return true;
+            }
+        }
+
+        // ============================================================
+        // 6. SHOHA fallback: use at 3 stacks even outside burst to prevent waste
+        // ============================================================
+        if (!HasZanshinReady && ShohaPvE.CanUse(out act))
+            return true;
+
+        // ============================================================
+        // 7. SHINTEN / KYUTEN: Kenki spender (25 each)
+        // Spend when above threshold to prevent overcapping.
+        // During burst, spend more aggressively. During filler, hold for burst.
+        // Never spend if Zanshin is ready (it costs 50 Kenki).
+        // ============================================================
+        if (!HasZanshinReady)
+        {
+            // Aggressive spend during burst or if Kenki is getting high
+            bool shouldSpend = IsBigBurst
+                || IsMiniBurst
+                || Kenki >= KenkiSpendThreshold
+                || (!IkishotenPvE.EnoughLevel && Kenki >= 25)
+                || (isTargetBoss && isTargetDying && Kenki >= 25);
+
+            if (shouldSpend)
+            {
+                if (HissatsuKyutenPvE.CanUse(out act))
+                    return true;
+                if (HissatsuShintenPvE.CanUse(out act))
+                    return true;
+            }
+        }
+
+        // ============================================================
+        // 8. HAGAKURE: convert Sen to Kenki for realignment
+        // Use when we have Sen but need to realign (e.g., switching to AoE).
+        // Also useful if stuck with wrong Sen count approaching burst.
+        // ============================================================
+        // Intentionally not used automatically -- Hagakure is a manual realignment
+        // tool and automatic usage can desync the rotation. The base class ActionCheck
+        // already handles Kenki overflow protection.
+
+        return base.AttackAbility(nextGCD, out act);
+    }
+
+    #endregion
+
+    #region GCD Logic
+
+    protected override bool GeneralGCD(out IAction? act)
+    {
+        bool isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
+        bool isTargetDying = CurrentTarget?.IsDying() ?? false;
+
+        // ================================================================
+        // PRIORITY 1: ALWAYS FINISH KAESHI / TSUBAMEGAESHI FOLLOW-UPS
+        // These are free follow-up GCDs that must be pressed immediately.
+        // ================================================================
+
+        // Kaeshi Namikiri (follow-up to Ogi Namikiri)
+        if (KaeshiNamikiriPvE.CanUse(out act))
+            return true;
+
+        // Tendo Kaeshi Setsugekka (follow-up to Tendo Setsugekka)
+        if (TendoKaeshiSetsugekkaPvE.CanUse(out act))
+            return true;
+
+        // Tendo Kaeshi Goken (follow-up to Tendo Goken)
+        if (TendoKaeshiGokenPvE.CanUse(out act, skipAoeCheck: true))
+            return true;
+
+        // Kaeshi Setsugekka (follow-up to Midare Setsugekka)
+        if (KaeshiSetsugekkaPvE.CanUse(out act))
+            return true;
+
+        // Kaeshi Goken (follow-up to Tenka Goken)
+        if (KaeshiGokenPvE.CanUse(out act, skipComboCheck: true, skipAoeCheck: true))
+            return true;
+
+        // ================================================================
+        // PRIORITY 2: OGI NAMIKIRI (burst-aligned, 120s)
+        // Only use when Higanbana is already on the target (boss) and
+        // both personal buffs (Fugetsu + Fuka) are active.
+        // ================================================================
+        if (OgiNamikiriPvE.CanUse(out act) && OgiNamikiriPvE.Target.Target != null)
+        {
+            bool targetHasHiganbana = OgiNamikiriPvE.Target.Target?.HasStatus(true, StatusID.Higanbana) ?? false;
+            bool isNonBoss = !isTargetBoss;
+
+            // Use if: non-boss target, or boss has Higanbana, and buffs are up
+            if ((isNonBoss || targetHasHiganbana) && HasFugetsuAndFuka)
+                return true;
+
+            // AoE scenario: 2+ targets, just use it
+            if (NumberOfHostilesInRange >= 2)
+                return true;
+        }
+
+        // ================================================================
+        // PRIORITY 3: TENDO IAIJUTSU (Tendo buff + 3 Sen / 2 Sen)
+        // Tendo versions are stronger. Use when Tendo buff is active.
+        // ================================================================
+
+        // Tendo Setsugekka: 3 Sen + Tendo buff (ST)
+        if (TendoSetsugekkaPvE.CanUse(out act, skipComboCheck: true))
+            return true;
+
+        // Tendo Goken: 2 Sen + Tendo buff (AoE)
+        if (TendoGokenPvE.CanUse(out act, skipComboCheck: true))
+            return true;
+
+        // ================================================================
+        // PRIORITY 4: STANDARD IAIJUTSU (no Tendo buff)
+        // ================================================================
+
+        // Midare Setsugekka: 3 Sen, no Tendo (ST)
+        if (MidareSetsugekkaPvE.CanUse(out act, skipComboCheck: true))
+            return true;
+
+        // Tenka Goken: 2 Sen, no Tendo (AoE, 3+ targets)
+        if (TenkaGokenPvE.CanUse(out act, skipComboCheck: true))
+            return true;
+
+        // ================================================================
+        // PRIORITY 5: HIGANBANA (1 Sen, DoT management)
+        // Only on boss targets. Refresh when about to expire.
+        // Skip during Meikyo (don't waste stacks on 1-Sen move).
+        // Skip when we have 3 Sen or are in Tendo (should use Midare/Tendo instead).
+        // ================================================================
+        if (!HasMeikyoShisui && !MidareSetsugekkaReady && !TendoSetsugekkaReady
+            && HasFugetsuAndFuka && !WillFugetsuEnd && !WillFukaEnd)
+        {
+            // Multi-target gate: don't use Higanbana if setting enabled and 2+ targets
+            bool higanbanaAllowed = !HiganbanaTargets || NumberOfAllHostilesInRange < 2;
+
+            if (higanbanaAllowed)
+            {
+                if (HiganbanaPvE.CanUse(out act, skipComboCheck: true,
+                    skipTTKCheck: isTargetBoss || IsInHighEndDuty))
+                    return true;
+            }
+        }
+
+        // ================================================================
+        // PRIORITY 6: AOE COMBO (3+ targets, Fuko/Fuga -> Mangetsu/Oka)
+        // ================================================================
+
+        // AoE finishers: Mangetsu (Getsu + Fugetsu) / Oka (Ka + Fuka)
+        if (HasFugetsuAndFuka)
+        {
+            // Refresh whichever buff ends first
+            switch (FugetsuOrFukaEndsFirst)
+            {
+                case "Fugetsu":
+                    if (MangetsuPvE.CanUse(out act, skipStatusProvideCheck: true,
+                        skipComboCheck: HasMeikyoShisui && !HasGetsu))
+                        return true;
+                    break;
+                case "Fuka":
+                    if (OkaPvE.CanUse(out act, skipStatusProvideCheck: true,
+                        skipComboCheck: HasMeikyoShisui && !HasKa))
+                        return true;
+                    break;
+                case "Equal":
+                case null:
+                    if (MangetsuPvE.CanUse(out act, skipStatusProvideCheck: true,
+                        skipComboCheck: HasMeikyoShisui && !HasGetsu))
+                        return true;
+                    if (OkaPvE.CanUse(out act, skipStatusProvideCheck: true,
+                        skipComboCheck: HasMeikyoShisui && !HasKa))
+                        return true;
+                    break;
+            }
+        }
+        if (!HasFugetsuAndFuka)
+        {
+            // Establish missing buffs via AoE combo
+            if (!OkaPvE.EnoughLevel && MangetsuPvE.CanUse(out act, skipStatusProvideCheck: true,
+                skipComboCheck: HasMeikyoShisui && !HasGetsu))
+                return true;
+
+            if (!HasFugetsu && MangetsuPvE.CanUse(out act))
+                return true;
+            if (!HasFuka && OkaPvE.CanUse(out act))
+                return true;
+        }
+
+        // AoE base combo (Fuko or Fuga)
+        if (!HasMeikyoShisui)
+        {
+            if (FugaMasteryTrait.EnoughLevel)
+            {
+                if (FukoPvE.CanUse(out act))
+                    return true;
+            }
+            else if (FugaPvE.CanUse(out act))
+            {
+                return true;
+            }
+        }
+
+        // ================================================================
+        // PRIORITY 7: SINGLE TARGET COMBO FINISHERS
+        // Gekko (rear, Getsu + Fugetsu), Kasha (flank, Ka + Fuka),
+        // Yukikaze (Setsu). Meikyo lets us skip to these directly.
+        // Prefer positionals we can actually hit.
+        // ================================================================
+
+        // With Meikyo active: use finishers directly, skipping combo steps.
+        // Prioritize filling missing Sen, then favor positional-correct hits.
+        if (HasMeikyoShisui)
+        {
+            // Fill missing Sen in order: prioritize what we don't have
+            if (!HasGetsu && GekkoPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+            if (!HasKa && KashaPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+            if (!HasSetsu && HasFugetsuAndFuka && YukikazePvE.CanUse(out act, skipComboCheck: true))
+                return true;
+
+            // All Sen present or duplicating: try positional-correct first
+            if (GekkoPvE.CanUse(out act, skipComboCheck: true) && GekkoPvE.Target.Target != null
+                && CanHitPositional(EnemyPositional.Rear, GekkoPvE.Target.Target))
+                return true;
+            if (KashaPvE.CanUse(out act, skipComboCheck: true) && KashaPvE.Target.Target != null
+                && CanHitPositional(EnemyPositional.Flank, KashaPvE.Target.Target))
+                return true;
+
+            // Fallback: any finisher that works
+            if (GekkoPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+            if (KashaPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+        }
+
+        // Normal combo finishers (not in Meikyo, combo is active)
+        // Try positional-correct first for extra damage
+        if (GekkoPvE.CanUse(out act) && GekkoPvE.Target.Target != null
+            && CanHitPositional(EnemyPositional.Rear, GekkoPvE.Target.Target))
+            return true;
+        if (KashaPvE.CanUse(out act) && KashaPvE.Target.Target != null
+            && CanHitPositional(EnemyPositional.Flank, KashaPvE.Target.Target))
+            return true;
+
+        // Yukikaze: Setsu Sen, no positional. Use when we need Setsu and have both buffs.
+        if (!HasSetsu && HasFugetsuAndFuka && YukikazePvE.CanUse(out act))
+            return true;
+
+        // Fallback: finishers without positional check
+        if (GekkoPvE.CanUse(out act))
+            return true;
+        if (KashaPvE.CanUse(out act))
+            return true;
+
+        // ================================================================
+        // PRIORITY 8: MID-COMBO STEPS (Jinpu / Shifu)
+        // Jinpu -> Gekko path (Fugetsu buff + Getsu Sen)
+        // Shifu -> Kasha path (Fuka buff + Ka Sen)
+        // Refresh whichever buff ends first.
+        // ================================================================
+        if (HasFugetsuAndFuka)
+        {
+            switch (FugetsuOrFukaEndsFirst)
+            {
+                case "Fugetsu":
+                    if (JinpuPvE.CanUse(out act, skipStatusProvideCheck: true))
+                        return true;
+                    break;
+                case "Fuka":
+                    if (ShifuPvE.CanUse(out act, skipStatusProvideCheck: true))
+                        return true;
+                    break;
+                case "Equal":
+                case null:
+                    if (JinpuPvE.CanUse(out act, skipStatusProvideCheck: true))
+                        return true;
+                    if (ShifuPvE.CanUse(out act, skipStatusProvideCheck: true))
+                        return true;
+                    break;
+            }
+        }
+        if (!HasFugetsuAndFuka)
+        {
+            // Establish missing buffs: Fugetsu (damage) is higher priority than Fuka (speed)
+            if (!HasFugetsu && JinpuPvE.CanUse(out act))
+                return true;
+            if (!HasFuka && ShifuPvE.CanUse(out act))
+                return true;
+
+            // Fallback for early levels / fresh combat
+            if (JinpuPvE.CanUse(out act))
+                return true;
+            if (ShifuPvE.CanUse(out act))
+                return true;
+        }
+
+        // ================================================================
+        // PRIORITY 9: BASE COMBO STARTER (Hakaze / Gyofu)
+        // Don't use during Meikyo (waste of stacks) or when Tsubamegaeshi is ready.
+        // ================================================================
+        if (!HasMeikyoShisui && !TsubamegaeshiActionReady)
+        {
+            if (GyofuPvE.EnoughLevel)
+            {
+                if (GyofuPvE.CanUse(out act))
+                    return true;
+            }
+            if (HakazePvE.CanUse(out act))
+                return true;
+        }
+
+        // ================================================================
+        // PRIORITY 10: RANGED FALLBACK (Enpi)
+        // Only when not in melee range. Doesn't break combo.
+        // ================================================================
+        if (EnpiPvE.CanUse(out act))
+            return true;
+
+        return base.GeneralGCD(out act);
+    }
+
+    #endregion
+}

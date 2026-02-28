@@ -445,9 +445,13 @@ public sealed class SezuraiMNK : MonkRotation
     {
         RotationUpdater();
 
+        // After blitz/Fire's Reply, prefer Opo (gets Formless Fist) but DON'T hard-gate
+        // If TryUseOpoOpo fails for any reason, fall through to other options to avoid stalling
         if (MustUseOpo)
         {
-            return CombatElapsedLessGCD(1) ? TryUseOpenerVariation(out act) : TryUseOpoOpo(out act);
+            if (CombatElapsedLessGCD(1) && TryUseOpenerVariation(out act)) return true;
+            if (TryUseOpoOpo(out act)) return true;
+            // Fall through instead of returning false - prevents deadlock
         }
 
         if (TryUseWindsReply(out act)) return true;
@@ -490,22 +494,31 @@ public sealed class SezuraiMNK : MonkRotation
                 return true;
             }
 
+            // Try preferred action first, then fallback to alternatives to prevent stalling
             switch (OpoOpoFury)
             {
                 case > 0 when LeapingOpoPvE.EnoughLevel:
-                    return LeapingOpoPvE.CanUse(out act, skipComboCheck: true);
+                    if (LeapingOpoPvE.CanUse(out act, skipComboCheck: true)) return true;
+                    break;
                 case > 0:
-                    return BootshinePvE.CanUse(out act, skipComboCheck: true);
+                    if (BootshinePvE.CanUse(out act, skipComboCheck: true)) return true;
+                    break;
                 case 0:
-                    return DragonKickPvE.CanUse(out act, skipComboCheck: true);
+                    if (DragonKickPvE.CanUse(out act, skipComboCheck: true)) return true;
+                    break;
             }
+
+            // Fallback: try any Opo GCD if preferred one failed
+            if (LeapingOpoPvE.CanUse(out act, skipComboCheck: true)) return true;
+            if (DragonKickPvE.CanUse(out act, skipComboCheck: true)) return true;
+            if (BootshinePvE.CanUse(out act, skipComboCheck: true)) return true;
         }
         return false;
     }
     private bool TryUseRaptor(out IAction? act)
     {
         act = null;
-        if (InRaptorForm || HasFormlessFist ||HasPerfectBalance)
+        if (InRaptorForm || HasFormlessFist || HasPerfectBalance)
         {
             if (FourpointFuryPvE.CanUse(out act, skipComboCheck: true))
             {
@@ -515,20 +528,27 @@ public sealed class SezuraiMNK : MonkRotation
             switch (RaptorFury)
             {
                 case > 0 when RisingRaptorPvE.EnoughLevel:
-                    return RisingRaptorPvE.CanUse(out act, skipComboCheck: true);
+                    if (RisingRaptorPvE.CanUse(out act, skipComboCheck: true)) return true;
+                    break;
                 case > 0:
-                    return TrueStrikePvE.CanUse(out act, skipComboCheck: true);
+                    if (TrueStrikePvE.CanUse(out act, skipComboCheck: true)) return true;
+                    break;
                 case 0:
-                    return TwinSnakesPvE.CanUse(out act, skipComboCheck: true);
-
+                    if (TwinSnakesPvE.CanUse(out act, skipComboCheck: true)) return true;
+                    break;
             }
+
+            // Fallback: try any Raptor GCD
+            if (RisingRaptorPvE.CanUse(out act, skipComboCheck: true)) return true;
+            if (TwinSnakesPvE.CanUse(out act, skipComboCheck: true)) return true;
+            if (TrueStrikePvE.CanUse(out act, skipComboCheck: true)) return true;
         }
         return false;
     }
     private bool TryUseCoeurl(out IAction? act)
     {
         act = null;
-        if (InCoeurlForm || HasFormlessFist ||HasPerfectBalance)
+        if (InCoeurlForm || HasFormlessFist || HasPerfectBalance)
         {
             if (RockbreakerPvE.CanUse(out act, skipComboCheck: true))
             {
@@ -538,13 +558,20 @@ public sealed class SezuraiMNK : MonkRotation
             switch (CoeurlFury)
             {
                 case > 0 when PouncingCoeurlPvE.EnoughLevel:
-                    return PouncingCoeurlPvE.CanUse(out act, skipComboCheck: true);
+                    if (PouncingCoeurlPvE.CanUse(out act, skipComboCheck: true)) return true;
+                    break;
                 case > 0:
-                    return SnapPunchPvE.CanUse(out act, skipComboCheck: true);
+                    if (SnapPunchPvE.CanUse(out act, skipComboCheck: true)) return true;
+                    break;
                 case 0:
-                    return DemolishPvE.CanUse(out act, skipComboCheck: true);
+                    if (DemolishPvE.CanUse(out act, skipComboCheck: true)) return true;
+                    break;
             }
 
+            // Fallback: try any Coeurl GCD
+            if (PouncingCoeurlPvE.CanUse(out act, skipComboCheck: true)) return true;
+            if (DemolishPvE.CanUse(out act, skipComboCheck: true)) return true;
+            if (SnapPunchPvE.CanUse(out act, skipComboCheck: true)) return true;
         }
 
         return false;
@@ -652,7 +679,10 @@ public sealed class SezuraiMNK : MonkRotation
             return RisingPhoenixPvE.CanUse(out act);
         }
 
-        return false;
+        // Fallback: if beast chakras are full but no specific condition matched
+        // (e.g. mixed 2+1 pattern = Celestial Revolution, or any Ready check mismatch)
+        // Use the generic MasterfulBlitz which resolves to whatever the game says
+        return MasterfulBlitzPvE.CanUse(out act);
     }
 
     #endregion
