@@ -360,6 +360,18 @@ public sealed class SezuraiMNK : MonkRotation
     [RotationConfig(CombatType.PvE, Name = "Choose Opener Variation")]
     private OpenerVariation ChosenVariation { get; set; } = OpenerVariation.DragonKick5;
 
+    [Range(0f, 0.25f, ConfigUnitType.Percent)]
+    [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
+    public float ActionAheadOverride { get; set; } = 0f;
+
+    #endregion
+
+    #region UpdateInfo
+
+    protected override void UpdateInfo()
+    {
+        DataCenter.RotationActionAheadOverride = ActionAheadOverride > 0f ? ActionAheadOverride : null;
+    }
 
     #endregion
 
@@ -539,12 +551,17 @@ public sealed class SezuraiMNK : MonkRotation
     }
     private bool TryUseFiller(out IAction? act)
     {
+        // Follow current form naturally instead of always starting with Opo
+        if (InRaptorForm)
+            return TryUseRaptor(out act) || TryUseCoeurl(out act) || TryUseOpoOpo(out act);
+        if (InCoeurlForm)
+            return TryUseCoeurl(out act) || TryUseOpoOpo(out act) || TryUseRaptor(out act);
 
+        // Opo form, formless, or no form -> start with Opo
         return TryUseOpoOpo(out act)
                || TryUseRaptor(out act)
                || TryUseCoeurl(out act)
                || TryUseFormShift(out act);
-
     }
     private bool TryUseOpenerVariation(out IAction? act)
     {
@@ -645,7 +662,14 @@ public sealed class SezuraiMNK : MonkRotation
     private bool TryUseFiresReply(out IAction? act)
     {
         act = null;
-        if (!HasRiddleOfFire && !HasFiresRumination || HasPerfectBalance) return false;
+        if (!HasFiresRumination || HasPerfectBalance) return false;
+
+        // Emergency: use Fire's Reply before buff expires (< 3s remaining)
+        if (StatusHelper.PlayerStatusTime(true, StatusID.FiresRumination) < 3f
+            && !HasBlitzReady && IsLastGCDOpo)
+        {
+            return FiresReplyPvE.CanUse(out act);
+        }
 
         if (IsBurst && !HasBlitzReady)
         {
@@ -663,16 +687,18 @@ public sealed class SezuraiMNK : MonkRotation
             }
         }
 
-        if (!IsBurst && !HasBlitzReady)
+        if (!IsBurst && HasRiddleOfFire && !HasBlitzReady && IsLastGCDOpo)
+        {
+            // During RoF without Brotherhood, use after any Opo GCD
+            return FiresReplyPvE.CanUse(out act);
+        }
+
+        if (!IsBurst && !HasRiddleOfFire && !HasBlitzReady)
         {
             if (FiresReplyPvE.CanUse(out act))
             {
-                if (LunarOddWindow && ((PhantomRushed && BlitzCount == 2) || !PhantomRushed && BlitzCount == 3))
-                {
-                    return IsLastGCDOpo;
-                }
-
-                if (SolarOddWindow && IsLastGCDOpo && !HasBlitzReady)
+                // Odd window usage - relaxed from strict BlitzCount gating
+                if ((LunarOddWindow || SolarOddWindow) && IsLastGCDOpo)
                 {
                     return true;
                 }
@@ -686,19 +712,24 @@ public sealed class SezuraiMNK : MonkRotation
         act = null;
         if (!HasWindsRumination || HasPerfectBalance) return false;
 
+        // Emergency: use before buff expires regardless of last GCD
+        if (StatusHelper.PlayerStatusTime(true, StatusID.WindsRumination) < 3f
+            && !HasBlitzReady)
+        {
+            return WindsReplyPvE.CanUse(out act);
+        }
+
         if (WindsReplyPvE.CanUse(out act))
         {
-            if (IsBurst && !HasBlitzReady && IsLastGCDOpo)
+            // Wind's Reply doesn't grant Formless Fist, so it can go anywhere
+            // Prefer after Opo GCD but don't require it
+            if (!HasBlitzReady && IsLastGCDOpo)
             {
                 return true;
             }
 
-            if (!IsBurst && HasRiddleOfFire && IsLastGCDOpo)
-            {
-                return true;
-            }
-
-            if (!IsBurst && !HasRiddleOfFire && IsLastGCDOpo)
+            // During burst, also allow after Masterful Blitz
+            if ((IsBurst || HasRiddleOfFire) && !HasBlitzReady && IsLastGCDMasterfulBlitz)
             {
                 return true;
             }
@@ -744,35 +775,45 @@ public sealed class SezuraiMNK : MonkRotation
         act = null;
         if (HasPerfectBalance) return false;
 
+        // Opener: use PB when both buffs are ready
         if (CombatElapsedLessGCD(1))
         {
             if (BrotherhoodPvE.Cooldown.HasOneCharge &&
                 RiddleOfFirePvE.Cooldown.HasOneCharge)
             {
-                return PerfectBalancePvE.CanUse(out act, usedUp: false, skipTTKCheck:true);
+                return PerfectBalancePvE.CanUse(out act, usedUp: false, skipTTKCheck: true);
             }
         }
 
+        // During burst (BH+RoF), use after Opo when Fire's Reply already spent
         if (InBurst && !HasFiresRumination)
         {
-            return IsLastGCDOpo && PerfectBalancePvE.CanUse(out act, usedUp: true, skipTTKCheck:true);
+            return IsLastGCDOpo && PerfectBalancePvE.CanUse(out act, usedUp: true, skipTTKCheck: true);
         }
 
+        // Solar odd window: PB before RoF (2-4 GCDs ahead)
         if (SolarOddWindow && IsLastGCDOpo && IsReadySoon(RiddleOfFirePvE, 2))
         {
             return PerfectBalancePvE.CanUse(out act, usedUp: true);
         }
 
+        // Lunar odd window: PB after RoF, on next Opo
         if (LunarOddWindow && (HasRiddleOfFire || IsReadySoon(RiddleOfFirePvE, 0)) && !HasBothNadi)
         {
-            return  IsLastGCDOpo && PerfectBalancePvE.Cooldown.WillHaveOneCharge(10) && PerfectBalancePvE.CanUse(out act, usedUp: true, skipTTKCheck:true);
+            return IsLastGCDOpo && PerfectBalancePvE.Cooldown.WillHaveOneCharge(10) && PerfectBalancePvE.CanUse(out act, usedUp: true, skipTTKCheck: true);
         }
 
-        if (IsReadySoon(BrotherhoodPvE, 2) && IsReadySoon(RiddleOfFirePvE,2))
+        // Pre-even window: PB when both BH+RoF coming soon
+        if (IsReadySoon(BrotherhoodPvE, 2) && IsReadySoon(RiddleOfFirePvE, 2))
         {
-                return IsLastGCDOpo && PerfectBalancePvE.CanUse(out act, usedUp: true, skipTTKCheck:true);
+            return IsLastGCDOpo && PerfectBalancePvE.CanUse(out act, usedUp: true, skipTTKCheck: true);
         }
 
+        // Overcap protection: if PB has 2 charges past opener, use it to avoid waste
+        if (PerfectBalancePvE.Cooldown.CurrentCharges >= 2 && !CombatElapsedLessGCD(5) && IsLastGCDOpo)
+        {
+            return PerfectBalancePvE.CanUse(out act, usedUp: true);
+        }
 
         return false;
     }
@@ -836,27 +877,33 @@ public sealed class SezuraiMNK : MonkRotation
     private bool TryUseRiddleOfWind(out IAction? act)
     {
         act = null;
-        if (!RiddleOfWindPvE.IsEnabled || !EnoughWeaveTime || !RiddleOfWindPvE.Cooldown.WillHaveOneCharge(WeaponRemain) && WeaponRemain <= 1.2f ) return false;
+        if (!RiddleOfWindPvE.IsEnabled || !EnoughWeaveTime) return false;
 
         if (RiddleOfWindPvE.CanUse(out act))
         {
-            if (InBurst)
+            // Priority 1: During burst window
+            if (InBurst && (IsLastGCDOpo || IsLastGCDMasterfulBlitz))
             {
-                if (IsLastGCDOpo || IsLastGCDMasterfulBlitz)
-                {
-                    return true;
-                }
+                return true;
             }
 
-            if (HasRiddleOfFire)
+            // Priority 2: During RoF
+            if (HasRiddleOfFire && (IsLastGCDOpo || IsLastGCDMasterfulBlitz))
             {
-                if (IsLastGCDOpo || IsLastGCDMasterfulBlitz)
-                {
-                    return true;
-                }
+                return true;
             }
 
+            // Priority 3: Outside burst but both CDs are ticking - use on cooldown
+            // RoW is 90s CD, holding it for burst loses more than buffing it gains
             if (IsLastGCDOpo && BrotherhoodPvE.Cooldown.IsCoolingDown && RiddleOfFirePvE.Cooldown.IsCoolingDown)
+            {
+                return true;
+            }
+
+            // Fallback: Use on cooldown if available and we have weave room
+            // This prevents drift - losing a use of RoW (~600 auto-attack potency + 1040 Wind's Reply) is far worse
+            // than missing buff alignment
+            if (RiddleOfWindPvE.Cooldown.HasOneCharge && !CombatElapsedLessGCD(3))
             {
                 return true;
             }
@@ -867,11 +914,21 @@ public sealed class SezuraiMNK : MonkRotation
     private bool TryUseForbiddenChakra(out IAction? act)
     {
         act = null;
-
-                if (Chakra < 5 || !EnoughWeaveTime || ((IsReadySoon(BrotherhoodPvE, 1) || IsReadySoon(RiddleOfFirePvE, 1)) && !IsOpenerStart)) return false;
+        if (Chakra < 5 || !EnoughWeaveTime) return false;
 
         // AoE Check
         if (EnlightenmentPvE.CanUse(out act)) return true;
+
+        // During Brotherhood, always spend at 5 - party generates more chakra and overcap wastes 80 potency each
+        if (HasBrotherhood && Chakra >= 5)
+        {
+            return TheForbiddenChakraPvE.CanUse(out act)
+                   || (!TheForbiddenChakraPvE.EnoughLevel && SteelPeakPvE.CanUse(out act));
+        }
+
+        // Only hold pre-burst if not already in burst window
+        if (!InBurst && !IsOpenerStart && (IsReadySoon(BrotherhoodPvE, 1) || IsReadySoon(RiddleOfFirePvE, 1)))
+            return false;
 
         if (IsOpenerStart && BlitzCount == 0)
         {
