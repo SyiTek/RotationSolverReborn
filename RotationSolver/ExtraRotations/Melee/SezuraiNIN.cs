@@ -803,7 +803,7 @@ public sealed class SezuraiNIN : NinjaRotation
             return true;
 
         // 5. Ninjutsu execution (mudra state machine)
-        if (_ninActionAim != null && GCDTime() == 0f)
+        if (_ninActionAim != null)
         {
             if (DoGokaMekkyaku(out act)) return true;
             if (DoHyoshoRanryu(out act)) return true;

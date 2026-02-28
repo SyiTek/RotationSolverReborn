@@ -13,7 +13,7 @@ public sealed class SezuraiSAM : SamuraiRotation
     public float ActionAheadOverride { get; set; } = 0f;
 
     [RotationConfig(CombatType.PvE, Name = "Auto Pot Usage (Gemdraught during Ikishoten burst windows + pre-pull)")]
-    public bool BurstMed { get; set; } = false;
+    public bool BurstMed { get; set; } = true;
 
     [RotationConfig(CombatType.PvE, Name = "Prevent Higanbana use if there is more than one target")]
     public bool HiganbanaTargets { get; set; } = true;

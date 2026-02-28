@@ -60,7 +60,7 @@ public sealed class SezuraiAST : AstrologianRotation
 
     [Range(0, 1, ConfigUnitType.Percent)]
     [RotationConfig(CombatType.PvE, Name = "Party HP threshold for Horoscope")]
-    public float HoroscopeHeal { get; set; } = 0.3f;
+    public float HoroscopeHeal { get; set; } = 0.5f;
 
     [Range(0, 1, ConfigUnitType.Percent)]
     [RotationConfig(CombatType.PvE, Name = "Party HP threshold for Lady of Crowns")]
