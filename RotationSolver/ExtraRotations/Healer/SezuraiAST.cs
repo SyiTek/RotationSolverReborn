@@ -130,7 +130,33 @@ public sealed class SezuraiAST : AstrologianRotation
 
     #endregion
 
-    #region Countdown
+    #region Countdown & Opener
+    // === AST OPENER (7.4 Balance / Icy Veins) ===
+    // Pre-pull: Earthly Star(-4 to -19s) → Fall Malefic precast(-2.1s) → Pot (weave on land)
+    // GCD1: Combust III (instant DoT)
+    // → Lightspeed (weave, flexible placement)
+    // GCD2: Fall Malefic
+    // GCD3: Fall Malefic → Divination (weave) + Play The Balance (weave)
+    // GCD4: Fall Malefic → Lord of Crowns (weave) + Umbral Draw (weave)
+    // GCD5: Fall Malefic → Play The Spear (weave) + Oracle (weave)
+    // GCD6-11: Fall Malefic x5-6 (count depends on GCD speed)
+    // Last GCD: Combust III (early refresh to snapshot raid buffs)
+    //
+    // Start with: The Balance, The Arrow, The Spire, Lord of Crowns drawn + Umbral Draw ready
+    //
+    // === EVEN BURST (120s) ===
+    // Divination (6% party buff) + Play Balance + Lord of Crowns + Umbral Draw
+    //   + Play Spear + Oracle + Combust refresh to snapshot buffs
+    //
+    // === ODD BURST (60s) ===
+    // Astral Draw off CD — draw Balance + Lord of Crowns but HOLD them for even window
+    // No Divination (120s). Continue Fall Malefic spam
+    //
+    // === FILLER ===
+    // Fall Malefic spam. Combust III: maintain ~100% uptime, refresh as last GCD in buffs
+    // Hold damage cards from odd draws for Divination windows
+    // Oracle: must use while Divination is active (don't let Divining buff expire)
+    // Earthly Star on CD (both heal and damage). Lightspeed freely for movement
 
     protected override IAction? CountDownAction(float remainTime)
     {

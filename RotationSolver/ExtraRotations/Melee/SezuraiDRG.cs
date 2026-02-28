@@ -19,7 +19,7 @@ public sealed class SezuraiDRG : DragoonRotation
     public float DragonfireDiveDistance { get; set; } = 20;
 
     [RotationConfig(CombatType.PvE, Name = "Experimental Pot Usage (during Battle Litany windows)")]
-    public bool BurstMed { get; set; } = false;
+    public bool BurstMed { get; set; } = true;
 
     [Range(0f, 0.25f, ConfigUnitType.Percent)]
     [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
@@ -69,6 +69,49 @@ public sealed class SezuraiDRG : DragoonRotation
         ImGui.Text($"HasBattleLitany: {HasBattleLitany}");
         ImGui.Text($"HasPowerSurge: {HasPowerSurge}");
         ImGui.Text($"HasDraconianFire: {HasDraconianFire}");
+    }
+
+    #endregion
+
+    #region Countdown & Opener
+    // === DRG OPENER (7.4 Balance) ===
+    // Pre-pull: True North(-5s) → Pot(-2s)
+    // GCD1: True Thrust → Lance Charge (weave) → Battle Litany (weave)
+    // GCD2: Spiral Blow (grants Power Surge) → Life Surge (weave)
+    // GCD3: Chaotic Spring (rear) → Geirskogul (weave, enters LotD) → High Jump (weave)
+    // GCD4: Wheeling Thrust → Dragonfire Dive (weave) → Nastrond (weave)
+    // GCD5: Fang and Claw → Starcross (weave) → Rise of the Dragon (weave)
+    // GCD6: Raiden Thrust (proc from combo finisher) → Wyrmwind Thrust (weave) → Mirage Dive (weave)
+    // Continue with Lance Barrage → Heavens' Thrust combo
+    //
+    // === EVEN BURST (120s) ===
+    // Lance Charge + Battle Litany + Dragonfire Dive + Starcross + Rise of the Dragon
+    // Full LotD phase: Nastrond x3 + Stardiver under raid buffs
+    // Life Surge on Heavens' Thrust (highest potency single-target GCD)
+    //
+    // === ODD BURST (60s) ===
+    // Lance Charge only — Battle Litany is 120s
+    // Geirskogul → LotD → Nastrond chain, hold Dragonfire Dive for even
+    //
+    // === FILLER / SUSTAIN ===
+    // 10-GCD repeating loop: True Thrust → Spiral Blow → Chaotic Spring →
+    //   Wheeling Thrust → Fang and Claw → Raiden Thrust → Lance Barrage →
+    //   Heavens' Thrust → Fang and Claw → Wheeling Thrust
+    // Use Wyrmwind Thrust before next Raiden Thrust to avoid overcap (2 stacks max)
+    // Life Surge on Heavens' Thrust or Chaotic Spring (highest potency GCDs)
+    // Keep Power Surge buff active (refreshed by Spiral Blow)
+
+    protected override IAction? CountDownAction(float remainTime)
+    {
+        // Pre-pull pot at ~2s
+        if (BurstMed && remainTime <= 2f && remainTime > 1f && UseBurstMedicine(out var act))
+            return act;
+
+        // True North for positional safety
+        if (remainTime <= 5f && remainTime > 2f && TrueNorthPvE.CanUse(out act))
+            return act;
+
+        return base.CountDownAction(remainTime);
     }
 
     #endregion
@@ -200,6 +243,15 @@ public sealed class SezuraiDRG : DragoonRotation
                     if (LifeSurgePvE.CanUse(out act, usedUp: InEvenBurst))
                         return true;
                 }
+
+                // Filler Life Surge: use on HT/Drakesbane outside Lance Charge
+                // Balance FAQ: "should almost never reach a full 2 stacks"
+                // Prevents charge drift by spending during filler on high-potency GCDs
+                if ((lsOnBigHit || lsOnAoE) && !HasLanceCharge)
+                {
+                    if (LifeSurgePvE.CanUse(out act))
+                        return true;
+                }
             }
         }
 
@@ -239,7 +291,18 @@ public sealed class SezuraiDRG : DragoonRotation
         }
 
         // 5. Dragonfire Dive (120s CD): use during burst windows (BL or LOTD active)
+        // Balance: hard cooldown, use on CD to prevent drift
         if (InEvenBurst || InLOTD || !BattleLitanyPvE.EnoughLevel)
+        {
+            if (DragonfireDivePvE.CanUse(out act))
+            {
+                if (DragonfireDivePvE.Target.Target.DistanceToPlayer() <= DragonfireDiveDistance)
+                    return true;
+            }
+        }
+
+        // DfD drift prevention: if available but burst conditions missed it, use before it drifts further
+        if (DragonfireDivePvE.Cooldown.HasOneCharge && !BattleLitanyPvE.Cooldown.WillHaveOneCharge(15))
         {
             if (DragonfireDivePvE.CanUse(out act))
             {
@@ -269,7 +332,10 @@ public sealed class SezuraiDRG : DragoonRotation
         // 10. Wyrmwind Thrust: flexible, prefer in buffs but MUST use before overcap
         // Guide: "you have up until the next Raiden Thrust to use WWT in order to not overcap"
         // Use in buffs, during LOTD, or when next GCD would grant a Focus stack (overcap)
+        // Balance: "you have up until the next Raiden Thrust to use WWT in order to not overcap"
+        // Use in buffs, during LOTD, at 2 Focus stacks (next RT would overcap), or when next GCD grants Focus
         if (HasBattleLitany || HasLanceCharge || InLOTD
+            || FocusCount >= 2
             || nextGCD.IsTheSameTo(true, RaidenThrustPvE, DraconianFuryPvE))
         {
             if (WyrmwindThrustPvE.CanUse(out act, usedUp: true))

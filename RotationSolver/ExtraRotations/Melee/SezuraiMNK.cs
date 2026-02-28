@@ -12,16 +12,16 @@ public sealed class SezuraiMNK : MonkRotation
     #region Enums
     private enum OpenerType : byte
     {
-        [Description("Double Lunar")] DoubleLunar,
-        [Description("Solar Lunar")] SolarLunar,
-        [Description("Triple Lunar")] TripleLunar
+        [Description("Double Lunar (Recommended)")] DoubleLunar,
+        [Description("Solar Lunar (Safe)")] SolarLunar,
+        [Description("Triple Lunar (Advanced)")] TripleLunar
     }
 
     private enum OpenerVariation : byte
     {
-        [Description("Dragon Kick - 5s")] DragonKick5,
-        [Description("Dragon Kick - 7s")] DragonKick7,
-        [Description("Demolish - 7s")] Demolish7
+        [Description("Dragon Kick - 5s Buffs (Recommended)")] DragonKick5,
+        [Description("Dragon Kick - 7s Buffs")] DragonKick7,
+        [Description("Demolish - 7s Buffs")] Demolish7
     }
 
     private enum Nadi : byte
@@ -354,11 +354,21 @@ public sealed class SezuraiMNK : MonkRotation
 
     #region Config Options
 
-    [RotationConfig(CombatType.PvE, Name = "Choose Opener.")]
+    [RotationConfig(CombatType.PvE, Name = "Opener Nadi Strategy",
+        Tooltip = "Double Lunar (Recommended): Overcaps Lunar Nadi in opener to align Phantom Rush with 2-minute party buff windows (Brotherhood + raid buffs). Best for most savage encounters with known kill times.\n\n" +
+                  "Solar Lunar (Safe): Earns Phantom Rush immediately in opener. Maximizes total Phantom Rush uses across any kill time. Best for progression or unknown fight lengths where you might lose a Phantom Rush with Double Lunar.\n\n" +
+                  "Triple Lunar (Advanced): Extends Lunar overcapping into odd-minute windows too, putting maximum Opo-opo GCDs under Riddle of Fire. Highest risk of losing a Phantom Rush if kill time doesn't align. Only for optimized kill times.")]
     private OpenerType ChosenOpener { get; set; } = OpenerType.DoubleLunar;
 
-    [RotationConfig(CombatType.PvE, Name = "Choose Opener Variation")]
+    [RotationConfig(CombatType.PvE, Name = "Opener Buff Timing",
+        Tooltip = "Controls when Brotherhood goes out after the pull. This does NOT affect Monk's personal DPS — it only changes when your party receives the Brotherhood buff.\n\n" +
+                  "5s Buffs (Recommended): Brotherhood at ~5s into pull (around GCD3). Most party compositions prefer this timing as it aligns with the majority of jobs' burst windows.\n\n" +
+                  "7s Buffs (DK): Brotherhood at ~7s into pull (around GCD4). Use when your party's other jobs prefer later buff timing.\n\n" +
+                  "7s Buffs (Demolish): Same 7s timing but starts with Demolish instead of Dragon Kick. Slightly stronger opener and 1-minute burst than DK-7s. Preferred 7s option unless specific Fury stack alignment is needed.")]
     private OpenerVariation ChosenVariation { get; set; } = OpenerVariation.DragonKick5;
+
+    [RotationConfig(CombatType.PvE, Name = "Auto Pot Usage (Gemdraught of Strength during Brotherhood)")]
+    public bool BurstMed { get; set; } = true;
 
     [Range(0f, 0.25f, ConfigUnitType.Percent)]
     [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
@@ -375,9 +385,58 @@ public sealed class SezuraiMNK : MonkRotation
 
     #endregion
 
-    #region Countdown Logic
+    #region Countdown & Opener
+    // === MNK OPENER (7.4 Balance — see config for variant selection) ===
+    //
+    // --- Double Lunar (Default, recommended for savage) ---
+    // Pre-pull: FormShift(-15s) → Meditation(chakra gen) → True North(-2s) → Pot(-2s) → Thunderclap(-0.8s)
+    // GCD1: Dragon Kick (Opo) → GCD2: Twin Snakes (Raptor) → GCD3: Demolish (Coeurl)
+    // → Riddle of Fire (weave) → Brotherhood (weave at 5s or 7s per config) → Perfect Balance (weave)
+    // GCD4-6: Opo x3 (Bootshine/DK — Opo-maxxing for Lunar Nadi) → Elixir Burst
+    // → Riddle of Wind (weave) → Perfect Balance (weave)
+    // GCD7-9: Opo x3 → second Elixir Burst (overcaps Lunar intentionally)
+    // Result: LL pattern → first Phantom Rush aligns with 2-min raid buffs
+    //
+    // --- Solar Lunar (Safe for progression / unknown kill times) ---
+    // Same pre-pull and GCD1-6 as Double Lunar
+    // GCD7-9: one of each form (Opo+Raptor+Coeurl) → Rising Phoenix (grants Solar Nadi)
+    // → Phantom Rush available immediately (both Nadi filled)
+    // Result: SL pattern → max Phantom Rush uses but PR lands in odd windows (outside party buffs)
+    //
+    // --- Triple Lunar (Advanced optimization) ---
+    // Same opener as Double Lunar (LL)
+    // Odd windows: Lunar sequence instead of Solar → delays Phantom Rush further
+    // Result: max Lunar (Opo-opo) GCDs under RoF, highest risk of lost PR if kill time is wrong
+    //
+    // --- Variation: 5s vs 7s / DK vs Demo ---
+    // 5s: Brotherhood at ~GCD3 (~5s into pull) — most party comps prefer this
+    // 7s: Brotherhood at ~GCD4 (~7s into pull) — for parties wanting later buffs
+    // Demo-7s: starts Demolish instead of DK, slightly stronger opener/1-min than DK-7s
+    //
+    // === EVEN BURST (120s) ===
+    // Riddle of Fire + Brotherhood + 2x Perfect Balance → 2 Blitz finishers
+    // Dump all Forbidden Chakra (5 stacks) under raid buffs
+    // Use PB after an Opo GCD for optimal blitz alignment
+    // Double/Triple Lunar: Phantom Rush lands HERE (the payoff)
+    //
+    // === ODD BURST (60s) ===
+    // Riddle of Fire only — Brotherhood is 120s
+    // 1x Perfect Balance → 1 Blitz, save second PB charge for even window
+    // Solar Lunar: Phantom Rush lands here instead (trade-off for more total PR uses)
+    //
+    // === FILLER / SUSTAIN ===
+    // Opo-maxxing: always use Dragon Kick + Bootshine/Leaping Opo for Opo GCDs (highest potency)
+    // Form rotation: Opo (DK/Boot) → Raptor (Twin Snakes) → Coeurl (Demolish)
+    // Forbidden Chakra: spend at 5 stacks, don't overcap between bursts
+    // RoF is 60s (every window), Brotherhood is 120s (even only)
+    // Use PB after an Opo GCD for optimal blitz alignment
+
     protected override IAction? CountDownAction(float remainTime)
     {
+        // Pre-pull pot at ~2s before pull
+        if (BurstMed && remainTime <= 2f && remainTime > 1f && UseBurstMedicine(out var potAct))
+            return potAct;
+
         if  (remainTime <= 0.8f && ThunderclapPvE.CanUse(out var act)
             || remainTime <= 2 && TrueNorthPvE.CanUse(out act)
             || remainTime <= 5 && Chakra < 5 && TryUseMeditations(out act))
@@ -862,12 +921,10 @@ public sealed class SezuraiMNK : MonkRotation
 
         if (timeRequirement) return BrotherhoodPvE.CanUse(out act);
 
+        // Balance: "press Brotherhood on cooldown, NEVER hold for alignment"
         if (!CombatElapsedLessGCD(10))
         {
-            if (IsCooldownAligned(3))
-            {
-                return BrotherhoodPvE.CanUse(out act);
-            }
+            return BrotherhoodPvE.CanUse(out act);
         }
         return false;
     }

@@ -162,7 +162,33 @@ public sealed class SezuraiVPR : ViperRotation
 
     #endregion
 
-    #region Countdown
+    #region Countdown & Opener
+    // === VPR OPENER (7.4 Balance — Swiftscaled first) ===
+    // Pre-pull: Pot(-2s)
+    // GCD1: Dread Fangs → GCD2: Swiftskin's Sting (grants Swiftscaled buff)
+    // → Serpent's Ire (weave, +50 Offering + Ready to Reawaken)
+    // GCD3: Reawaken → First Generation → First Legacy (oGCD)
+    // → Second Generation → Second Legacy → Third Generation → Third Legacy
+    // → Fourth Generation → Fourth Legacy → Ouroboros
+    // → Second Reawaken (if gauge permits) → repeat Generation cycle
+    // → Uncoiled Fury dump → resume normal combo
+    //
+    // === EVEN BURST (120s) ===
+    // Serpent's Ire + 2x Reawaken chain (10 GCDs of burst)
+    // Dump all Rattling Coils (Uncoiled Fury) under raid buffs
+    // Enter with Swiftscaled active for GCD speed during Reawaken
+    //
+    // === ODD BURST (60s) ===
+    // 1x Reawaken only — save second for even windows
+    // Spend excess coils to prevent overcap (keep 1 for movement)
+    //
+    // === FILLER / SUSTAIN ===
+    // 10-second rule: stop using Vicewinder/Vicepit within 10s of Serpent's Ire
+    //   to avoid active Dread combo overlapping burst start
+    // Combo: Dread Fangs → Hunter's/Swiftskin's Sting → Vicewinder → follow-ups
+    // Keep both Noxious Gnash (from Dread Fangs) and Swiftscaled (from SS) active
+    // Rattling Coil management: use 1 charge between bursts, hold 2+ for burst
+    // Uncoiled Fury: DPS-neutral movement tool, don't overcap at 3 coils
 
     protected override IAction? CountDownAction(float remainTime)
     {
@@ -170,7 +196,7 @@ public sealed class SezuraiVPR : ViperRotation
         OpenerCompleted = false;
 
         // Pre-pull medicine at ~2s (pot animation takes ~1s, lands before first GCD)
-        if (BurstMed && remainTime <= 2f && UseBurstMedicine(out var act))
+        if (BurstMed && remainTime <= 2f && remainTime > 1f && UseBurstMedicine(out var act))
             return act;
 
         return base.CountDownAction(remainTime);

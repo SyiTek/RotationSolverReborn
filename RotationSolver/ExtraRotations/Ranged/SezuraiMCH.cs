@@ -68,7 +68,33 @@ public sealed class SezuraiMCH : MachinistRotation
 
     #endregion
 
-    #region Countdown
+    #region Countdown & Opener
+    // === MCH OPENER (7.4 Balance) ===
+    // Pre-pull: Reassemble(-5s) → Pot(-2s) → Air Anchor precast(-0.6s)
+    // GCD1: Air Anchor (Reassembled, highest potency tool) → Gauss Round (weave) → Ricochet (weave)
+    // GCD2: Drill → Barrel Stabilizer (weave)
+    // GCD3: Chain Saw → GCD4: Excavator (follow-up)
+    // GCD5: Full Metal Field → Wildfire (late weave)
+    // → Hypercharge → 5x Blazing Shot → Double Check + Checkmate weaves
+    // → Automaton Queen deployment after HC
+    //
+    // === EVEN BURST (120s) ===
+    // Wildfire + Full Metal Field + Hypercharge (WF+FMF+HC burst)
+    // Reassemble on Air Anchor/Drill for guaranteed crit+DH
+    // Queen at 100 Battery for maximum Pile Bunker under raid buffs
+    //
+    // === ODD BURST (60s) ===
+    // Barrel Stabilizer + Reassemble + Drill/Air Anchor
+    // Single Hypercharge, save Wildfire + Chain Saw for even
+    // Queen at 50+ Battery to avoid overcap
+    //
+    // === FILLER / SUSTAIN ===
+    // Combo: Heated Split Shot → Heated Slug Shot → Heated Clean Shot (Battery gen)
+    // Tool priority: Air Anchor > Drill > Chain Saw (use on CD, don't drift)
+    // Reassemble: always pair with Air Anchor or Drill for crit+DH guarantee
+    // Heat: spend at 50+ on Hypercharge, but pool for Wildfire windows
+    // Battery: deploy Queen at 50+ to avoid overcap, hold for 100 in even windows
+    // Gauss Round + Ricochet: spend charges to avoid overcap (3 max each)
 
     protected override IAction? CountDownAction(float remainTime)
     {
@@ -77,7 +103,7 @@ public sealed class SezuraiMCH : MachinistRotation
             return act;
 
         // Medicine at ~2s
-        if (BurstMed && remainTime <= 2f && UseBurstMedicine(out act))
+        if (BurstMed && remainTime <= 2f && remainTime > 1f && UseBurstMedicine(out act))
             return act;
 
         // Air Anchor just before pull (first GCD of opener)

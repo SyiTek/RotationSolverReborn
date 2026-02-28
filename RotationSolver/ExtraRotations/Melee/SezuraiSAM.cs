@@ -87,7 +87,32 @@ public sealed class SezuraiSAM : SamuraiRotation
 
     #endregion
 
-    #region Countdown
+    #region Countdown & Opener
+    // === SAM OPENER (7.4 Balance) ===
+    // Pre-pull: Meikyo Shisui(-14s) → True North(-5s) → Pot(-2s)
+    // GCD1: Gekko (rear, grants Getsu) → GCD2: Kasha (flank, grants Ka)
+    // → Ikishoten (weave, grants Ogi Namikiri + 50 Kenki)
+    // GCD3: Yukikaze (grants Setsu) → Tendo Setsugekka (3 Sen, powered-up Iaijutsu)
+    // → Meikyo Shisui (weave) → GCD4: Gekko → GCD5: Kasha → GCD6: Yukikaze
+    // → Midare Setsugekka → Kaeshi Setsugekka (follow-up)
+    // → Ogi Namikiri → Kaeshi Namikiri → Shoha (weave, 3 Meditation stacks)
+    //
+    // === EVEN BURST (120s) ===
+    // Ikishoten + double Meikyo → Tendo Setsugekka + Midare + Ogi Namikiri
+    // Dump all Kenki: Senei + Shinten spam under raid buffs
+    // Pot before first Tendo Setsugekka for max snapshot
+    //
+    // === ODD BURST (60s) ===
+    // Meikyo → Midare Setsugekka + Senei
+    // Save Ikishoten + second Meikyo for even windows
+    // Still use Shinten to spend Kenki, but less aggressively
+    //
+    // === FILLER / SUSTAIN ===
+    // 29-GCD loop at 2.08 GCD: Hakaze → Jinpu → Gekko → Hakaze → Shifu → Kasha
+    //   → Hakaze → Yukikaze → Midare Setsugekka → repeat
+    // Higanbana: apply at start, reapply when ≥48s remaining on fight
+    // Never overcap Kenki — Shinten at 50+ outside burst, pool to ~25 for burst
+    // Use Meikyo to skip to Sen-granting finishers for alignment
 
     protected override IAction? CountDownAction(float remainTime)
     {
@@ -101,7 +126,7 @@ public sealed class SezuraiSAM : SamuraiRotation
             return act;
 
         // Pre-pull medicine at ~2s: pot animation lands before first GCD
-        if (BurstMed && remainTime <= 2f && UseBurstMedicine(out act))
+        if (BurstMed && remainTime <= 2f && remainTime > 1f && UseBurstMedicine(out act))
             return act;
 
         return base.CountDownAction(remainTime);
@@ -275,11 +300,21 @@ public sealed class SezuraiSAM : SamuraiRotation
             }
         }
 
-        // Meikyo outside burst: use when both buffs are up and we have 0 Sen,
-        // or when a buff is about to fall off (emergency)
+        // Meikyo outside burst: use when buffs need refresh, target dying, or during filler
+        // Balance: Meikyo IS used during filler phases to fast-track Midare cycles
         if (!HasMeikyoShisui && !TsubamegaeshiActionReady && SenCount == 0)
         {
+            // Emergency: buffs about to fall off or target dying
             if (!HasFugetsuAndFuka || (isTargetBoss && isTargetDying))
+            {
+                if (MeikyoShisuiPvE.CanUse(out act))
+                    return true;
+            }
+
+            // Filler Meikyo: use at 0 Sen with both buffs up to accelerate Midare cycles
+            // Only when not approaching burst (Ikishoten > 30s away)
+            if (HasFugetsuAndFuka && !IsBigBurst && !IsPreBurst
+                && (!IkishotenPvE.EnoughLevel || IkishotenPvE.Cooldown.RecastTimeRemain > 30))
             {
                 if (MeikyoShisuiPvE.CanUse(out act))
                     return true;

@@ -96,12 +96,40 @@ public sealed class SezuraiRPR : ReaperRotation
 
     #endregion
 
-    #region Countdown
+    #region Countdown & Opener
+    // === RPR OPENER (7.4 Balance) ===
+    // Pre-pull: Soulsow → Pot(-2s) → Harpe precast(-1.3s)
+    // GCD1: Shadow of Death (Death's Design 60s) → GCD2: Soul Slice (50 Soul)
+    // → Arcane Circle (late weave, party buff) → GCD3: Soul Slice (100 Soul)
+    // → Gluttony (weave, -50 Soul → 2 Executioner stacks)
+    // GCD4: Executioner's Gibbet → GCD5: Executioner's Gallows
+    // → Plentiful Harvest (weave, after Bloodsown Circle expires)
+    // → Enshroud → Void Reaping → Cross Reaping → Lemure's Slice
+    // → Void Reaping → Cross Reaping → Lemure's Slice → Communio → Perfectio
+    // → Sacrificium (weave during Enshroud)
+    //
+    // === EVEN BURST (120s) ===
+    // Arcane Circle (party buff) + double Enshroud + Gluttony + Plentiful Harvest
+    // Both Enshroud chains under Arcane Circle with Sacrificium + Perfectio
+    // Use Harvest Moon under raid buffs if available
+    //
+    // === ODD BURST (60s) ===
+    // Gluttony + 1x Enshroud only — Arcane Circle is 120s
+    // Save Plentiful Harvest + second Enshroud for even windows
+    // Note: 10-minute deadzone where resources don't align perfectly
+    //
+    // === FILLER / SUSTAIN ===
+    // Combo: Slice → Waxing Slice → Infernal Slice (build Soul gauge)
+    // Shadow of Death: refresh when ≤30s remains (don't clip too early)
+    // Soul Slice: use charges to build gauge, don't overcap at 2 charges
+    // Spend Soul: Gibbet/Gallows at 50+ to avoid overcap, pool for burst
+    // Harvest Moon: ranged GCD for movement if Soulsow was prepped
+    // Pool Shroud to 50+ before Arcane Circle windows for double Enshroud
 
     protected override IAction? CountDownAction(float remainTime)
     {
         // Pre-pull medicine at ~2s (pot animation takes ~1s, lands before first GCD)
-        if (BurstMed && remainTime <= 2f && UseBurstMedicine(out var act))
+        if (BurstMed && remainTime <= 2f && remainTime > 1f && UseBurstMedicine(out var act))
             return act;
 
         // Harpe at cast time before pull (approx 1.3s cast)
@@ -282,10 +310,11 @@ public sealed class SezuraiRPR : ReaperRotation
                 if (ArcaneCirclePvE.Cooldown.WillHaveOneCharge(8) && EnshroudPvE.CanUse(out act))
                     return true;
 
-                // Middle of AC cooldown (65s-50s window): safe to spend one Enshroud
+                // Mid-cycle Enshroud: need 3 Enshrouds per 120s (double burst + 1 mid-cycle)
+                // Balance: use when AC is 40-80s away to ensure mid-cycle Enshroud fires
                 if (!HasArcaneCircle
-                    && ArcaneCirclePvE.Cooldown.WillHaveOneCharge(65)
-                    && !ArcaneCirclePvE.Cooldown.WillHaveOneCharge(50)
+                    && ArcaneCirclePvE.Cooldown.WillHaveOneCharge(80)
+                    && !ArcaneCirclePvE.Cooldown.WillHaveOneCharge(40)
                     && EnshroudPvE.CanUse(out act))
                     return true;
 
@@ -345,10 +374,11 @@ public sealed class SezuraiRPR : ReaperRotation
         // Use to convert Soul gauge into Shroud via Soul Reaver GCDs
         // Do not use if: Bloodsown Circle active (wait for PH), Perfectio pending,
         // Executioner stacks pending, Immortal Sacrifice pending, or Gluttony coming soon
+        // Balance: hold Blood Stalk ~2 GCDs before Gluttony, overcap at 90+ Soul
         if (!HasBloodsownCircleSelf && !HasPerfectioParata && !HasExecutioner && !HasImmortalSacrifice
-            && ((GluttonyPvE.EnoughLevel && !GluttonyPvE.Cooldown.WillHaveOneChargeGCD(4))
+            && ((GluttonyPvE.EnoughLevel && !GluttonyPvE.Cooldown.WillHaveOneChargeGCD(2))
                 || !GluttonyPvE.EnoughLevel
-                || Soul == 100))
+                || Soul >= 90))
         {
             if (GrimSwathePvE.CanUse(out act))
                 return true;

@@ -441,7 +441,33 @@ public sealed class SezuraiNIN : NinjaRotation
 
     #endregion
 
-    #region Countdown
+    #region Countdown & Opener
+    // === NIN OPENER (7.4 Balance) ===
+    // Pre-pull: Hide(-6s) → Suiton mudra(-5s) → Pot(-2s)
+    // GCD1: Spinning Edge → Kassatsu (weave)
+    // GCD2: Gust Slash → Dokumori (weave, 120s party vuln debuff)
+    // GCD3: Aeolian Edge → Bunshin (weave) → Dream Within a Dream (weave)
+    // GCD4: Spinning Edge → Kunai's Bane (weave, consumes Suiton)
+    // GCD5: Phantom Kamaitachi → Ten Chi Jin (weave)
+    // TCJ: Fuma Shuriken → Raiton → Suiton → Meisui (weave)
+    // → Fleeting/Forked Raiju → Zesho Meppo (Ninki dump)
+    //
+    // === EVEN BURST (120s) ===
+    // Dokumori (party vuln) + Kunai's Bane + Kassatsu + TCJ + Bunshin
+    // Full Ninki dump: Zesho Meppo + Bhavacakra under raid buffs
+    // Hyosho Ranryu (from Kassatsu) under burst window
+    //
+    // === ODD BURST (60s) ===
+    // Kunai's Bane + Kassatsu → Hyosho Ranryu
+    // Use Phantom Kamaitachi in odd windows (save PK for odd, not even)
+    // Hold TCJ and Bunshin for even windows
+    //
+    // === FILLER / SUSTAIN ===
+    // Combo: Spinning Edge → Gust Slash → Aeolian Edge (rear) or Armor Crush (flank)
+    // Kazematoi: Aeolian Edge grants 2 stacks, spend for positional flexibility
+    // Raiton as default ninjutsu between bursts (don't waste Suiton outside burst prep)
+    // Spend Ninki on Bhavacakra at ~85+ to avoid overcap, pool for burst below that
+    // Use Fleeting/Forked Raiju ASAP to avoid losing proc
 
     protected override IAction? CountDownAction(float remainTime)
     {
@@ -469,7 +495,7 @@ public sealed class SezuraiNIN : NinjaRotation
         }
 
         // Pre-pull medicine at ~2s
-        if (BurstMed && remainTime <= 2f && UseBurstMedicine(out act))
+        if (BurstMed && remainTime <= 2f && remainTime > 1f && UseBurstMedicine(out act))
             return act;
 
         return base.CountDownAction(remainTime);
