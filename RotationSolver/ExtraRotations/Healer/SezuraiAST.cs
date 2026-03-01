@@ -24,7 +24,7 @@ public sealed class SezuraiAST : AstrologianRotation
 
     public enum HealModeStrategy : byte
     {
-        [Description("Normal: GCD heals only if solo healer")]
+        [Description("Balanced: oGCD first, GCD heals when party HP critical (<40%) or solo healing")]
         Balanced,
 
         [Description("DPS Focus: oGCD heals only, never GCD heal")]
@@ -68,15 +68,15 @@ public sealed class SezuraiAST : AstrologianRotation
 
     [Range(0, 1, ConfigUnitType.Percent)]
     [RotationConfig(CombatType.PvE, Name = "HP threshold for Essential Dignity 3rd charge")]
-    public float EssentialDignityThird { get; set; } = 0.8f;
+    public float EssentialDignityThird { get; set; } = 0.7f;
 
     [Range(0, 1, ConfigUnitType.Percent)]
     [RotationConfig(CombatType.PvE, Name = "HP threshold for Essential Dignity 2nd charge")]
-    public float EssentialDignitySecond { get; set; } = 0.7f;
+    public float EssentialDignitySecond { get; set; } = 0.5f;
 
     [Range(0, 1, ConfigUnitType.Percent)]
-    [RotationConfig(CombatType.PvE, Name = "HP threshold for Essential Dignity last charge")]
-    public float EssentialDignityLast { get; set; } = 0.6f;
+    [RotationConfig(CombatType.PvE, Name = "HP threshold for Essential Dignity last charge (emergency)")]
+    public float EssentialDignityLast { get; set; } = 0.3f;
 
     [Range(0f, 0.25f, ConfigUnitType.Percent)]
     [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
@@ -252,22 +252,25 @@ public sealed class SezuraiAST : AstrologianRotation
         return base.DefenseSingleAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.CollectiveUnconsciousPvE, ActionID.SunSignPvE)]
+    [RotationDesc(ActionID.CollectiveUnconsciousPvE, ActionID.SunSignPvE, ActionID.NeutralSectPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
+        // Sun Sign: 10% party mitigation for 15s — always use when available
         if (SunSignPvE.CanUse(out act))
             return true;
 
-        if (EarthlyStarPvE.CanUse(out act))
+        // Neutral Sect: use proactively for Sun Sign access even without GCD heals planned.
+        // The 10% party mitigation from Sun Sign is too valuable to skip in savage.
+        if (!StatusHelper.PlayerHasStatus(true, StatusID.Suntouched)
+            && NeutralSectPvE.CanUse(out act))
             return true;
 
-        if ((MacrocosmosPvE.Cooldown.IsCoolingDown && !MacrocosmosPvE.Cooldown.WillHaveOneCharge(150))
-            || (CollectiveUnconsciousPvE.Cooldown.IsCoolingDown && !CollectiveUnconsciousPvE.Cooldown.WillHaveOneCharge(40)))
-        {
-            return base.DefenseAreaAbility(nextGCD, out act);
-        }
-
+        // Collective Unconscious: tap for 10% mitigation (30y) + regen (8y).
+        // In 7.4, a single tap grants 10s of mitigation — do NOT channel during uptime.
         if (CollectiveUnconsciousPvE.CanUse(out act))
+            return true;
+
+        if (EarthlyStarPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -277,19 +280,14 @@ public sealed class SezuraiAST : AstrologianRotation
 
     #region Healing Abilities
 
-    [RotationDesc(ActionID.TheArrowPvE, ActionID.TheEwerPvE, ActionID.EssentialDignityPvE, ActionID.CelestialIntersectionPvE)]
+    [RotationDesc(ActionID.EssentialDignityPvE, ActionID.CelestialIntersectionPvE, ActionID.ExaltationPvE, ActionID.TheArrowPvE, ActionID.TheEwerPvE)]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
         if (MicroPrio && HasMacrocosmos)
             return base.HealSingleAbility(nextGCD, out act);
 
-        if (InCombat && TheArrowPvE.CanUse(out act))
-            return true;
-
-        if (InCombat && TheEwerPvE.CanUse(out act))
-            return true;
-
-        // Essential Dignity: tiered by charge count
+        // Essential Dignity: tiered by charge count.
+        // Scales inversely with target HP — max 900p at <=30%. Never cap charges.
         if (EssentialDignityPvE.Cooldown.CurrentCharges == 3
             && EssentialDignityPvE.CanUse(out act, usedUp: true)
             && EssentialDignityPvE.Target.Target.GetHealthRatio() < EssentialDignityThird)
@@ -305,36 +303,59 @@ public sealed class SezuraiAST : AstrologianRotation
             && EssentialDignityPvE.Target.Target.GetHealthRatio() < EssentialDignityLast)
             return true;
 
+        // Celestial Intersection: 200p heal + 400p shield — keep one charge rolling
         if (CelestialIntersectionPvE.CanUse(out act, usedUp: true))
+            return true;
+
+        // Exaltation: 10% mitigation (8s) + 500p delayed heal — great for tankbusters
+        if (ExaltationPvE.CanUse(out act))
+            return true;
+
+        // The Arrow: +10% healing received — apply before co-healer burst heals
+        if (InCombat && TheArrowPvE.CanUse(out act))
+            return true;
+
+        // The Ewer: 1,000p regen — highest potency single-target oGCD heal
+        if (InCombat && TheEwerPvE.CanUse(out act))
             return true;
 
         return base.HealSingleAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.CelestialOppositionPvE, ActionID.StellarDetonationPvE, ActionID.HoroscopePvE, ActionID.HoroscopePvE_16558, ActionID.LadyOfCrownsPvE)]
+    [RotationDesc(ActionID.CelestialOppositionPvE, ActionID.StellarDetonationPvE, ActionID.HoroscopePvE, ActionID.HoroscopePvE_16558, ActionID.LadyOfCrownsPvE, ActionID.CollectiveUnconsciousPvE)]
     protected override bool HealAreaAbility(IAction nextGCD, out IAction? act)
     {
+        // Earthly Star (charged): 720p heal — highest priority AoE heal
         if (HasGiantDominance && StellarDetonationPvE.CanUse(out act))
             return true;
 
+        // Microcosmos detonation: heal based on compiled damage
         if (MicrocosmosPvE.CanUse(out act))
             return true;
 
         if (MicroPrio && HasMacrocosmos)
             return base.HealAreaAbility(nextGCD, out act);
 
+        // Celestial Opposition: 700p total AoE heal, no restrictions
         if (CelestialOppositionPvE.CanUse(out act))
             return true;
 
+        // Collective Unconscious: tap for 10% mitigation + 500p regen (8y range)
+        if (CollectiveUnconsciousPvE.CanUse(out act))
+            return true;
+
+        // Earthly Star (uncharged): 540p heal — still worth detonating
         if (StellarDetonationPvE.CanUse(out act))
             return true;
 
+        // Horoscope: detonate for free healing
         if (PartyMembersAverHP < HoroscopeHeal && HoroscopePvE_16558.CanUse(out act))
             return true;
 
         if (PartyMembersAverHP < HoroscopeHeal && HoroscopePvE.CanUse(out act))
             return true;
 
+        // Lady of Crowns: free 400p AoE heal — never waste it
         if (LadyOfCrownsPvE.CanUse(out act))
             return true;
 
@@ -347,12 +368,12 @@ public sealed class SezuraiAST : AstrologianRotation
 
     protected override bool GeneralAbility(IAction nextGCD, out IAction? act)
     {
-        // Sun Sign: use before Suntouched expires
+        // Sun Sign: 10% party mitigation for 15s. Use whenever Suntouched is available.
+        // Don't hold too long — the mitigation value is always worth it in savage.
         if (StatusHelper.PlayerHasStatus(true, StatusID.Suntouched)
-            && StatusHelper.PlayerWillStatusEndGCD(3, 0, true, StatusID.Suntouched))
+            && SunSignPvE.CanUse(out act, skipAoeCheck: true, skipTTKCheck: true))
         {
-            if (SunSignPvE.CanUse(out act, skipAoeCheck: true, skipTTKCheck: true))
-                return true;
+            return true;
         }
 
         // Lady of Crowns: heal if party HP low or draw about to overcap
@@ -484,36 +505,27 @@ public sealed class SezuraiAST : AstrologianRotation
 
     protected override bool DefenseSingleGCD(out IAction? act)
     {
-        if ((MacrocosmosPvE.Cooldown.IsCoolingDown && !MacrocosmosPvE.Cooldown.WillHaveOneCharge(150))
-            || (CollectiveUnconsciousPvE.Cooldown.IsCoolingDown && !CollectiveUnconsciousPvE.Cooldown.WillHaveOneCharge(40)))
-        {
-            return base.DefenseAreaGCD(out act);
-        }
-
+        // Neutral Sect + Aspected Benefic = massive shield on tank
         if ((NeutralSectPvE.CanUse(out _) || HasNeutralSect || IsLastAbility(false, NeutralSectPvE))
             && AspectedBeneficPvE.CanUse(out act, skipStatusProvideCheck: true))
         {
             return true;
         }
 
-        return base.DefenseAreaGCD(out act);
+        return base.DefenseSingleGCD(out act);
     }
 
     [RotationDesc(ActionID.MacrocosmosPvE)]
     protected override bool DefenseAreaGCD(out IAction? act)
     {
-        if ((MacrocosmosPvE.Cooldown.IsCoolingDown && !MacrocosmosPvE.Cooldown.WillHaveOneCharge(150))
-            || (CollectiveUnconsciousPvE.Cooldown.IsCoolingDown && !CollectiveUnconsciousPvE.Cooldown.WillHaveOneCharge(40)))
-        {
-            return base.DefenseAreaGCD(out act);
-        }
-
+        // Neutral Sect + Helios Conjunction = AoE heal + shield + regen
         if ((NeutralSectPvE.CanUse(out _) || HasNeutralSect || IsLastAbility(false, NeutralSectPvE))
             && HeliosConjunctionPvE.CanUse(out act, skipStatusProvideCheck: true))
         {
             return true;
         }
 
+        // Macrocosmos: cast before multi-hit or heavy raidwide damage
         if ((MultiHitRestrict && IsCastingMultiHit) || !MultiHitRestrict)
         {
             if (MacrocosmosPvE.CanUse(out act))
@@ -661,9 +673,10 @@ public sealed class SezuraiAST : AstrologianRotation
             if (!base.CanHealSingleSpell) return false;
             return HealMode switch
             {
-                HealModeStrategy.DPSFocus => false,              // Never GCD heal
-                HealModeStrategy.Healbot => true,                 // Always GCD heal
-                _ => IsSoloHealer,                                // Only if solo healer
+                HealModeStrategy.DPSFocus => false,
+                HealModeStrategy.Healbot => true,
+                // Balanced: solo healer OR emergency (any party member critically low)
+                _ => IsSoloHealer || PartyMembersAverHP < 0.4f,
             };
         }
     }
@@ -675,9 +688,10 @@ public sealed class SezuraiAST : AstrologianRotation
             if (!base.CanHealAreaSpell) return false;
             return HealMode switch
             {
-                HealModeStrategy.DPSFocus => false,              // Never GCD heal
-                HealModeStrategy.Healbot => true,                 // Always GCD heal
-                _ => IsSoloHealer,                                // Only if solo healer
+                HealModeStrategy.DPSFocus => false,
+                HealModeStrategy.Healbot => true,
+                // Balanced: solo healer OR emergency (party HP critically low)
+                _ => IsSoloHealer || PartyMembersAverHP < 0.4f,
             };
         }
     }

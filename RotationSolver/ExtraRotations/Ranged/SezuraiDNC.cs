@@ -124,16 +124,17 @@ public sealed class SezuraiDNC : DancerRotation
 
     #region Countdown & Opener
     // === DNC OPENER (7.4 Balance) ===
-    // Pre-pull: Closed Position → Standard Step(-15.5s) → dance steps → Standard Finish(-0.5s)
+    // Pre-pull: Closed Position → Standard Step(-15.5s) → dance steps → Pot(-1.5s) → Standard Finish(-0.5s)
     // GCD1: Technical Step → dance steps → Technical Finish
-    // → Devilment (weave) → Tillana → Starfall Dance
-    // → Flourish (weave) → Finishing Move → Last Dance
-    // → Saber Dance (Esprit dump) → proc GCDs under buffs
+    // → Devilment (weave) → Tillana → Flourish (weave)
+    // → Dance of the Dawn → Fan Dance IV (weave)
+    // → Last Dance → Fan Dance III (weave) → Starfall Dance
+    // → Finishing Move → Saber Dance (Esprit dump) → proc GCDs under buffs
     //
     // === BURST WINDOWS (120s cycle) ===
     // Technical Finish (5% party buff) + Devilment (personal crit/DH)
+    // Tillana → DotD → Last Dance → Starfall → Finishing Move → Saber spam
     // Flourish → Fan Dance IV + Fan Dance III + feather dump under full buffs
-    // Starfall Dance + Dance of the Dawn + Saber Dance spam
     // All major CDs are 120s — every burst window is identical
     //
     // === FILLER / SUSTAIN ===
@@ -369,11 +370,26 @@ public sealed class SezuraiDNC : DancerRotation
             if (ExecuteStepGCD(out act))
                 return true;
 
-            // Finish the dance when steps are complete
-            if (DanceFinishGCD(out act, finishNow: false))
+            // Finish the dance immediately when steps are complete.
+            // finishNow: true prevents a stall where CanUse fails for a framework
+            // reason but the status isn't expiring yet — without this the rotation
+            // would return null and the character would stand idle forever.
+            if (DanceFinishGCD(out act, finishNow: true))
                 return true;
 
-            // Fallback: if we're dancing but nothing resolves, do nothing rather than break
+            // Safety fallback: if we're somehow stuck in dance with no step or finish
+            // resolving, try the raw finish actions directly to break the stall.
+            if (HasStandardStep && CompletedSteps == 2)
+            {
+                act = DoubleStandardFinishPvE;
+                return true;
+            }
+            if (HasTechnicalStep && CompletedSteps == 4)
+            {
+                act = QuadrupleTechnicalFinishPvE;
+                return true;
+            }
+
             act = null;
             return false;
         }
@@ -400,32 +416,8 @@ public sealed class SezuraiDNC : DancerRotation
         if (HasTillana && TryUseTillana(out act))
             return true;
 
-        // === STARFALL DANCE (from Devilment, Flourishing Starfall) ===
-        // Highest priority special GCD during burst. 20s duration from Devilment.
-        // Must use before Devilment expires.
-        if (HasFlourishingStarfall)
-        {
-            // Use early if Devilment is about to expire, or when no higher priorities pending
-            bool starfallUrgent = StatusHelper.PlayerWillStatusEnd(7, true, StatusID.FlourishingStarfall);
-            bool noHigherPriority = !HasTillana || Esprit >= 50; // Don't delay Tillana overcap
-
-            if ((starfallUrgent || noHigherPriority) && StarfallDancePvE.CanUse(out act, skipAoeCheck: true))
-                return true;
-        }
-
-        // === FINISHING MOVE (from Flourish, replaces Standard Step button) ===
-        // Acts like a free Standard Finish without dancing. Grants Last Dance Ready.
-        // Use during burst window. Outside burst, use when available but don't hold too long.
-        if (HasFinishingMove && !HasLastDance)
-        {
-            bool fmUrgent = StatusHelper.PlayerWillStatusEnd(5, true, StatusID.FinishingMoveReady);
-
-            if ((InBurstWindow || fmUrgent) && FinishingMovePvE.CanUse(out act, skipAoeCheck: true))
-                return true;
-        }
-
         // === DANCE OF THE DAWN (from Technical Finish, costs 50 Esprit) ===
-        // High potency AoE. Use during burst when available.
+        // Highest potency GCD (1000p). Use early in burst after Tillana.
         // Requires Esprit >= 50 and DanceOfTheDawnReady status.
         if (HasDanceOfTheDawn && Esprit >= 50)
         {
@@ -439,15 +431,40 @@ public sealed class SezuraiDNC : DancerRotation
         }
 
         // === LAST DANCE (from Standard Finish / Finishing Move) ===
-        // 30s duration. Use during burst, or before it expires, or when Esprit is low.
+        // 30s duration. Use during burst after DotD, or before it expires, or as filler.
+        // Must be used before Finishing Move (FM also grants Last Dance, would overwrite).
         if (HasLastDance)
         {
             bool ldUrgent = StatusHelper.PlayerWillStatusEnd(5, true, StatusID.LastDanceReady);
-            bool ldInBurst = InBurstWindow && !HasFlourishingStarfall;
+            bool ldInBurst = InBurstWindow;
             bool ldFiller = !InBurstWindow && Esprit < EspritThreshold
                 && (!TechnicalStepPvE.EnoughLevel || !TechnicalStepPvE.Cooldown.WillHaveOneCharge(15));
 
             if ((ldUrgent || ldInBurst || ldFiller) && LastDancePvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+        }
+
+        // === STARFALL DANCE (from Devilment, Flourishing Starfall) ===
+        // 600p guaranteed crit+DH under Devilment. 20s duration.
+        // Use after DotD and Last Dance during burst.
+        if (HasFlourishingStarfall)
+        {
+            bool starfallUrgent = StatusHelper.PlayerWillStatusEnd(7, true, StatusID.FlourishingStarfall);
+            bool starfallInBurst = InBurstWindow && !HasTillana;
+
+            if ((starfallUrgent || starfallInBurst) && StarfallDancePvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+        }
+
+        // === FINISHING MOVE (from Flourish, replaces Standard Step button) ===
+        // Acts like a free Standard Finish without dancing. Grants Last Dance Ready.
+        // Use during burst after Last Dance is consumed (to avoid overwriting the proc).
+        // Outside burst, use when available but don't hold too long.
+        if (HasFinishingMove && !HasLastDance)
+        {
+            bool fmUrgent = StatusHelper.PlayerWillStatusEnd(5, true, StatusID.FinishingMoveReady);
+
+            if ((InBurstWindow || fmUrgent) && FinishingMovePvE.CanUse(out act, skipAoeCheck: true))
                 return true;
         }
 
