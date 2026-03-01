@@ -1564,4 +1564,47 @@ public partial class CustomRotation
     [Description("Whether or not Invincibility should be ignored for a PvP action.")]
     public static bool IgnorePvPInvincibility => Service.Config.IgnorePvPInvincibility;
     #endregion
+
+    #region BossModReborn Timeline
+    /// <summary>
+    /// Whether BossModReborn has an active boss module loaded for the current encounter.
+    /// </summary>
+    [Description("BMR has active module")]
+    public static bool BmrActive => DataCenter.BmrHasActiveModule;
+
+    /// <summary>
+    /// Seconds until the next raidwide damage event according to BMR's timeline.
+    /// Returns float.MaxValue if no raidwide is predicted.
+    /// </summary>
+    [Description("Seconds until next raidwide")]
+    public static float BmrRaidwideIn => DataCenter.BmrNextRaidwideIn;
+
+    /// <summary>
+    /// Seconds until the next tankbuster event according to BMR's timeline.
+    /// Returns float.MaxValue if no tankbuster is predicted.
+    /// </summary>
+    [Description("Seconds until next tankbuster")]
+    public static float BmrTankbusterIn => DataCenter.BmrNextTankbusterIn;
+
+    /// <summary>
+    /// Seconds until the next knockback event according to BMR's timeline.
+    /// Returns float.MaxValue if no knockback is predicted.
+    /// </summary>
+    [Description("Seconds until next knockback")]
+    public static float BmrKnockbackIn => DataCenter.BmrNextKnockbackIn;
+
+    /// <summary>
+    /// Seconds until the next predicted damage event from BMR's active components.
+    /// This is more precise than timeline data but has a shorter lookahead window.
+    /// Returns float.MaxValue if no damage is predicted.
+    /// </summary>
+    [Description("Seconds until next predicted damage")]
+    public static float BmrDamageIn => DataCenter.BmrNextDamageIn;
+
+    /// <summary>
+    /// The type of the next predicted damage event (0=None, 1=Tankbuster, 2=Raidwide, 3=Shared).
+    /// </summary>
+    [Description("Next predicted damage type")]
+    public static int BmrDamageType => DataCenter.BmrNextDamageType;
+    #endregion
 }

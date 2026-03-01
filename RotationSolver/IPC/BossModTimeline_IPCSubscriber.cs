@@ -1,0 +1,43 @@
+using ECommons.EzIpcManager;
+
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+
+namespace RotationSolver.IPC;
+
+internal static class BossModTimeline_IPCSubscriber
+{
+    private static readonly EzIPCDisposalToken[] _disposalTokens =
+        EzIPC.Init(typeof(BossModTimeline_IPCSubscriber), "BossMod", SafeWrapper.AnyException);
+
+    internal static bool IsEnabled => IPCSubscriber_Common.IsReady("BossModReborn")
+                                      || IPCSubscriber_Common.IsReady("BossMod");
+
+    [EzIPC("HasActiveModule", true)]
+    internal static readonly Func<bool>? HasActiveModule;
+
+    [EzIPC("ActiveModuleName", true)]
+    internal static readonly Func<string?>? ActiveModuleName;
+
+    [EzIPC("Timeline.NextRaidwideIn", true)]
+    internal static readonly Func<float>? NextRaidwideIn;
+
+    [EzIPC("Timeline.NextTankbusterIn", true)]
+    internal static readonly Func<float>? NextTankbusterIn;
+
+    [EzIPC("Timeline.NextKnockbackIn", true)]
+    internal static readonly Func<float>? NextKnockbackIn;
+
+    [EzIPC("Hints.NextDamageIn", true)]
+    internal static readonly Func<float>? NextDamageIn;
+
+    [EzIPC("Hints.NextDamageType", true)]
+    internal static readonly Func<int>? NextDamageType;
+
+    [EzIPC("Hints.SpecialModeIn", true)]
+    internal static readonly Func<float>? SpecialModeIn;
+
+    [EzIPC("Hints.SpecialModeType", true)]
+    internal static readonly Func<int>? SpecialModeType;
+
+    internal static void Dispose() => IPCSubscriber_Common.DisposeAll(_disposalTokens);
+}

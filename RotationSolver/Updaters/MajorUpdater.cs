@@ -158,6 +158,9 @@ internal static class MajorUpdater
             // Target updater always needs to be first to update
 			MacroUpdater.UpdateMacro();
 
+			// Poll BMR timeline data before state evaluation
+			BossModUpdater.Update();
+
 			StateUpdater.UpdateState();
 
 			ActionUpdater.UpdateNextAction();

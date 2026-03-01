@@ -125,7 +125,16 @@ internal static class StateUpdater
 
     private static bool ShouldAddDefenseArea()
     {
-        return DataCenter.InCombat && Service.Config.UseAoeDefense && DataCenter.IsHostileCastingAOE && !DataCenter.IsTyrantCastingSpecialIndicator();
+        if (DataCenter.InCombat && Service.Config.UseAoeDefense && DataCenter.IsHostileCastingAOE && !DataCenter.IsTyrantCastingSpecialIndicator())
+            return true;
+
+        // Proactive raidwide mitigation via BossModReborn timeline
+        if (DataCenter.InCombat && Service.Config.UseBmrTimeline
+            && DataCenter.BmrNextRaidwideIn > 0
+            && DataCenter.BmrNextRaidwideIn <= Service.Config.BmrRaidwideMitWindow)
+            return true;
+
+        return false;
     }
 
     private static bool ShouldAddDefenseSingle()
@@ -196,6 +205,12 @@ internal static class StateUpdater
                 return true;
             }
         }
+
+        // Proactive tankbuster mitigation via BossModReborn timeline
+        if (Service.Config.UseBmrTimeline && DataCenter.Role == JobRole.Tank
+            && DataCenter.BmrNextTankbusterIn > 0
+            && DataCenter.BmrNextTankbusterIn <= Service.Config.BmrTankbusterMitWindow)
+            return true;
 
         return false;
     }
@@ -442,7 +457,16 @@ internal static class StateUpdater
 
     private static bool ShouldAddAntiKnockback()
     {
-        return DataCenter.InCombat && Service.Config.UseKnockback && DataCenter.AreHostilesCastingKnockback;
+        if (DataCenter.InCombat && Service.Config.UseKnockback && DataCenter.AreHostilesCastingKnockback)
+            return true;
+
+        // Proactive knockback prevention via BossModReborn timeline
+        if (DataCenter.InCombat && Service.Config.UseBmrTimeline
+            && DataCenter.BmrNextKnockbackIn > 0
+            && DataCenter.BmrNextKnockbackIn <= Service.Config.BmrKnockbackWindow)
+            return true;
+
+        return false;
     }
 
     private static bool ShouldAddProvoke()

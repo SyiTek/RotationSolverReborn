@@ -1958,4 +1958,29 @@ internal static class DataCenter
 		}
 	}
 	#endregion
+
+	#region BossModReborn Timeline Integration
+	public static bool BmrHasActiveModule { get; set; }
+	public static string? BmrActiveModuleName { get; set; }
+	public static float BmrNextRaidwideIn { get; set; } = float.MaxValue;
+	public static float BmrNextTankbusterIn { get; set; } = float.MaxValue;
+	public static float BmrNextKnockbackIn { get; set; } = float.MaxValue;
+	public static float BmrNextDamageIn { get; set; } = float.MaxValue;
+	public static int BmrNextDamageType { get; set; }
+	public static float BmrSpecialModeIn { get; set; } = float.MaxValue;
+	public static int BmrSpecialModeType { get; set; }
+
+	public static void ResetBmrData()
+	{
+		BmrHasActiveModule = false;
+		BmrActiveModuleName = null;
+		BmrNextRaidwideIn = float.MaxValue;
+		BmrNextTankbusterIn = float.MaxValue;
+		BmrNextKnockbackIn = float.MaxValue;
+		BmrNextDamageIn = float.MaxValue;
+		BmrNextDamageType = 0;
+		BmrSpecialModeIn = float.MaxValue;
+		BmrSpecialModeType = 0;
+	}
+	#endregion
 }

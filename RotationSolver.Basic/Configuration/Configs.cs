@@ -560,6 +560,24 @@ internal partial class Configs : IPluginConfiguration
 	[ConditionBool, UI("Automatically use AOE defensive actions", Filter = AutoActionUsage, Parent = nameof(UseDefenseAbility))]
 	private static readonly bool _useAOEDefense = true;
 
+	[ConditionBool, UI("Use BossModReborn timeline for proactive mitigation",
+		Description = "When enabled and BossModReborn is loaded, RSR will use its timeline data to trigger defensive abilities before raidwides and tankbusters hit.",
+		Filter = AutoActionUsage, Parent = nameof(UseDefenseAbility))]
+	private static readonly bool _useBmrTimeline = false;
+
+	[UI("Seconds before raidwide to use area mitigation", Parent = nameof(UseBmrTimeline))]
+	[Range(1, 15, ConfigUnitType.Seconds, 0.5f)]
+	public float BmrRaidwideMitWindow { get; set; } = 5f;
+
+	[UI("Seconds before tankbuster to use single mitigation", Parent = nameof(UseBmrTimeline),
+		PvEFilter = JobFilterType.Tank)]
+	[Range(1, 10, ConfigUnitType.Seconds, 0.5f)]
+	public float BmrTankbusterMitWindow { get; set; } = 3f;
+
+	[UI("Seconds before knockback to use anti-knockback", Parent = nameof(UseBmrTimeline))]
+	[Range(1, 10, ConfigUnitType.Seconds, 0.5f)]
+	public float BmrKnockbackWindow { get; set; } = 3f;
+
 	[UI("Number of hostiles", Parent = nameof(UseDefenseAbility),
 		PvEFilter = JobFilterType.Tank)]
 	[Range(1, 8, ConfigUnitType.None, 0.05f)]
