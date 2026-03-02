@@ -225,12 +225,9 @@ public sealed class SezuraiAST : AstrologianRotation
         if (StellarNow && HasGiantDominance && StellarDetonationPvE.CanUse(out act))
             return true;
 
-        // BMR-aware: detonate Macrocosmos right after raidwide damage hits
-        // Per Balance: "Incredibly powerful but effectiveness depends entirely on timing"
-        // The stored healing is richest immediately after the big hit lands
-        if (BmrActive && HasMacrocosmos && BmrRaidwideIn <= 0.5f
-            && MicrocosmosPvE.CanUse(out act))
-            return true;
+        // Macrocosmos detonation is handled by HealAreaAbility AFTER damage hits.
+        // Do NOT detonate here before raidwide — the buff needs to store damage first,
+        // then Microcosmos releases the stored healing. Detonating before damage = 0 healing.
 
         return base.EmergencyAbility(nextGCD, out act);
 
@@ -297,17 +294,17 @@ public sealed class SezuraiAST : AstrologianRotation
         // Earthly Star placement is NOT here — it's in AttackAbility (primarily a damage tool).
         // Star DETONATION for healing is in HealAreaAbility and AttackAbility (burst).
 
-        bool rwImminent = BmrActive && BmrRaidwideIn is > 0 and <= 3f;
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
 
         // Sun Sign: 10% party mit for 15s — use when available (it's free, Suntouched from Neutral Sect)
         if (SunSignPvE.CanUse(out act))
             return true;
 
         // Collective Unconscious: tap for 10% mit (30y) + regen (8y), 60s CD.
-        // This is our bread-and-butter raidwide mit — available for most raidwides.
-        // BMR: save for imminent hits (<=3s) so the 5-10s mit window covers the damage snapshot.
+        // Per Balance: this is MIT — use BEFORE raidwide to reduce incoming damage.
+        // BMR: fire 1-5s before raidwide so the mit window covers the damage snapshot.
         // Without BMR: use whenever the framework says to defend.
-        if (rwImminent && CollectiveUnconsciousPvE.CanUse(out act))
+        if (rwSoon && CollectiveUnconsciousPvE.CanUse(out act))
             return true;
 
         if (!BmrActive && CollectiveUnconsciousPvE.CanUse(out act))
@@ -368,15 +365,27 @@ public sealed class SezuraiAST : AstrologianRotation
     [RotationDesc(ActionID.CelestialOppositionPvE, ActionID.StellarDetonationPvE, ActionID.HoroscopePvE, ActionID.HoroscopePvE_16558, ActionID.LadyOfCrownsPvE, ActionID.CollectiveUnconsciousPvE)]
     protected override bool HealAreaAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: if a raidwide is coming SOON, don't waste heals — let MIT handle it.
+        // Heals should fire AFTER damage, not before. The framework triggers this method
+        // when party HP drops, which should be after the raidwide hits.
+        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+
         // Earthly Star (charged): 720p heal — highest priority AoE heal
+        // This is our best post-raidwide heal. Only detonate when HP is actually low.
         if (HasGiantDominance && StellarDetonationPvE.CanUse(out act))
             return true;
 
-        // Microcosmos detonation: heal based on compiled damage
+        // Microcosmos detonation: releases stored damage as healing
+        // Only fires after damage has been stored (post-raidwide)
         if (MicrocosmosPvE.CanUse(out act))
             return true;
 
         if (MicroPrio && HasMacrocosmos)
+            return base.HealAreaAbility(nextGCD, out act);
+
+        // If raidwide is coming soon, HOLD heals — MIT is already handling it in DefenseAreaAbility.
+        // The heals below will fire after the raidwide hits and HP drops.
+        if (rwComingSoon)
             return base.HealAreaAbility(nextGCD, out act);
 
         // Celestial Opposition: 700p total AoE heal, no restrictions
@@ -519,12 +528,9 @@ public sealed class SezuraiAST : AstrologianRotation
             if (HasDivination && HasGiantDominance && StellarDetonationPvE.CanUse(out act))
                 return true;
 
-            // --- BMR-aware: detonate Giant Dominance Star right before raidwide ---
-            // Per Balance: "Earthly Star will be the cornerstone of your healing"
-            // Detonate charged star just before raidwide hits for 720p party heal + 310p damage
-            if (BmrActive && BmrRaidwideIn is > 0 and <= 2f
-                && HasGiantDominance && StellarDetonationPvE.CanUse(out act))
-                return true;
+            // Star detonation for HEALING is handled by HealAreaAbility AFTER raidwide damage.
+            // Do NOT detonate before raidwide — the 720p heal is wasted on full HP.
+            // Per Balance: "Place Star before raidwide, detonate AFTER damage for healing value."
 
             // --- BMR-aware Earthly Star placement ---
             // Per Balance: "Place it 10 seconds before the raidwide so you can detonate after damage"
