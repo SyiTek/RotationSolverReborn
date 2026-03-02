@@ -50,14 +50,27 @@ internal static class BossModUpdater
             DataCenter.BmrNextVulnerableEndIn = BossModTimeline_IPCSubscriber.NextVulnerableEndIn?.Invoke() ?? float.MaxValue;
 
             // Poll Hints endpoints (component-level damage predictions — works even without state machine flags)
-            DataCenter.BmrNextDamageIn = BossModTimeline_IPCSubscriber.NextDamageIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrNextDamageType = BossModTimeline_IPCSubscriber.NextDamageType?.Invoke() ?? 0;
+            var damageIn = BossModTimeline_IPCSubscriber.NextDamageIn?.Invoke() ?? float.MaxValue;
+            var damageType = BossModTimeline_IPCSubscriber.NextDamageType?.Invoke() ?? 0;
+            DataCenter.BmrNextDamageIn = damageIn;
+            DataCenter.BmrNextDamageType = damageType;
+
+            // Type-specific Hints endpoints (may return 0.0 if BMR doesn't have them — SafeWrapper default)
             var hintsRaidwide = BossModTimeline_IPCSubscriber.NextRaidwideDamageIn?.Invoke() ?? float.MaxValue;
             var hintsTankbuster = BossModTimeline_IPCSubscriber.NextTankbusterDamageIn?.Invoke() ?? float.MaxValue;
 
-            // Merge: use the nearest source (Timeline state flags OR Hints damage predictions)
-            DataCenter.BmrNextRaidwideIn = Math.Min(timelineRaidwide, hintsRaidwide);
-            DataCenter.BmrNextTankbusterIn = Math.Min(timelineTankbuster, hintsTankbuster);
+            // Filter out invalid values (<=0 means endpoint missing/SafeWrapper default or damage already resolved)
+            if (hintsRaidwide <= 0f) hintsRaidwide = float.MaxValue;
+            if (hintsTankbuster <= 0f) hintsTankbuster = float.MaxValue;
+
+            // Final fallback: use generic damage prediction if type matches
+            // This works even when type-specific endpoints aren't available in older BMR builds
+            var genericRaidwide = (damageType == 2 && damageIn > 0f) ? damageIn : float.MaxValue; // 2 = Raidwide
+            var genericTankbuster = (damageType == 1 && damageIn > 0f) ? damageIn : float.MaxValue; // 1 = Tankbuster
+
+            // Merge all sources: Timeline OR type-specific Hints OR generic damage prediction
+            DataCenter.BmrNextRaidwideIn = Math.Min(Math.Min(timelineRaidwide, hintsRaidwide), genericRaidwide);
+            DataCenter.BmrNextTankbusterIn = Math.Min(Math.Min(timelineTankbuster, hintsTankbuster), genericTankbuster);
 
             DataCenter.BmrSpecialModeIn = BossModTimeline_IPCSubscriber.SpecialModeIn?.Invoke() ?? float.MaxValue;
             DataCenter.BmrSpecialModeType = BossModTimeline_IPCSubscriber.SpecialModeType?.Invoke() ?? 0;
