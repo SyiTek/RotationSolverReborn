@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
 [Rotation("SezuraiSAM", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned SAM with Tendo burst, Higanbana management, and Kenki optimization.")]
+    Description = "Balance-aligned SAM with Tendo burst, Higanbana management, Kenki optimization, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiSAM.cs")]
 [ExtraRotation]
 public sealed class SezuraiSAM : SamuraiRotation
@@ -25,6 +25,9 @@ public sealed class SezuraiSAM : SamuraiRotation
     [Range(25, 75, ConfigUnitType.None, 5)]
     [RotationConfig(CombatType.PvE, Name = "Kenki threshold for Shinten/Kyuten during filler (save for burst below this)")]
     public int KenkiSpendThreshold { get; set; } = 50;
+
+    [RotationConfig(CombatType.PvE, Name = "Use BMR timeline for proactive mitigation, downtime planning, and burst hold")]
+    public bool UseBmr { get; set; } = true;
 
     #endregion
 
@@ -68,6 +71,85 @@ public sealed class SezuraiSAM : SamuraiRotation
 
     #endregion
 
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR is active AND the user has enabled our BMR config toggle.
+    /// All BMR checks go through this so there's a single kill-switch.
+    /// </summary>
+    private bool BmrUsable => UseBmr && BmrActive;
+
+    /// <summary>
+    /// BMR: downtime is imminent and close enough to worry about (~20s).
+    /// Used for resource dump decisions -- dump Kenki, fire Ikishoten early, etc.
+    /// </summary>
+    private bool BmrDowntimeSoon => BmrUsable && BmrDowntimeIn is > 0 and <= 20f;
+
+    /// <summary>
+    /// BMR: downtime is very close (~10s). Aggressive dump: spend all Kenki,
+    /// fire any remaining Sen as Iaijutsu, and stop starting new combos.
+    /// </summary>
+    private bool BmrDowntimeImminent => BmrUsable && BmrDowntimeIn is > 0 and <= 10f;
+
+    /// <summary>
+    /// BMR: downtime too close for Midare/Tendo cast (~3s). These have a ~1.3s cast
+    /// time and the follow-up Kaeshi takes another GCD. Don't start if we can't finish.
+    /// </summary>
+    private bool BmrBlockLongCast => BmrUsable && BmrDowntimeIn is > 0 and <= 3f;
+
+    /// <summary>
+    /// BMR: downtime too close to start a new 3-GCD combo (~5s).
+    /// Prefer finishing current combo, dumping Sen, or using ranged fallback.
+    /// </summary>
+    private bool BmrBlockNewCombo => BmrUsable && BmrDowntimeIn is > 0 and <= 5f;
+
+    /// <summary>
+    /// BMR: vulnerability window coming within 30s -- hold Ikishoten for it.
+    /// Per Balance intermediate: align burst with party buff / vuln windows.
+    /// </summary>
+    private bool BmrHoldIkiForVuln => BmrUsable
+        && BmrVulnerableIn is > 0 and <= 30f
+        && IkishotenPvE.Cooldown.HasOneCharge;
+
+    /// <summary>
+    /// BMR: Ikishoten won't be useful before downtime (too late to burst).
+    /// Don't waste Iki if downtime < 15s and no burst is active.
+    /// The full burst sequence (Ogi + Zanshin + Tendo + Midare) takes ~12-15s.
+    /// </summary>
+    private bool BmrBlockIkiBeforeDowntime => BmrUsable
+        && BmrDowntimeIn is > 0 and <= 15f
+        && !IsBigBurst;
+
+    /// <summary>
+    /// BMR: hold one Meikyo charge for post-downtime re-entry.
+    /// After downtime, Meikyo lets us skip to finishers to re-establish buffs + Sen quickly.
+    /// Only hold if downtime is within 15s and we have a charge to spare.
+    /// </summary>
+    private bool BmrHoldMeikyoForDowntime => BmrUsable
+        && BmrDowntimeIn is > 0 and <= 15f
+        && MeikyoShisuiPvE.Cooldown.CurrentCharges <= 1;
+
+    /// <summary>
+    /// BMR: raidwide damage incoming soon (~3s). Use Third Eye/Tengentsu proactively.
+    /// Per Balance: "each time you successfully use Tengentsu you have effectively gained 100 potency."
+    /// </summary>
+    private bool BmrRaidwideSoon => BmrUsable && BmrRaidwideIn is > 0 and <= 3f;
+
+    /// <summary>
+    /// BMR: raidwide damage incoming within Feint's application window (~5s).
+    /// Feint lasts 10s and reduces physical damage by 10% + magic by 5%.
+    /// </summary>
+    private bool BmrFeintWindow => BmrUsable && BmrRaidwideIn is > 0 and <= 5f;
+
+    /// <summary>
+    /// BMR: damage (raidwide or generic) incoming soon -- use self-heal proactively.
+    /// Bloodbath + Second Wind before the hit lands to top off HP.
+    /// </summary>
+    private bool BmrDamageSoon => BmrUsable
+        && (BmrRaidwideIn is > 0 and <= 4f || BmrDamageIn is > 0 and <= 4f);
+
+    #endregion
+
     #region Weave Helpers
 
     /// <summary>
@@ -89,29 +171,29 @@ public sealed class SezuraiSAM : SamuraiRotation
 
     #region Countdown & Opener
     // === SAM OPENER (7.4 Balance) ===
-    // Pre-pull: Meikyo Shisui(-14s) → True North(-5s) → Pot(-2s)
-    // GCD1: Gekko (rear, grants Getsu) → GCD2: Kasha (flank, grants Ka)
-    // → Ikishoten (weave, grants Ogi Namikiri + 50 Kenki)
-    // GCD3: Yukikaze (grants Setsu) → Tendo Setsugekka (3 Sen, powered-up Iaijutsu)
-    // → Meikyo Shisui (weave) → GCD4: Gekko → GCD5: Kasha → GCD6: Yukikaze
-    // → Midare Setsugekka → Kaeshi Setsugekka (follow-up)
-    // → Ogi Namikiri → Kaeshi Namikiri → Shoha (weave, 3 Meditation stacks)
+    // Pre-pull: Meikyo Shisui(-14s) -> True North(-5s) -> Pot(-2s)
+    // GCD1: Gekko (rear, grants Getsu) -> GCD2: Kasha (flank, grants Ka)
+    // -> Ikishoten (weave, grants Ogi Namikiri + 50 Kenki)
+    // GCD3: Yukikaze (grants Setsu) -> Tendo Setsugekka (3 Sen, powered-up Iaijutsu)
+    // -> Meikyo Shisui (weave) -> GCD4: Gekko -> GCD5: Kasha -> GCD6: Yukikaze
+    // -> Midare Setsugekka -> Kaeshi Setsugekka (follow-up)
+    // -> Ogi Namikiri -> Kaeshi Namikiri -> Shoha (weave, 3 Meditation stacks)
     //
     // === EVEN BURST (120s) ===
-    // Ikishoten + double Meikyo → Tendo Setsugekka + Midare + Ogi Namikiri
+    // Ikishoten + double Meikyo -> Tendo Setsugekka + Midare + Ogi Namikiri
     // Dump all Kenki: Senei + Shinten spam under raid buffs
     // Pot before first Tendo Setsugekka for max snapshot
     //
     // === ODD BURST (60s) ===
-    // Meikyo → Midare Setsugekka + Senei
+    // Meikyo -> Midare Setsugekka + Senei
     // Save Ikishoten + second Meikyo for even windows
     // Still use Shinten to spend Kenki, but less aggressively
     //
     // === FILLER / SUSTAIN ===
-    // 29-GCD loop at 2.08 GCD: Hakaze → Jinpu → Gekko → Hakaze → Shifu → Kasha
-    //   → Hakaze → Yukikaze → Midare Setsugekka → repeat
-    // Higanbana: apply at start, reapply when ≥48s remaining on fight
-    // Never overcap Kenki — Shinten at 50+ outside burst, pool to ~25 for burst
+    // 29-GCD loop at 2.08 GCD: Hakaze -> Jinpu -> Gekko -> Hakaze -> Shifu -> Kasha
+    //   -> Hakaze -> Yukikaze -> Midare Setsugekka -> repeat
+    // Higanbana: apply at start, reapply when >=48s remaining on fight
+    // Never overcap Kenki -- Shinten at 50+ outside burst, pool to ~25 for burst
     // Use Meikyo to skip to Sen-granting finishers for alignment
 
     protected override IAction? CountDownAction(float remainTime)
@@ -179,14 +261,38 @@ public sealed class SezuraiSAM : SamuraiRotation
         ImGui.Text($"IkishotenCD: {(IkishotenPvE.Cooldown.IsCoolingDown ? $"{IkishotenPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"SeneiCD: {(HissatsuSeneiPvE.Cooldown.IsCoolingDown ? $"{HissatsuSeneiPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"MeikyoCharges: {MeikyoShisuiPvE.Cooldown.CurrentCharges}");
+        ImGui.Text("--- BMR Decisions ---");
+        ImGui.Text($"BmrUsable: {BmrUsable} | UseBmr: {UseBmr}");
+        ImGui.Text($"DowntimeSoon: {BmrDowntimeSoon} | DowntimeImminent: {BmrDowntimeImminent}");
+        ImGui.Text($"BlockLongCast: {BmrBlockLongCast} | BlockNewCombo: {BmrBlockNewCombo}");
+        ImGui.Text($"HoldIkiForVuln: {BmrHoldIkiForVuln} | BlockIkiBeforeDowntime: {BmrBlockIkiBeforeDowntime}");
+        ImGui.Text($"HoldMeikyoForDowntime: {BmrHoldMeikyoForDowntime}");
+        ImGui.Text($"FeintWindow: {BmrFeintWindow} | RaidwideSoon: {BmrRaidwideSoon}");
+        ImGui.Text($"DamageSoon: {BmrDamageSoon}");
         ImGui.Text("--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -205,6 +311,16 @@ public sealed class SezuraiSAM : SamuraiRotation
     [RotationDesc]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-proactive: pre-heal before raidwide/damage hits so we survive
+        if (BmrDamageSoon && !HasZanshinReady)
+        {
+            if (BloodbathPvE.CanUse(out act))
+                return true;
+            if (SecondWindPvE.CanUse(out act))
+                return true;
+        }
+
+        // Standard self-healing (framework-triggered or non-BMR)
         if (SecondWindPvE.CanUse(out act))
             return true;
         if (BloodbathPvE.CanUse(out act))
@@ -219,23 +335,27 @@ public sealed class SezuraiSAM : SamuraiRotation
         if (HasZanshinReady)
             return base.DefenseAreaAbility(nextGCD, out act);
 
-        // BMR-aware: Feint + Third Eye/Tengentsu proactively when raidwide imminent
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
-
-        if (rwSoon)
+        // BMR-aware: Feint proactively when raidwide imminent
+        // Skip during active big burst to avoid clipping damage oGCDs (Zanshin/Shoha/Senei)
+        if (BmrFeintWindow && !IsBigBurst)
         {
             if (FeintPvE.CanUse(out act))
                 return true;
-            // Third Eye/Tengentsu: self-mit before raidwide damage
+        }
+
+        // BMR-aware: Third Eye/Tengentsu proactively before raidwide damage
+        // Per Balance: "each time you successfully use Tengentsu you have effectively gained 100 potency"
+        // These are short-duration buffs (4s) so use them close to the hit
+        if (BmrRaidwideSoon)
+        {
             if (TengentsuPvE.CanUse(out act))
                 return true;
             if (ThirdEyePvE.CanUse(out act))
                 return true;
-            return base.DefenseAreaAbility(nextGCD, out act);
         }
 
-        // Non-BMR: Feint when framework triggers defense
-        if (FeintPvE.CanUse(out act))
+        // Non-BMR fallback: Feint when framework triggers defense
+        if (!BmrUsable && FeintPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -247,10 +367,24 @@ public sealed class SezuraiSAM : SamuraiRotation
         if (HasZanshinReady)
             return base.DefenseSingleAbility(nextGCD, out act);
 
-        if (TengentsuPvE.CanUse(out act))
-            return true;
-        if (ThirdEyePvE.CanUse(out act))
-            return true;
+        // BMR-aware: use Third Eye/Tengentsu before raidwide or tankbuster damage
+        // Raidwide hits everyone including melee -- this is free mitigation + Kenki
+        if (BmrRaidwideSoon || (BmrUsable && BmrTankbusterIn is > 0 and <= 3f))
+        {
+            if (TengentsuPvE.CanUse(out act))
+                return true;
+            if (ThirdEyePvE.CanUse(out act))
+                return true;
+        }
+
+        // Non-BMR fallback
+        if (!BmrUsable)
+        {
+            if (TengentsuPvE.CanUse(out act))
+                return true;
+            if (ThirdEyePvE.CanUse(out act))
+                return true;
+        }
 
         return base.DefenseSingleAbility(nextGCD, out act);
     }
@@ -306,21 +440,57 @@ public sealed class SezuraiSAM : SamuraiRotation
         bool isTargetDying = CurrentTarget?.IsDying() ?? false;
 
         // ============================================================
+        // 0. BMR: DUMP BURST BEFORE DOWNTIME
+        // If downtime is approaching and Ikishoten is available, fire it
+        // now so we can spend Kenki + Ogi before the boss leaves.
+        // Skip if vuln window is coming (save burst for damage amp).
+        // ============================================================
+        if (BmrDowntimeSoon && !BmrHoldIkiForVuln && !BmrBlockIkiBeforeDowntime
+            && CanBurst && HasFugetsuAndFuka && !HasZanshinReady && !CombatElapsedLessGCD(2))
+        {
+            if (IkishotenPvE.CanUse(out act))
+                return true;
+        }
+
+        // ============================================================
+        // BMR: AGGRESSIVE KENKI DUMP BEFORE DOWNTIME
+        // Kenki is wasted during downtime. Spend it all on Shinten/Kyuten.
+        // Also fire Senei/Guren if available -- better to use than waste.
+        // ============================================================
+        if (BmrDowntimeImminent && !HasZanshinReady && Kenki >= 25)
+        {
+            // Fire Senei/Guren if available (big damage before boss leaves)
+            if (HissatsuGurenPvE.CanUse(out act, skipAoeCheck: !HissatsuSeneiPvE.EnoughLevel))
+                return true;
+            if (HissatsuSeneiPvE.CanUse(out act))
+                return true;
+
+            // Dump remaining Kenki via Shinten/Kyuten
+            if (HissatsuKyutenPvE.CanUse(out act))
+                return true;
+            if (HissatsuShintenPvE.CanUse(out act))
+                return true;
+        }
+
+        // ============================================================
         // 1. MEIKYO SHISUI: grants 3 combo-skip stacks + Tendo buff
         // Use during burst, after Tsubamegaeshi follow-ups, or to maintain buffs.
         // Balance guide: one charge for burst Tendo, one for filler/realignment.
+        // BMR: Hold one charge for post-downtime re-entry when downtime is close.
         // ============================================================
         if (CanBurst && HasHostilesInRange && HasFugetsuAndFuka)
         {
             // During burst: use after Kaeshi follow-ups to set up next Tendo Setsugekka
             if (TsubamegaeshiActionReady || IsLastAction(false, TendoKaeshiSetsugekkaPvE, KaeshiSetsugekkaPvE, KaeshiNamikiriPvE, TendoKaeshiGokenPvE, KaeshiGokenPvE))
             {
+                // BMR: still allow burst Meikyo even near downtime -- we need it for Tendo
                 if (MeikyoShisuiPvE.CanUse(out act, usedUp: true))
                     return true;
             }
 
             // At 0 Sen after burst finishes: use to quickly rebuild 3 Sen
-            if (SenCount == 0 && !HasMeikyoShisui && !TsubamegaeshiActionReady)
+            // BMR: hold if downtime coming and we only have 1 charge
+            if (SenCount == 0 && !HasMeikyoShisui && !TsubamegaeshiActionReady && !BmrHoldMeikyoForDowntime)
             {
                 if (MeikyoShisuiPvE.CanUse(out act, usedUp: EnhancedMeikyoShisuiTrait.EnoughLevel && MeikyoShisuiPvE.Cooldown.WillHaveXChargesGCD(2, 1)))
                     return true;
@@ -329,7 +499,8 @@ public sealed class SezuraiSAM : SamuraiRotation
 
         // Meikyo outside burst: use when buffs need refresh, target dying, or during filler
         // Balance: Meikyo IS used during filler phases to fast-track Midare cycles
-        if (!HasMeikyoShisui && !TsubamegaeshiActionReady && SenCount == 0)
+        // BMR: hold for post-downtime if downtime is close and only 1 charge
+        if (!HasMeikyoShisui && !TsubamegaeshiActionReady && SenCount == 0 && !BmrHoldMeikyoForDowntime)
         {
             // Emergency: buffs about to fall off or target dying
             if (!HasFugetsuAndFuka || (isTargetBoss && isTargetDying))
@@ -368,11 +539,16 @@ public sealed class SezuraiSAM : SamuraiRotation
         // 3. IKISHOTEN: grants Ogi Namikiri Ready + Zanshin Ready + 50 Kenki
         // 120s cooldown. Use in burst window after establishing buffs.
         // Note: base class ActionCheck requires Kenki >= 50 and InCombat.
+        // BMR: hold for vuln windows, block if downtime is too close.
         // ============================================================
-        if (CanBurst && !HasZanshinReady && HasFugetsuAndFuka && !CombatElapsedLessGCD(2))
         {
-            if (IkishotenPvE.CanUse(out act))
-                return true;
+            bool bmrBlockIki = BmrHoldIkiForVuln || BmrBlockIkiBeforeDowntime;
+
+            if (!bmrBlockIki && CanBurst && !HasZanshinReady && HasFugetsuAndFuka && !CombatElapsedLessGCD(2))
+            {
+                if (IkishotenPvE.CanUse(out act))
+                    return true;
+            }
         }
 
         // ============================================================
@@ -420,15 +596,17 @@ public sealed class SezuraiSAM : SamuraiRotation
         // Spend when above threshold to prevent overcapping.
         // During burst, spend more aggressively. During filler, hold for burst.
         // Never spend if Zanshin is ready (it costs 50 Kenki).
+        // BMR: dump all Kenki when downtime is approaching.
         // ============================================================
         if (!HasZanshinReady)
         {
-            // Aggressive spend during burst or if Kenki is getting high
+            // Aggressive spend during burst, high Kenki, target dying, or BMR downtime
             bool shouldSpend = IsBigBurst
                 || IsMiniBurst
                 || Kenki >= KenkiSpendThreshold
                 || (!IkishotenPvE.EnoughLevel && Kenki >= 25)
-                || (isTargetBoss && isTargetDying && Kenki >= 25);
+                || (isTargetBoss && isTargetDying && Kenki >= 25)
+                || (BmrDowntimeSoon && Kenki >= 25);
 
             if (shouldSpend)
             {
@@ -463,6 +641,7 @@ public sealed class SezuraiSAM : SamuraiRotation
         // ================================================================
         // PRIORITY 1: ALWAYS FINISH KAESHI / TSUBAMEGAESHI FOLLOW-UPS
         // These are free follow-up GCDs that must be pressed immediately.
+        // Even during downtime approach -- they're instant and high potency.
         // ================================================================
 
         // Kaeshi Namikiri (follow-up to Ogi Namikiri)
@@ -486,11 +665,42 @@ public sealed class SezuraiSAM : SamuraiRotation
             return true;
 
         // ================================================================
+        // BMR: DUMP SEN AS IAIJUTSU BEFORE DOWNTIME
+        // If downtime is imminent (<=10s), fire any available Iaijutsu to avoid
+        // wasting Sen. Midare/Tendo at 3 Sen, Tenka/Tendo Goken at 2 Sen.
+        // Even Higanbana at 1 Sen is better than losing the Sen entirely.
+        // But don't start a cast if downtime < 3s (won't finish the cast + Kaeshi).
+        // ================================================================
+        if (BmrDowntimeImminent && !BmrBlockLongCast && HasFugetsuAndFuka)
+        {
+            // Ogi Namikiri: instant follow-up after cast, dump before downtime
+            if (OgiNamikiriPvE.CanUse(out act) && OgiNamikiriPvE.Target.Target != null)
+                return true;
+
+            // Tendo Setsugekka / Goken (strongest, use first if available)
+            if (TendoSetsugekkaPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+            if (TendoGokenPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+
+            // Standard Midare / Tenka Goken
+            if (MidareSetsugekkaPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+            if (TenkaGokenPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+
+            // Higanbana: 1 Sen, better than losing it. Skip if it's already on target.
+            if (SenCount == 1 && HiganbanaPvE.CanUse(out act, skipComboCheck: true, skipTTKCheck: true))
+                return true;
+        }
+
+        // ================================================================
         // PRIORITY 2: OGI NAMIKIRI (burst-aligned, 120s)
         // Only use when Higanbana is already on the target (boss) and
         // both personal buffs (Fugetsu + Fuka) are active.
+        // BMR: Don't start if downtime < 3s (cast time ~1.3s + Kaeshi follow-up).
         // ================================================================
-        if (OgiNamikiriPvE.CanUse(out act) && OgiNamikiriPvE.Target.Target != null)
+        if (!BmrBlockLongCast && OgiNamikiriPvE.CanUse(out act) && OgiNamikiriPvE.Target.Target != null)
         {
             bool targetHasHiganbana = OgiNamikiriPvE.Target.Target?.HasStatus(true, StatusID.Higanbana) ?? false;
             bool isNonBoss = !isTargetBoss;
@@ -507,36 +717,46 @@ public sealed class SezuraiSAM : SamuraiRotation
         // ================================================================
         // PRIORITY 3: TENDO IAIJUTSU (Tendo buff + 3 Sen / 2 Sen)
         // Tendo versions are stronger. Use when Tendo buff is active.
+        // BMR: Don't start if downtime < 3s (cast + Kaeshi won't complete).
         // ================================================================
 
-        // Tendo Setsugekka: 3 Sen + Tendo buff (ST)
-        if (TendoSetsugekkaPvE.CanUse(out act, skipComboCheck: true))
-            return true;
+        if (!BmrBlockLongCast)
+        {
+            // Tendo Setsugekka: 3 Sen + Tendo buff (ST)
+            if (TendoSetsugekkaPvE.CanUse(out act, skipComboCheck: true))
+                return true;
 
-        // Tendo Goken: 2 Sen + Tendo buff (AoE)
-        if (TendoGokenPvE.CanUse(out act, skipComboCheck: true))
-            return true;
+            // Tendo Goken: 2 Sen + Tendo buff (AoE)
+            if (TendoGokenPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+        }
 
         // ================================================================
         // PRIORITY 4: STANDARD IAIJUTSU (no Tendo buff)
+        // BMR: Don't start if downtime < 3s.
         // ================================================================
 
-        // Midare Setsugekka: 3 Sen, no Tendo (ST)
-        if (MidareSetsugekkaPvE.CanUse(out act, skipComboCheck: true))
-            return true;
+        if (!BmrBlockLongCast)
+        {
+            // Midare Setsugekka: 3 Sen, no Tendo (ST)
+            if (MidareSetsugekkaPvE.CanUse(out act, skipComboCheck: true))
+                return true;
 
-        // Tenka Goken: 2 Sen, no Tendo (AoE, 3+ targets)
-        if (TenkaGokenPvE.CanUse(out act, skipComboCheck: true))
-            return true;
+            // Tenka Goken: 2 Sen, no Tendo (AoE, 3+ targets)
+            if (TenkaGokenPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+        }
 
         // ================================================================
         // PRIORITY 5: HIGANBANA (1 Sen, DoT management)
         // Only on boss targets. Refresh when about to expire.
         // Skip during Meikyo (don't waste stacks on 1-Sen move).
         // Skip when we have 3 Sen or are in Tendo (should use Midare/Tendo instead).
+        // BMR: Don't apply if downtime is imminent (DoT won't tick fully).
         // ================================================================
         if (!HasMeikyoShisui && !MidareSetsugekkaReady && !TendoSetsugekkaReady
-            && HasFugetsuAndFuka && !WillFugetsuEnd && !WillFukaEnd)
+            && HasFugetsuAndFuka && !WillFugetsuEnd && !WillFukaEnd
+            && !BmrDowntimeImminent)
         {
             // Multi-target gate: don't use Higanbana if setting enabled and 2+ targets
             bool higanbanaAllowed = !HiganbanaTargets || NumberOfAllHostilesInRange < 2;
@@ -594,7 +814,8 @@ public sealed class SezuraiSAM : SamuraiRotation
         }
 
         // AoE base combo (Fuko or Fuga)
-        if (!HasMeikyoShisui)
+        // BMR: Don't start new AoE combo if downtime < 5s
+        if (!HasMeikyoShisui && !BmrBlockNewCombo)
         {
             if (FugaMasteryTrait.EnoughLevel)
             {
@@ -705,8 +926,9 @@ public sealed class SezuraiSAM : SamuraiRotation
         // ================================================================
         // PRIORITY 9: BASE COMBO STARTER (Hakaze / Gyofu)
         // Don't use during Meikyo (waste of stacks) or when Tsubamegaeshi is ready.
+        // BMR: Don't start a new combo if downtime < 5s (combo won't complete).
         // ================================================================
-        if (!HasMeikyoShisui && !TsubamegaeshiActionReady)
+        if (!HasMeikyoShisui && !TsubamegaeshiActionReady && !BmrBlockNewCombo)
         {
             if (GyofuPvE.EnoughLevel)
             {

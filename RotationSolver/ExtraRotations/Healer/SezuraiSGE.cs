@@ -3,7 +3,7 @@ using System.ComponentModel;
 namespace RotationSolver.ExtraRotations.Healer;
 
 [Rotation("SezuraiSGE", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned SGE with Phlegma burst, Addersgall management, and 3 healing modes.")]
+    Description = "Balance-aligned SGE with Phlegma burst, Addersgall management, BMR timeline integration, and 3 healing modes.")]
 [SourceCode(Path = "main/ExtraRotations/Healer/SezuraiSGE.cs")]
 [ExtraRotation]
 public sealed class SezuraiSGE : SageRotation
@@ -61,6 +61,15 @@ public sealed class SezuraiSGE : SageRotation
     [Range(0f, 0.25f, ConfigUnitType.Percent)]
     [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
     public float ActionAheadOverride { get; set; } = 0f;
+
+    [RotationConfig(CombatType.PvE, Name = "[BMR] Hold Phlegma charges for pre-downtime dump")]
+    public bool PhlegmaDumpBeforeDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "[BMR] Hold Philosophia for vuln windows")]
+    public bool PhilosophiaForVuln { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "[BMR] Use Panhaima proactively for multi-hit raidwides (10-15s lead)")]
+    public bool PanhaimaMultiHit { get; set; } = true;
 
     #endregion
 
@@ -161,11 +170,11 @@ public sealed class SezuraiSGE : SageRotation
     #region Countdown & Opener
     // === SGE OPENER (7.4 Balance / Icy Veins) ===
     // Pre-pull: Eukrasia(-1.5s)
-    // GCD1: Eukrasian Dosis III (instant DoT) → Pot (weave)
+    // GCD1: Eukrasian Dosis III (instant DoT) -> Pot (weave)
     // GCD2: Dosis III
     // GCD3: Dosis III (waiting for raid buffs)
     // GCD4: Dosis III
-    // GCD5: Phlegma III (instant) → Psyche (weave, 600p oGCD)
+    // GCD5: Phlegma III (instant) -> Psyche (weave, 600p oGCD)
     // GCD6: Phlegma III (instant, 2nd charge)
     // GCD7-9: Dosis III x3
     // GCD10: Eukrasian Dosis III (refresh, snapshots raid buffs)
@@ -231,15 +240,24 @@ public sealed class SezuraiSGE : SageRotation
 
     #region Defense
 
-    [RotationDesc(ActionID.KeracholePvE, ActionID.HolosPvE, ActionID.PanhaimaPvE)]
+    [RotationDesc(ActionID.KeracholePvE, ActionID.HolosPvE, ActionID.PanhaimaPvE, ActionID.PhysisIiPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: time party mit to raidwide (1-2 mits max per raidwide)
-        // Balance: "Kerachole is your bread-and-butter party mit — 10% + regen"
+        // === BMR-AWARE PARTY MITIGATION ===
+        // Per Balance: "Kerachole is your bread-and-butter party mit - 10% + regen"
+        // Strategy: Spread mits across raidwides. Max 1-2 per raidwide.
+        // Kerachole + Holos for big hits. Panhaima for multi-hit mechanics (10-15s lead).
+        // Physis II for regen + 10% healing buff (amplifies post-RW recovery).
+        //
+        // Mitigation is multiplicative (two 10% = 19%, not 20%), so spreading is more
+        // efficient total damage reduction over the fight.
+
         bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwMedium = BmrActive && BmrRaidwideIn is > 5f and <= 15f;
 
         if (rwSoon)
         {
+            // === Imminent raidwide (0-5s) ===
             // Kerachole first: 10% mit + regen, best value (costs 1 Addersgall)
             if (CanSpendAddersgall && KeracholePvE.CanUse(out act))
                 return true;
@@ -248,12 +266,34 @@ public sealed class SezuraiSGE : SageRotation
             if (HolosPvE.CanUse(out act))
                 return true;
 
-            // Don't stack Panhaima on same raidwide unless multi-hit
-            // Max 1-2 mits per raidwide — stop
+            // Physis II: AoE regen + 10% healing received buff — preps post-RW recovery
+            if (PhysisIiPvE.CanUse(out act))
+                return true;
+
+            if (!PhysisIiPvE.EnoughLevel && PhysisPvE.CanUse(out act))
+                return true;
+
+            // Max 1-2 mits per raidwide — don't stack Panhaima here unless multi-hit
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
-        // Non-BMR: use whenever framework triggers defense
+        if (rwMedium)
+        {
+            // === Raidwide in 5-15s ===
+            // Panhaima: multi-layer shields, best placed 10-15s before multi-hit mechanics
+            // Each shield pops on a separate hit, giving 600-1000+ total potency
+            if (PanhaimaMultiHit && PanhaimaPvE.CanUse(out act))
+                return true;
+
+            // If Kerachole is available and RW is ~5-8s out, still good to pre-apply
+            // (15s duration means it will cover the hit)
+            if (BmrRaidwideIn <= 8f && CanSpendAddersgall && KeracholePvE.CanUse(out act))
+                return true;
+
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // === Non-BMR fallback: use whenever framework triggers defense ===
         if (CanSpendAddersgall && KeracholePvE.CanUse(out act))
             return true;
 
@@ -266,15 +306,27 @@ public sealed class SezuraiSGE : SageRotation
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.HaimaPvE, ActionID.TaurocholePvE)]
+    [RotationDesc(ActionID.TaurocholePvE, ActionID.HaimaPvE, ActionID.KrasisPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: when TB imminent, shield the tank proactively
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+        // === BMR-AWARE TANK MITIGATION ===
+        // Per Balance: Taurochole = strongest single-target tool (700p heal + 10% mit)
+        // Haima = multi-layer shield for heavy TBs (1800p total with auto-attacks)
+        // Krasis = 20% healing received buff, snapshot before Taurochole for extra value
+        //
+        // Strategy: Spread across TBs. Max 2 tools per TB.
+
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 5f;
+        bool tbMedium = BmrActive && BmrTankbusterIn is > 5f and <= 10f;
 
         if (tbSoon)
         {
-            // Taurochole first: heal + 10% mit (best single-target Addersgall tool)
+            // === Imminent TB (0-5s) ===
+            // Krasis first: 20% healing buff on tank amplifies Taurochole + Kardia
+            if (KrasisPvE.CanUse(out act))
+                return true;
+
+            // Taurochole: heal + 10% mit (best single-target Addersgall tool)
             if (CanSpendAddersgall && TaurocholePvE.CanUse(out act))
                 return true;
 
@@ -286,7 +338,17 @@ public sealed class SezuraiSGE : SageRotation
             return base.DefenseSingleAbility(nextGCD, out act);
         }
 
-        // Non-BMR: use when framework triggers defense
+        if (tbMedium)
+        {
+            // === TB in 5-10s ===
+            // Pre-place Haima (shields stack over time via auto-attacks)
+            if (HaimaPvE.CanUse(out act))
+                return true;
+
+            return base.DefenseSingleAbility(nextGCD, out act);
+        }
+
+        // === Non-BMR fallback: use when framework triggers defense ===
         if (HaimaPvE.CanUse(out act))
             return true;
 
@@ -303,13 +365,18 @@ public sealed class SezuraiSGE : SageRotation
     [RotationDesc(ActionID.TaurocholePvE, ActionID.DruocholePvE, ActionID.SoteriaPvE, ActionID.HaimaPvE, ActionID.KrasisPvE)]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: if a tankbuster is coming soon, don't waste Taurochole on chip damage.
+        // Save it for the TB where the 10% mit matters.
+        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 1f and <= 8f;
+
         // Soteria: boosts Kardia heals, free, no Addersgall cost
         // Use when a tank needs extra passive healing
         if (SoteriaPvE.CanUse(out act))
             return true;
 
         // Taurochole: strongest single-target Addersgall heal + mit
-        if (CanSpendAddersgall && TaurocholePvE.CanUse(out act)
+        // BMR: hold for TB if one is coming soon — the mit component is wasted otherwise
+        if (!tbComingSoon && CanSpendAddersgall && TaurocholePvE.CanUse(out act)
             && TaurocholePvE.Target.Target?.GetHealthRatio() < TaurocholHP)
             return true;
 
@@ -319,7 +386,8 @@ public sealed class SezuraiSGE : SageRotation
             return true;
 
         // Haima: multi-layer shield on low HP target
-        if (HaimaPvE.CanUse(out act))
+        // BMR: hold for TB if one is coming soon
+        if (!tbComingSoon && HaimaPvE.CanUse(out act))
             return true;
 
         // Krasis: boost healing received by 20% on target
@@ -332,25 +400,54 @@ public sealed class SezuraiSGE : SageRotation
     [RotationDesc(ActionID.KeracholePvE, ActionID.IxocholePvE, ActionID.HolosPvE, ActionID.PhysisIiPvE, ActionID.PanhaimaPvE, ActionID.PepsisPvE, ActionID.PhilosophiaPvE)]
     protected override bool HealAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: place Kerachole proactively before raidwide for 10% mit + regen
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+        // === BMR-AWARE AREA HEALING ===
+        // CRITICAL RULE: MIT BEFORE raidwide, HEAL AFTER damage.
+        // This method fires when party HP drops (i.e. AFTER damage).
+        // If a raidwide is STILL coming soon, hold heals — MIT is handling it in DefenseAreaAbility.
+        // After the RW hits and HP drops, these heals fire to recover the party.
+        //
+        // Per Balance: "Kerachole for mit+regen, Physis for regen+heal buff,
+        // Ixochole for immediate burst, Pepsis to convert shields, Philosophia for sustained"
 
-        if (rwSoon && CanSpendAddersgall && KeracholePvE.CanUse(out act))
+        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+
+        // === Pepsis: convert existing shields to heals (best used POST-raidwide) ===
+        // If we applied E.Prognosis shield before the RW and it's still up, Pepsis converts
+        // the remaining shield value into a heal. Best value right after RW lands.
+        // Pepsis requires EukrasianPrognosis status to be active on the party.
+        if (!rwComingSoon && PepsisPvE.CanUse(out act))
             return true;
 
-        // Philosophia: Dawntrail ability, party heal + GCD healing buff
-        if (PhilosophiaPvE.CanUse(out act))
+        // === Philosophia: Dawntrail ability, party heal + GCD healing buff ===
+        // BMR: if vuln window coming, hold Philosophia so the healing buff covers the
+        // vuln phase where extra healing matters most.
+        if (PhilosophiaForVuln && BmrActive && BmrVulnerableIn is > 0 and <= 20f)
+        {
+            // Hold Philosophia for the vuln window — skip it here
+        }
+        else if (PhilosophiaPvE.CanUse(out act))
+        {
             return true;
+        }
 
-        // Kerachole: AoE regen + mit (best value Addersgall spend)
+        // === Hold heals if raidwide is imminent ===
+        // MIT handles the incoming damage. These heals would be wasted on pre-damage HP.
+        // After the RW hits, the framework will call this method again with low party HP.
+        if (rwComingSoon)
+            return base.HealAreaAbility(nextGCD, out act);
+
+        // === Post-raidwide healing priority (oGCD > GCD) ===
+
+        // Kerachole: AoE regen + 10% mit (best value Addersgall spend)
+        // If party took damage, the regen will heal them up over 15s
         if (CanSpendAddersgall && PartyMembersAverHP < KeracholHP && KeracholePvE.CanUse(out act))
             return true;
 
-        // Ixochole: immediate AoE heal
+        // Ixochole: immediate AoE heal — burst recovery when party is low
         if (CanSpendAddersgall && PartyMembersAverHP < IxocholHP && IxocholePvE.CanUse(out act))
             return true;
 
-        // Physis II: AoE regen + 10% healing buff
+        // Physis II: AoE regen + 10% healing buff (amplifies other heals in the window)
         if (PhysisIiPvE.CanUse(out act))
             return true;
 
@@ -361,12 +458,8 @@ public sealed class SezuraiSGE : SageRotation
         if (HolosPvE.CanUse(out act))
             return true;
 
-        // Panhaima: multi-layer shields
+        // Panhaima: multi-layer shields (useful for follow-up damage)
         if (PanhaimaPvE.CanUse(out act))
-            return true;
-
-        // Pepsis: convert existing shields to heals
-        if (PepsisPvE.CanUse(out act))
             return true;
 
         return base.HealAreaAbility(nextGCD, out act);
@@ -384,6 +477,14 @@ public sealed class SezuraiSGE : SageRotation
 
         // Rhizomata: grants 1 Addersgall charge
         // Use when below max charges and not about to naturally gain one
+        // BMR: more aggressive usage before raidwide/TB if we need charges for Kerachole/Taurochole
+        bool needChargesForMit = BmrActive
+            && ((BmrRaidwideIn is > 0 and <= 10f) || (BmrTankbusterIn is > 0 and <= 10f))
+            && Addersgall == 0;
+
+        if (needChargesForMit && RhizomataPvE.CanUse(out act))
+            return true;
+
         if (Addersgall <= 1 && !AddersgallEndAfter(3) && RhizomataPvE.CanUse(out act))
             return true;
 
@@ -399,11 +500,24 @@ public sealed class SezuraiSGE : SageRotation
         if (!InCombat || !HasHostilesInRange)
             return base.AttackAbility(nextGCD, out act);
 
+        // === BMR: Phlegma dump before downtime ===
+        // If boss is about to become untargetable, spend all Phlegma charges now.
+        // Charges ticking during downtime = wasted damage. Better to front-load them.
+        bool downtimeApproaching = PhlegmaDumpBeforeDowntime
+            && BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+
         // === Psyche (Dawntrail oGCD, 60s CD) ===
         // Use on cooldown. SGE has no personal raid buff, so Psyche should not
         // drift. It naturally aligns with 120s windows every other use.
-        if (PsychePvE.CanUse(out act))
+        // BMR: hold briefly if downtime is imminent (Psyche is wasted on invuln boss)
+        if (downtimeApproaching && BmrDowntimeIn <= 3f)
+        {
+            // Boss going away in <3s — hold Psyche
+        }
+        else if (PsychePvE.CanUse(out act))
+        {
             return true;
+        }
 
         // === Rhizomata: gain Addersgall charge ===
         // Use when we need charges for healing (empty gauge)
@@ -553,11 +667,17 @@ public sealed class SezuraiSGE : SageRotation
                 return true;
         }
 
+        // === BMR: Skip DoT refresh if downtime is imminent ===
+        // If the boss is going untargetable in <5s, don't waste a GCD applying a 30s DoT.
+        // Use Phlegma/Toxikon/Dosis instead for immediate damage.
+        bool downtimeImminent = BmrActive && BmrDowntimeIn is > 0 and <= 5f;
+
         // === Eukrasian Dosis DoT Snapshot ===
         // If raid buffs just went up, force-refresh DoT to snapshot buffed ticks.
         // DoTs in FFXIV snapshot all buffs at application time, so refreshing early
         // during raid buffs gives 30s of buffed ticks.
-        if (InRaidBuffs && CanBurst)
+        // BMR: skip snapshot if downtime imminent (DoT wasted on untargetable boss)
+        if (!downtimeImminent && InRaidBuffs && CanBurst)
         {
             if (EukrasianDosisIiiPvE.EnoughLevel)
             {
@@ -579,8 +699,22 @@ public sealed class SezuraiSGE : SageRotation
         // === AoE Damage (3+ targets) ===
 
         // Eukrasian Dyskrasia: AoE DoT (3+ targets, does not stack with Eukrasian Dosis)
-        if (TryEukrasianAction(EukrasianDyskrasiaPvE, out act))
+        // BMR: skip if downtime imminent (DoT wasted)
+        if (!downtimeImminent && TryEukrasianAction(EukrasianDyskrasiaPvE, out act))
             return true;
+
+        // === BMR: Phlegma dump before downtime ===
+        // If boss is about to become untargetable, dump all Phlegma charges NOW.
+        // Charges regenerating during downtime = pure waste. Front-load them.
+        if (downtimeImminent && PhlegmaDumpBeforeDowntime)
+        {
+            if (PhlegmaIiiPvE.EnoughLevel && PhlegmaIiiPvE.CanUse(out act, usedUp: true))
+                return true;
+            if (PhlegmaIiPvE.EnoughLevel && PhlegmaIiPvE.CanUse(out act, usedUp: true))
+                return true;
+            if (PhlegmaPvE.EnoughLevel && PhlegmaPvE.CanUse(out act, usedUp: true))
+                return true;
+        }
 
         // Phlegma III: 2 charges, 45s each.
         // Pool for raid buff windows when configured, but don't overcap charges.
@@ -619,20 +753,24 @@ public sealed class SezuraiSGE : SageRotation
 
         // === DoT Maintenance ===
         // Eukrasian Dosis: apply/refresh DoT (framework handles refresh timing via IsRestrictedDOT)
-        if (EukrasianDosisIiiPvE.EnoughLevel)
+        // BMR: skip refresh if downtime imminent (DoT ticks wasted on untargetable boss)
+        if (!downtimeImminent)
         {
-            if (TryEukrasianAction(EukrasianDosisIiiPvE, out act))
-                return true;
-        }
-        else if (EukrasianDosisIiPvE.EnoughLevel)
-        {
-            if (TryEukrasianAction(EukrasianDosisIiPvE, out act))
-                return true;
-        }
-        else if (EukrasianDosisPvE.EnoughLevel)
-        {
-            if (TryEukrasianAction(EukrasianDosisPvE, out act))
-                return true;
+            if (EukrasianDosisIiiPvE.EnoughLevel)
+            {
+                if (TryEukrasianAction(EukrasianDosisIiiPvE, out act))
+                    return true;
+            }
+            else if (EukrasianDosisIiPvE.EnoughLevel)
+            {
+                if (TryEukrasianAction(EukrasianDosisIiPvE, out act))
+                    return true;
+            }
+            else if (EukrasianDosisPvE.EnoughLevel)
+            {
+                if (TryEukrasianAction(EukrasianDosisPvE, out act))
+                    return true;
+            }
         }
 
         // === Movement GCDs ===
@@ -760,6 +898,7 @@ public sealed class SezuraiSGE : SageRotation
         ImGui.Text($"Psyche: {(PsychePvE.Cooldown.IsCoolingDown ? $"{PsychePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Pneuma: {(PneumaPvE.Cooldown.IsCoolingDown ? $"{PneumaPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Rhizomata: {(RhizomataPvE.Cooldown.IsCoolingDown ? $"{RhizomataPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Philosophia: {(PhilosophiaPvE.Cooldown.IsCoolingDown ? $"{PhilosophiaPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
 
         ImGui.Text($"--- Healing ---");
         ImGui.Text($"HealMode: {HealMode}");
@@ -773,15 +912,32 @@ public sealed class SezuraiSGE : SageRotation
         ImGui.Text($"Holos: {(HolosPvE.Cooldown.IsCoolingDown ? $"{HolosPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Panhaima: {(PanhaimaPvE.Cooldown.IsCoolingDown ? $"{PanhaimaPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Haima: {(HaimaPvE.Cooldown.IsCoolingDown ? $"{HaimaPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Taurochole: {(TaurocholePvE.Cooldown.IsCoolingDown ? $"{TaurocholePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 

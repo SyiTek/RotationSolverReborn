@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Tank;
 
 [Rotation("SezuraiGNB", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned GNB with No Mercy burst, Gnashing Fang combo, Reign combo, and cartridge optimization.")]
+    Description = "BMR-smart Balance-aligned GNB with timeline-aware mitigation, downtime-aware burst, Gnashing Fang combo, Reign combo, and cartridge optimization.")]
 [SourceCode(Path = "main/ExtraRotations/Tank/SezuraiGNB.cs")]
 [ExtraRotation]
 public sealed class SezuraiGNB : GunbreakerRotation
@@ -12,14 +12,18 @@ public sealed class SezuraiGNB : GunbreakerRotation
     [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
     public float ActionAheadOverride { get; set; } = 0f;
 
-    [RotationConfig(CombatType.PvE, Name = "Experimental Pot Usage (during No Mercy windows)")]
+    [RotationConfig(CombatType.PvE, Name = "Use Gemdraught of Strength during No Mercy windows")]
     public bool BurstMed { get; set; } = true;
 
-    [RotationConfig(CombatType.PvE, Name = "Auto Mitigation (use defensive CDs automatically)")]
+    [RotationConfig(CombatType.PvE, Name = "Use defensive cooldowns automatically")]
     public bool AutoMitigation { get; set; } = true;
 
     [RotationConfig(CombatType.PvE, Name = "Use Trajectory as gap closer")]
     public bool UseGapCloser { get; set; } = true;
+
+    [Range(0, 1, ConfigUnitType.Percent)]
+    [RotationConfig(CombatType.PvE, Name = "Aurora self-heal HP threshold")]
+    public float AuroraHpThreshold { get; set; } = 0.65f;
 
     #endregion
 
@@ -31,7 +35,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
     private bool CanBurst => MergedStatus.HasFlag(AutoStatus.Burst);
 
     /// <summary>
-    /// True when we are inside a No Mercy damage window or No Mercy is imminent.
+    /// True when we are inside a No Mercy damage window.
     /// No Mercy is a 20s buff on a 60s cooldown.
     /// </summary>
     private bool InBurstWindow => HasNoMercy;
@@ -46,6 +50,11 @@ public sealed class SezuraiGNB : GunbreakerRotation
     /// True when we are in the middle of a Gnashing Fang or Reign combo and must finish it.
     /// </summary>
     private bool InLockedCombo => InGnashingFang || InReignCombo;
+
+    /// <summary>
+    /// True when the player is medicated (potion buff active).
+    /// </summary>
+    private static bool IsMedicated => StatusHelper.PlayerHasStatus(true, StatusID.Medicated);
 
     #endregion
 
@@ -69,6 +78,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
         ImGui.Text($"CanBurst: {CanBurst}");
         ImGui.Text($"InBurstWindow (NoMercy): {InBurstWindow}");
         ImGui.Text($"NoMercySoon: {NoMercySoon}");
+        ImGui.Text($"IsMedicated: {IsMedicated}");
 
         ImGui.Separator();
 
@@ -107,15 +117,46 @@ public sealed class SezuraiGNB : GunbreakerRotation
         ImGui.Text($"GnashingFang Charges: {GnashingFangPvE.Cooldown.CurrentCharges}");
         ImGui.Text($"DoubleDown CD: {DoubleDownPvE.Cooldown.RecastTimeRemainOneCharge:F1}s");
         ImGui.Text($"BlastingZone CD: {BlastingZonePvE.Cooldown.RecastTimeRemainOneCharge:F1}s");
+
+        ImGui.Separator();
+
+        // Defensive CDs
+        ImGui.Text($"--- Defensive CDs ---");
+        ImGui.Text($"HeartOfCorundum: {(HeartOfCorundumPvE.Cooldown.IsCoolingDown ? $"{HeartOfCorundumPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Camouflage: {(CamouflagePvE.Cooldown.IsCoolingDown ? $"{CamouflagePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"GreatNebula: {(GreatNebulaPvE.Cooldown.IsCoolingDown ? $"{GreatNebulaPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Rampart: {(RampartPvE.Cooldown.IsCoolingDown ? $"{RampartPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Reprisal: {(ReprisalPvE.Cooldown.IsCoolingDown ? $"{ReprisalPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"HeartOfLight: {(HeartOfLightPvE.Cooldown.IsCoolingDown ? $"{HeartOfLightPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Aurora Charges: {AuroraPvE.Cooldown.CurrentCharges}");
+        ImGui.Text($"HP: {Player?.GetHealthRatio():P0}");
+
+        ImGui.Separator();
+
+        // BMR Timeline
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -126,24 +167,24 @@ public sealed class SezuraiGNB : GunbreakerRotation
     // Pre-pull: Lightning Shot
     // GCD1: Keen Edge
     // GCD2: Brutal Shell
-    // GCD3: Solid Barrel → Pot (weave)
-    // GCD4: Keen Edge → No Mercy (early weave at 2.50 GCD)
-    // GCD5: Gnashing Fang → Bloodfest (weave) + Jugular Rip (weave)
-    // GCD6: Double Down → Bow Shock (weave) + Blasting Zone (weave)
+    // GCD3: Solid Barrel -> Pot (weave)
+    // GCD4: Keen Edge -> No Mercy (early weave at 2.50 GCD)
+    // GCD5: Gnashing Fang -> Bloodfest (weave) + Jugular Rip (weave)
+    // GCD6: Double Down -> Bow Shock (weave) + Blasting Zone (weave)
     // GCD7: Sonic Break
-    // GCD8: Savage Claw → Abdomen Tear (weave)
-    // GCD9: Wicked Talon → Eye Gouge (weave)
+    // GCD8: Savage Claw -> Abdomen Tear (weave)
+    // GCD9: Wicked Talon -> Eye Gouge (weave)
     // GCD10: Reign of Beasts
     // GCD11: Noble Blood
     // GCD12: Lion Heart
     //
-    // === BURST WINDOWS (60s cycle — every window is the same in 7.4) ===
+    // === BURST WINDOWS (60s cycle -- every window is the same in 7.4) ===
     // Bloodfest is 60s (changed in 7.4), so every NM window has Reign combo:
-    //   NM → GF combo + DD + Sonic Break + Reign combo (9 GCDs under NM)
+    //   NM -> GF combo + DD + Sonic Break + Reign combo (9 GCDs under NM)
     //   Weave Bow Shock + Blasting Zone + Continuations inside NM
     //
     // === FILLER ===
-    // Keen Edge → Brutal Shell → Solid Barrel (generates 1 cartridge)
+    // Keen Edge -> Brutal Shell -> Solid Barrel (generates 1 cartridge)
     // GF combo once outside NM (don't let both charges cap)
     // Blasting Zone on CD (one in burst, one in filler)
     // Burst Strike only to prevent cartridge overcap (gauge full + SB next)
@@ -163,7 +204,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
 
     #endregion
 
-    #region Additional oGCD Logic
+    #region Movement & Anti-Knockback
 
     [RotationDesc(ActionID.TrajectoryPvE)]
     protected override bool MoveForwardAbility(IAction nextGCD, out IAction? act)
@@ -181,23 +222,45 @@ public sealed class SezuraiGNB : GunbreakerRotation
         return base.AntiKnockbackAbility(nextGCD, out act);
     }
 
+    #endregion
+
+    #region Defensive Abilities
+
     [RotationDesc(ActionID.HeartOfLightPvE, ActionID.ReprisalPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
         if (!AutoMitigation)
             return base.DefenseAreaAbility(nextGCD, out act);
 
-        // BMR-aware: time Heart of Light to raidwide — covers both magic (10%) and phys (5%)
+        // === BMR-AWARE RAIDWIDE MITIGATION ===
+        // Balance: mitigation is multiplicative -- two 10% reductions = 19% total, not 20%.
+        // Spreading mits across separate raidwides is more efficient than stacking on one.
+        // Use 1-2 mits per raidwide max. Heart of Light (10% magic / 5% phys) + Reprisal (10%)
+        // should cover separate raidwides, not the same one.
         bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        // BMR active but no raidwide coming: don't waste party mits
+        if (BmrActive && !rwSoon)
+            return base.DefenseAreaAbility(nextGCD, out act);
 
         if (rwSoon)
         {
+            // Heart of Light: primary raidwide tool (10% magic / 5% phys, 30y, 15s)
             if (HeartOfLightPvE.CanUse(out act, skipAoeCheck: true))
                 return true;
-            // Don't stack Reprisal on same raidwide — save for next one
+
+            // Reprisal: use if Heart of Light is on CD for this raidwide
+            // Don't stack both on the same raidwide -- save Reprisal for the next one
+            if (!HeartOfLightPvE.Cooldown.IsCoolingDown)
+                return base.DefenseAreaAbility(nextGCD, out act);
+
+            if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
+        // === NON-BMR FALLBACK ===
         // Without BMR: skip if NM burst is imminent (avoid clipping oGCD slots)
         if (!BmrActive && NoMercySoon && !HasNoMercy)
             return base.DefenseAreaAbility(nextGCD, out act);
@@ -211,18 +274,31 @@ public sealed class SezuraiGNB : GunbreakerRotation
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.HeartOfCorundumPvE, ActionID.GreatNebulaPvE, ActionID.NebulaPvE,
-        ActionID.CamouflagePvE, ActionID.RampartPvE, ActionID.ReprisalPvE)]
+    [RotationDesc(ActionID.HeartOfCorundumPvE, ActionID.AuroraPvE, ActionID.CamouflagePvE,
+        ActionID.GreatNebulaPvE, ActionID.NebulaPvE, ActionID.RampartPvE, ActionID.ReprisalPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
         if (!AutoMitigation)
             return base.DefenseSingleAbility(nextGCD, out act);
 
-        // BMR-aware: when TB is imminent, Heart of Corundum + ONE longer CD
+        // Don't stack mit during Superbolide -- invuln handles it
+        if (StatusHelper.PlayerHasStatus(true, StatusID.Superbolide) && Player?.GetHealthRatio() < 0.3f)
+            return false;
+
+        // === BMR-AWARE TANKBUSTER MITIGATION ===
         // Balance: "Heart of Corundum is your primary short-CD mitigation (~28% for first 4s)"
+        // Strategy: Heart of Corundum first (short CD, every TB), then Aurora (HoT for recovery,
+        // hold 1 charge), then ONE heavier CD. Never dump all CDs on a single TB.
+        // Mitigation is multiplicative: spreading across TBs is more efficient.
         bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
 
-        // Heart of Corundum / Heart of Stone - short CD, always first
+        // BMR active but no TB coming soon: don't waste single-target mits
+        if (BmrActive && !tbSoon)
+            return base.DefenseSingleAbility(nextGCD, out act);
+
+        // --- Heart of Corundum / Heart of Stone: short CD, always first for every TB ---
+        // Balance: "applicable to anything from auto-attacks to tank busters"
+        // 27.75% reduction for 4s, then 15% for another 4s, plus conditional 900p heal
         if (HeartOfCorundumPvE.CanUse(out act))
             return true;
         if (!HeartOfCorundumPvE.EnoughLevel && HeartOfStonePvE.CanUse(out act))
@@ -230,18 +306,33 @@ public sealed class SezuraiGNB : GunbreakerRotation
 
         if (tbSoon)
         {
-            // Layer ONE longer CD for big TBs
+            // --- Aurora: HoT for TB recovery ---
+            // Balance: "deploy after taking heavy damage" -- 1800 total potency over 18s
+            // Hold 1 charge for co-tank or emergency; spend 1 charge per TB for self-recovery
+            if (AuroraPvE.CanUse(out act))
+                return true;
+
+            // --- Layer ONE heavier CD for big TBs ---
+            // Camouflage: 10% + parry rate, effective against physical TBs
             if (CamouflagePvE.CanUse(out act))
                 return true;
-            // Don't dump all long CDs — 2 mits per TB is enough
+
+            // Don't dump all long CDs -- 2-3 mits per TB is enough (HoC + Aurora + 1 heavy)
             return base.DefenseSingleAbility(nextGCD, out act);
         }
 
-        // Non-BMR / reactive path: stagger long CDs
+        // === NON-BMR REACTIVE PATH ===
+        // Framework triggered DefenseSingle -- stagger long CDs in priority order
+
+        // Aurora for recovery (hold 1 charge)
+        if (AuroraPvE.CanUse(out act))
+            return true;
+
+        // Camouflage: 10% + parry rate
         if (CamouflagePvE.CanUse(out act))
             return true;
 
-        // Great Nebula / Nebula - 30% mit, stagger with Rampart
+        // Great Nebula / Nebula: 40%/30% mit + 20% max HP increase -- stagger with Rampart
         if ((!RampartPvE.Cooldown.IsCoolingDown || RampartPvE.Cooldown.ElapsedAfter(60))
             && GreatNebulaPvE.CanUse(out act))
             return true;
@@ -251,7 +342,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
             && NebulaPvE.CanUse(out act))
             return true;
 
-        // Rampart - 20% mit, stagger with Nebula
+        // Rampart: 20% mit + 15% self-heal boost -- stagger with Nebula
         if (GreatNebulaPvE.EnoughLevel)
         {
             if (GreatNebulaPvE.Cooldown.IsCoolingDown && GreatNebulaPvE.Cooldown.ElapsedAfter(60)
@@ -268,17 +359,39 @@ public sealed class SezuraiGNB : GunbreakerRotation
         return base.DefenseSingleAbility(nextGCD, out act);
     }
 
+    #endregion
+
+    #region Heal Abilities
+
     [RotationDesc(ActionID.AuroraPvE)]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
-        if (AuroraPvE.CanUse(out act))
-            return true;
+        // Aurora: 2 charges, 1800 total potency HoT over 18s
+        // BMR-aware: if a TB is coming soon, save at least 1 charge for the TB mit path
+        // Otherwise, use for self-healing when HP is below threshold
+        bool tbApproaching = BmrActive && BmrTankbusterIn is > 0 and <= 15f;
+
+        if (Player?.GetHealthRatio() < AuroraHpThreshold && InCombat)
+        {
+            // If TB is approaching, only use Aurora if we have 2 charges (hold 1 for TB)
+            if (tbApproaching)
+            {
+                if (AuroraPvE.Cooldown.CurrentCharges >= 2 && AuroraPvE.CanUse(out act))
+                    return true;
+            }
+            else
+            {
+                if (AuroraPvE.CanUse(out act))
+                    return true;
+            }
+        }
+
         return base.HealSingleAbility(nextGCD, out act);
     }
 
     #endregion
 
-    #region oGCD Logic
+    #region Emergency Ability (oGCD - highest priority)
 
     protected override bool EmergencyAbility(IAction nextGCD, out IAction? act)
     {
@@ -305,16 +418,57 @@ public sealed class SezuraiGNB : GunbreakerRotation
         if (FatedBrandPvE.CanUse(out act))
             return true;
 
+        // === SUPERBOLIDE ===
+        // Balance: "Reduces HP to 50% while granting 10 seconds of near-invulnerability"
+        // BMR-aware: only Superbolide if TB is actually imminent AND HP is critical.
+        // Without BMR: use the framework's health threshold as before.
+        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool hpCritical = Player?.GetHealthRatio() <= Service.Config.HealthForDyingTanks;
+
+        if (SuperbolidePvE.CanUse(out act))
+        {
+            // BMR path: only invuln if TB is about to hit and we're low
+            if (BmrActive && tbImminent && hpCritical)
+                return true;
+
+            // Non-BMR path: use framework HP threshold
+            if (!BmrActive && hpCritical)
+                return true;
+        }
+
         // === MEDICINE ===
         // Use during No Mercy for maximum value. No Mercy is a 20% damage buff.
-        if (BurstMed && InBurstWindow && InCombat && UseBurstMedicine(out act))
-            return true;
+        // BMR-aware: don't pot if downtime is imminent (waste of pot duration).
+        if (BurstMed && InBurstWindow && InCombat)
+        {
+            bool downtimeWastesPot = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+            if (!downtimeWastesPot && UseBurstMedicine(out act))
+                return true;
+        }
 
         return base.EmergencyAbility(nextGCD, out act);
     }
 
+    #endregion
+
+    #region oGCD Logic (AttackAbility)
+
     protected override bool AttackAbility(IAction nextGCD, out IAction? act)
     {
+        // === BMR DOWNTIME / VULNERABILITY AWARENESS ===
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
+        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+        bool vulnWindowSoon = BmrActive && BmrVulnerableIn is > 0 and <= 30f;
+
+        // === BMR: DUMP BURST BEFORE DOWNTIME ===
+        // If downtime is <=15s and No Mercy + Gnashing Fang are available, fire NOW
+        // to get as much damage out as possible before the boss becomes untargetable.
+        // Need ~8s minimum for a meaningful NM window (GF combo + DD + some hits).
+        if (downtimeSoon && !downtimeVeryClose && InCombat && HasHostilesInRange
+            && !InLockedCombo && AmmoComboStep == 0
+            && !HasNoMercy && NoMercyPvE.CanUse(out act))
+            return true;
+
         // === NO MERCY: 20% damage buff, 20s duration, 60s cooldown ===
         // In 7.4, every NM window has Bloodfest available.
         // Use NM when we have Bloodfest buff active (meaning Bloodfest was just used)
@@ -324,54 +478,72 @@ public sealed class SezuraiGNB : GunbreakerRotation
         // (the standard 7.4 flow is: build to 3 cartridges -> Bloodfest -> NM)
         if (CanBurst && InCombat && HasHostilesInRange)
         {
-            // High level: NM with Bloodfest buff for full 9-GCD window
-            if (ReignOfBeastsPvE.EnoughLevel && HasBloodfest && NoMercyPvE.CanUse(out act))
-                return true;
+            // BMR: skip NM if downtime too close to get value from the 20s window
+            bool downtimeTooClose = BmrActive && BmrDowntimeIn is > 0 and < 8f;
 
-            // Mid level: NM before Gnashing Fang
-            if (!ReignOfBeastsPvE.EnoughLevel && GnashingFangPvE.EnoughLevel
-                && nextGCD.IsTheSameTo(false, (ActionID)GnashingFangPvE.ID)
-                && NoMercyPvE.CanUse(out act))
-                return true;
+            // BMR: hold for vulnerability window if it's coming and NM won't be wasted
+            bool holdForVuln = vulnWindowSoon && BmrVulnerableIn > 5f
+                && !NoMercyPvE.Cooldown.WillHaveOneChargeGCD(4);
 
-            // Low level fallbacks
-            if (!GnashingFangPvE.EnoughLevel && BurstStrikePvE.EnoughLevel
-                && nextGCD.IsTheSameTo(false, (ActionID)BurstStrikePvE.ID)
-                && NoMercyPvE.CanUse(out act))
-                return true;
-
-            if (!BurstStrikePvE.EnoughLevel && SolidBarrelPvE.EnoughLevel
-                && nextGCD.IsTheSameTo(false, (ActionID)SolidBarrelPvE.ID)
-                && NoMercyPvE.CanUse(out act))
-                return true;
-
-            if (!SolidBarrelPvE.EnoughLevel
-                && NoMercyPvE.CanUse(out act))
-                return true;
-
-            // AoE: NM before Double Down or Fated Circle
-            if (DemonSlicePvE.CanUse(out _))
+            if (!downtimeTooClose && !holdForVuln)
             {
-                if (DoubleDownPvE.EnoughLevel
-                    && nextGCD.IsTheSameTo(false, (ActionID)DoubleDownPvE.ID)
+                // High level: NM with Bloodfest buff for full 9-GCD window
+                if (ReignOfBeastsPvE.EnoughLevel && HasBloodfest && NoMercyPvE.CanUse(out act))
+                    return true;
+
+                // Mid level: NM before Gnashing Fang
+                if (!ReignOfBeastsPvE.EnoughLevel && GnashingFangPvE.EnoughLevel
+                    && nextGCD.IsTheSameTo(false, (ActionID)GnashingFangPvE.ID)
                     && NoMercyPvE.CanUse(out act))
                     return true;
 
-                if (!DoubleDownPvE.EnoughLevel
-                    && nextGCD.IsTheSameTo(false, (ActionID)FatedCirclePvE.ID)
+                // Low level fallbacks
+                if (!GnashingFangPvE.EnoughLevel && BurstStrikePvE.EnoughLevel
+                    && nextGCD.IsTheSameTo(false, (ActionID)BurstStrikePvE.ID)
                     && NoMercyPvE.CanUse(out act))
                     return true;
+
+                if (!BurstStrikePvE.EnoughLevel && SolidBarrelPvE.EnoughLevel
+                    && nextGCD.IsTheSameTo(false, (ActionID)SolidBarrelPvE.ID)
+                    && NoMercyPvE.CanUse(out act))
+                    return true;
+
+                if (!SolidBarrelPvE.EnoughLevel
+                    && NoMercyPvE.CanUse(out act))
+                    return true;
+
+                // AoE: NM before Double Down or Fated Circle
+                if (DemonSlicePvE.CanUse(out _))
+                {
+                    if (DoubleDownPvE.EnoughLevel
+                        && nextGCD.IsTheSameTo(false, (ActionID)DoubleDownPvE.ID)
+                        && NoMercyPvE.CanUse(out act))
+                        return true;
+
+                    if (!DoubleDownPvE.EnoughLevel
+                        && nextGCD.IsTheSameTo(false, (ActionID)FatedCirclePvE.ID)
+                        && NoMercyPvE.CanUse(out act))
+                        return true;
+                }
             }
         }
 
         // === BLOODFEST: 60s CD, grants 3 cartridges + Ready to Reign ===
         // In 7.4, Bloodfest is 60s (same as NM). Use after NM in burst windows.
         // The Bloodfest buff raises max cartridges to 6 for 30s, preventing overcap.
+        // BMR: dump Bloodfest before downtime to ensure we get the cartridges spent
+        if (downtimeSoon && BloodfestPvE.CanUse(out act))
+            return true;
+
         if (BloodfestPvE.CanUse(out act))
             return true;
 
         // === BOW SHOCK: 60s CD, AoE damage + DoT, use inside No Mercy ===
         if (HasNoMercy && BowShockPvE.CanUse(out act, skipAoeCheck: true))
+            return true;
+
+        // BMR: dump Bow Shock before downtime even outside NM
+        if (downtimeSoon && BowShockPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
         // Low level: Bow Shock without NM gating if Sonic Break isn't unlocked
@@ -386,6 +558,10 @@ public sealed class SezuraiGNB : GunbreakerRotation
             if (HasNoMercy && BlastingZonePvE.CanUse(out act))
                 return true;
 
+            // BMR: dump before downtime
+            if (downtimeSoon && BlastingZonePvE.CanUse(out act))
+                return true;
+
             // Outside NM: use if it won't be ready for next NM window
             if (!HasNoMercy && !NoMercyPvE.Cooldown.WillHaveOneCharge(15)
                 && BlastingZonePvE.CanUse(out act))
@@ -394,7 +570,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
 
         // Danger Zone: lower level version
         if (!BlastingZonePvE.EnoughLevel
-            && (HasNoMercy || !NoMercyPvE.Cooldown.WillHaveOneCharge(15))
+            && (HasNoMercy || downtimeSoon || !NoMercyPvE.Cooldown.WillHaveOneCharge(15))
             && DangerZonePvE.CanUse(out act))
             return true;
 
@@ -407,6 +583,10 @@ public sealed class SezuraiGNB : GunbreakerRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        // === BMR DOWNTIME AWARENESS ===
+        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+
         // =====================================================
         // PRIORITY 0: Overcap prevention before NM window
         // If ammo is capped and we'd waste a cartridge from Solid Barrel,
@@ -423,6 +603,8 @@ public sealed class SezuraiGNB : GunbreakerRotation
         // PRIORITY 1: Finish locked combos (MUST always complete)
         // Gnashing Fang combo: GF -> Savage Claw -> Wicked Talon
         // Reign combo: Reign of Beasts -> Noble Blood -> Lion Heart
+        // These MUST complete even during downtime -- dropping the combo
+        // is worse than losing a GCD.
         // =====================================================
 
         // Gnashing Fang combo finishers
@@ -438,6 +620,41 @@ public sealed class SezuraiGNB : GunbreakerRotation
 
         if (NobleBloodPvE.CanUse(out act, skipComboCheck: true))
             return true;
+
+        // =====================================================
+        // BMR: DUMP GAUGE BEFORE DOWNTIME
+        // If downtime is approaching (<=8s), spend all cartridges on
+        // damage GCDs to avoid wasting resources during untargetable phase.
+        // Don't start Gnashing Fang if <8s to downtime (needs ~6s for full
+        // GF combo + 3 Continuations). Do start it if 8-15s.
+        // =====================================================
+        if (downtimeSoon && !InLockedCombo && AmmoComboStep == 0)
+        {
+            // Double Down: 2-cartridge AoE nuke -- dump first if available
+            if (DoubleDownPvE.CanUse(out act))
+                return true;
+
+            // Gnashing Fang: only if enough time to complete the 3-hit combo (~6s)
+            // BmrDowntimeIn > 6f is guaranteed by downtimeSoon (<=8f) so we have 6-8s
+            if (BmrDowntimeIn > 6f && GnashingFangPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+
+            // Sonic Break: use if Ready to Break to avoid losing the buff
+            if (HasReadyToBreak && SonicBreakPvE.CanUse(out act))
+                return true;
+
+            // Reign of Beasts: use if Ready to Reign (needs ~4s for 3-hit combo)
+            if (HasReadyToReign && BmrDowntimeIn > 4f && ReignOfBeastsPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+
+            // Burst Strike: dump remaining cartridges
+            if (Ammo >= 1 && BurstStrikePvE.CanUse(out act))
+                return true;
+
+            // Fated Circle: AoE dump
+            if (Ammo >= 1 && FatedCirclePvE.CanUse(out act))
+                return true;
+        }
 
         // =====================================================
         // PRIORITY 2: No Mercy burst window GCDs
@@ -535,6 +752,27 @@ public sealed class SezuraiGNB : GunbreakerRotation
 
             if (DemonSlicePvE.CanUse(out act))
                 return true;
+
+            // =====================================================
+            // BMR: DON'T START NEW COMBOS BEFORE DOWNTIME
+            // If downtime is <=3s away, don't start a new combo --
+            // it'll drop during the untargetable phase and waste
+            // the combo progress. Use Lightning Shot instead.
+            // Still allow finishing an in-progress combo above.
+            // =====================================================
+            if (downtimeVeryClose)
+            {
+                // Finish in-progress combos
+                if (SolidBarrelPvE.CanUse(out act))
+                    return true;
+                if (BrutalShellPvE.CanUse(out act))
+                    return true;
+
+                // Don't start Keen Edge -- Lightning Shot instead
+                if (LightningShotPvE.CanUse(out act))
+                    return true;
+                return base.GeneralGCD(out act);
+            }
 
             // =====================================================
             // PRIORITY 4: Single Target Combo

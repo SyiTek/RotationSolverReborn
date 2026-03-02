@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Tank;
 
 [Rotation("SezuraiDRK", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned DRK with 5/2 Edge plan, Delirium burst, MP optimization, and Living Shadow alignment.")]
+    Description = "BMR-smart Balance-aligned DRK with 5/2 Edge plan, Delirium burst, MP optimization, Living Shadow alignment, and timeline-aware mitigation/downtime.")]
 [SourceCode(Path = "main/ExtraRotations/Tank/SezuraiDRK.cs")]
 [ExtraRotation]
 public sealed class SezuraiDRK : DarkKnightRotation
@@ -148,15 +148,46 @@ public sealed class SezuraiDRK : DarkKnightRotation
             ImGui.Text($"Delirium CD: {DeliriumPvE.Cooldown.RecastTimeRemainOneCharge:F1}s");
         if (ShadowbringerPvE.EnoughLevel)
             ImGui.Text($"Shadowbringer Charges: {ShadowbringerPvE.Cooldown.CurrentCharges}");
+
+        ImGui.Separator();
+
+        // Defensive CDs
+        ImGui.Text($"--- Defensive CDs ---");
+        ImGui.Text($"TBN: {(TheBlackestNightPvE.Cooldown.IsCoolingDown ? $"{TheBlackestNightPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Oblation Charges: {OblationPvE.Cooldown.CurrentCharges}");
+        ImGui.Text($"Dark Missionary: {(DarkMissionaryPvE.Cooldown.IsCoolingDown ? $"{DarkMissionaryPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Shadowed Vigil: {(ShadowedVigilPvE.Cooldown.IsCoolingDown ? $"{ShadowedVigilPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Rampart: {(RampartPvE.Cooldown.IsCoolingDown ? $"{RampartPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Reprisal: {(ReprisalPvE.Cooldown.IsCoolingDown ? $"{ReprisalPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Living Dead: {(LivingDeadPvE.Cooldown.IsCoolingDown ? $"{LivingDeadPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+
+        ImGui.Separator();
+
+        // BMR Timeline
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -164,30 +195,30 @@ public sealed class SezuraiDRK : DarkKnightRotation
 
     #region Countdown & Opener
     // === DRK OPENER (7.4 Balance / Icy Veins) ===
-    // Pre-pull: TBN(-3s, on pulling tank for Dark Arts proc) → Pot(-2s) → Unmend(-1s)
-    // GCD1: Hard Slash → Edge of Shadow (Dark Arts) + Living Shadow (weave)
+    // Pre-pull: TBN(-3s, on pulling tank for Dark Arts proc) -> Pot(-2s) -> Unmend(-1s)
+    // GCD1: Hard Slash -> Edge of Shadow (Dark Arts) + Living Shadow (weave)
     // GCD2: Syphon Strike
-    // GCD3: Souleater → Delirium (weave) + Shadowbringer (weave)
-    // GCD4: Disesteem → Salted Earth (weave) + Edge of Shadow (weave)
-    // GCD5: Scarlet Delirium → Shadowbringer (weave) + Edge of Shadow (weave)
-    // GCD6: Comeuppance → Carve and Spit (weave) + Edge of Shadow (weave)
-    // GCD7: Torcleaver → Edge of Shadow (weave) + Salt and Darkness (weave)
+    // GCD3: Souleater -> Delirium (weave) + Shadowbringer (weave)
+    // GCD4: Disesteem -> Salted Earth (weave) + Edge of Shadow (weave)
+    // GCD5: Scarlet Delirium -> Shadowbringer (weave) + Edge of Shadow (weave)
+    // GCD6: Comeuppance -> Carve and Spit (weave) + Edge of Shadow (weave)
+    // GCD7: Torcleaver -> Edge of Shadow (weave) + Salt and Darkness (weave)
     // GCD8: Bloodspiller
     //
-    // === EVEN BURST (120s) — "5 Edge" window ===
+    // === EVEN BURST (120s) -- "5 Edge" window ===
     // Full resource dump: Living Shadow + Disesteem + Scarlet Delirium combo
     //   + 5x Edge of Shadow + 2x Shadowbringer + Carve and Spit
     // Align with raid buffs; enter with ~9000+ MP + Dark Arts proc banked
     //
-    // === ODD BURST (60s) — "2 Edge" window ===
-    // Delirium → 3x Bloodspiller (Scarlet combo is 120s) + 2-3x Edge of Shadow
+    // === ODD BURST (60s) -- "2 Edge" window ===
+    // Delirium -> 3x Bloodspiller (Scarlet combo is 120s) + 2-3x Edge of Shadow
     // Save MP, Shadowbringer charges, and Living Shadow for even windows
     //
     // === FILLER (5/2 MP Plan) ===
     // Even window: spend 5 Edge of Shadow under raid buffs
     // Odd window: spend 2 Edge of Shadow + 1 TBN (Dark Arts banked for next even)
     // Darkside maintenance: each Edge adds 30s (cap 60s), never let it drop
-    // Blood: enter Delirium at ≤70 Blood; Bloodspiller to prevent overcap
+    // Blood: enter Delirium at <=70 Blood; Bloodspiller to prevent overcap
 
     protected override IAction? CountDownAction(float remainTime)
     {
@@ -219,9 +250,33 @@ public sealed class SezuraiDRK : DarkKnightRotation
 
     protected override bool EmergencyAbility(IAction nextGCD, out IAction? act)
     {
+        // === LIVING DEAD ===
+        // Balance: "Prevents most attacks from lowering HP below 1 for 10s"
+        // BMR-aware: only use Living Dead if TB is actually imminent and HP is critical.
+        // This is DRK's invuln -- it requires healer coordination (Walking Dead / Undead Rebirth).
+        // Without BMR: use the framework's health threshold as before.
+        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool hpCritical = Player?.GetHealthRatio() <= Service.Config.HealthForDyingTanks;
+
+        if (LivingDeadPvE.CanUse(out act))
+        {
+            // BMR path: only invuln if TB is about to hit and we are low
+            if (BmrActive && tbImminent && hpCritical)
+                return true;
+
+            // Non-BMR path: use framework HP threshold
+            if (!BmrActive && hpCritical)
+                return true;
+        }
+
         // Medicine: use during even-minute burst (Living Shadow active or party buffs)
-        if (BurstMed && InCombat && InBurstWindow && InEvenBurst && UseBurstMedicine(out act))
-            return true;
+        // BMR-aware: don't pot if downtime is imminent (waste of pot duration)
+        if (BurstMed && InCombat && InBurstWindow && InEvenBurst)
+        {
+            bool downtimeWastesPot = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+            if (!downtimeWastesPot && UseBurstMedicine(out act))
+                return true;
+        }
 
         // TBN for Dark Arts generation:
         // - Use before burst windows to bank a free Edge of Shadow
@@ -273,24 +328,76 @@ public sealed class SezuraiDRK : DarkKnightRotation
                 return true;
         }
 
+        // === BMR DOWNTIME/VULNERABILITY AWARENESS ===
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
+        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+        bool vulnWindowSoon = BmrActive && BmrVulnerableIn is > 0 and <= 30f;
+
+        // === BMR: DUMP BURST BEFORE DOWNTIME ===
+        // If downtime is <=15s away, dump Living Shadow and Delirium NOW so they
+        // get their full value. Living Shadow persists ~22s independently, so even
+        // if the boss goes untargetable, the shadow keeps hitting if it was deployed
+        // early enough. Delirium stacks must be spent before the phase ends.
+        if (downtimeSoon && InCombat && HasHostilesInRange && DarkSideTime > 0)
+        {
+            // Living Shadow: deploy ASAP before downtime -- it attacks independently
+            if (BmrDowntimeIn > 5f && LivingShadowPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+
+            // Delirium: only start if we have enough time to spend all 3 stacks (~8s)
+            // Balance: "pre-cast Delirium only if you can immediately consume all stacks"
+            if (BmrDowntimeIn > 10f && DeliriumPvE.CanUse(out act))
+                return true;
+
+            // MP dump: spend Edge/Flood of Shadow aggressively before downtime
+            // Resources sitting idle during downtime are wasted damage
+            if (CurrentMp >= 3000)
+            {
+                if (FloodOfShadowPvE.CanUse(out act))
+                    return true;
+                if (EdgeOfShadowPvE.CanUse(out act))
+                    return true;
+            }
+
+            // Shadowbringer: dump charges before downtime
+            if (ShadowbringerPvE.EnoughLevel && ShadowbringerPvE.CanUse(out act, usedUp: true, skipAoeCheck: true))
+                return true;
+
+            // Carve and Spit / Abyssal Drain: use before downtime for MP generation + damage
+            if (AbyssalDrainPvE.CanUse(out act))
+                return true;
+            if (CarveAndSpitPvE.CanUse(out act))
+                return true;
+        }
+
         // === BURST COOLDOWNS ===
         if (CanBurst && InCombat && HasHostilesInRange)
         {
-            // 1. Living Shadow: 120s CD, deploy during even-minute windows
-            // Balance: "Living Shadow out early enough that its attacks fully fit into buffs"
-            // Must have Darkside active for Shadowbringer (and Living Shadow needs Blood)
-            if (!CombatElapsedLessGCD(1) && DarkSideTime > 0 && LivingShadowPvE.CanUse(out act, skipAoeCheck: true))
-                return true;
+            // BMR: skip starting burst CDs if downtime is <10s (not enough time to spend stacks)
+            bool downtimeTooClose = BmrActive && BmrDowntimeIn is > 0 and < 10f;
 
-            // 2. Delirium: 60s CD, grants 3 Delirium stacks + Blood Weapon stacks
-            // Balance: "Use Delirium in your opener, and then on cooldown every 60 seconds"
-            // Enter with <= 70 Blood to avoid overcapping from Blood Weapon
-            if (!CombatElapsedLessGCD(1) && DeliriumPvE.CanUse(out act))
-                return true;
+            // BMR: hold for vulnerability window if it is soon and CDs won't come back
+            bool holdForVuln = vulnWindowSoon && BmrVulnerableIn > 5f
+                && !LivingShadowPvE.Cooldown.WillHaveOneChargeGCD(4);
 
-            // Pre-Delirium Blood Weapon (if Delirium not high enough level)
-            if (!DeliriumPvE.EnoughLevel && BloodWeaponPvE.CanUse(out act))
-                return true;
+            if (!downtimeTooClose && !holdForVuln)
+            {
+                // 1. Living Shadow: 120s CD, deploy during even-minute windows
+                // Balance: "Living Shadow out early enough that its attacks fully fit into buffs"
+                // Must have Darkside active for Shadowbringer (and Living Shadow needs Blood)
+                if (!CombatElapsedLessGCD(1) && DarkSideTime > 0 && LivingShadowPvE.CanUse(out act, skipAoeCheck: true))
+                    return true;
+
+                // 2. Delirium: 60s CD, grants 3 Delirium stacks + Blood Weapon stacks
+                // Balance: "Use Delirium in your opener, and then on cooldown every 60 seconds"
+                // Enter with <= 70 Blood to avoid overcapping from Blood Weapon
+                if (!CombatElapsedLessGCD(1) && DeliriumPvE.CanUse(out act))
+                    return true;
+
+                // Pre-Delirium Blood Weapon (if Delirium not high enough level)
+                if (!DeliriumPvE.EnoughLevel && BloodWeaponPvE.CanUse(out act))
+                    return true;
+            }
         }
 
         // Don't dump oGCDs in first 3 seconds (let opener sequence properly)
@@ -363,6 +470,10 @@ public sealed class SezuraiDRK : DarkKnightRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        // === BMR DOWNTIME AWARENESS ===
+        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+
         // === DISESTEEM (Dawntrail addition) ===
         // Use immediately when Scorn buff is active. This is a high-potency
         // follow-up to Living Shadow and should be used in the burst window.
@@ -387,6 +498,18 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (ImpalementPvE.CanUse(out act))
             return true;
 
+        // === BMR: DUMP BLOOD GAUGE BEFORE DOWNTIME ===
+        // If downtime is approaching (<=8s), spend all Blood Gauge on Bloodspiller
+        // / Quietus to avoid wasting resources during the untargetable phase.
+        // Don't worry about overcap or combo state -- just dump.
+        if (downtimeSoon && Blood >= 50)
+        {
+            if (QuietusPvE.CanUse(out act))
+                return true;
+            if (BloodspillerPvE.CanUse(out act, skipComboCheck: true))
+                return true;
+        }
+
         // === BLOODSPILLER / QUIETUS (Blood Gauge Spenders) ===
         // Spend Blood: during Delirium (free), when overcapping (90+),
         // during burst windows, or when party buffs are active.
@@ -396,6 +519,25 @@ public sealed class SezuraiDRK : DarkKnightRotation
                 return true;
             if (BloodspillerPvE.CanUse(out act, skipComboCheck: true))
                 return true;
+        }
+
+        // === BMR: DON'T START NEW COMBOS BEFORE DOWNTIME ===
+        // If downtime is <=3s away, don't start a new combo -- it will drop during
+        // the untargetable phase and waste the combo progress. Finish current combo
+        // or use Unmend for a clean hit.
+        if (downtimeVeryClose)
+        {
+            // Still allow finishing an in-progress combo (CanUse checks combo state)
+            if (StalwartSoulPvE.CanUse(out act))
+                return true;
+            if (SouleaterPvE.CanUse(out act))
+                return true;
+            if (SyphonStrikePvE.CanUse(out act))
+                return true;
+            // Don't start Hard Slash / Unleash -- Unmend instead for a clean hit
+            if (UnmendPvE.CanUse(out act))
+                return true;
+            return base.GeneralGCD(out act);
         }
 
         // === AOE COMBO: Unleash -> Stalwart Soul ===
@@ -435,24 +577,61 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (!AutoMitigation)
             return base.DefenseSingleAbility(nextGCD, out act);
 
-        // BMR-aware: when TB is imminent, TBN is THE tool (25% HP shield, Dark Arts if broken)
-        // Balance: "TBN is either damage neutral or a gain — always use it for tankbusters"
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+        // Don't stack mit during Living Dead when low -- invuln handles it
+        if (StatusHelper.PlayerHasStatus(true, StatusID.LivingDead, StatusID.WalkingDead, StatusID.UndeadRebirth)
+            && Player?.GetHealthRatio() < 0.3f)
+            return base.DefenseSingleAbility(nextGCD, out act);
 
+        // === BMR-AWARE TANKBUSTER MITIGATION ===
+        // Balance: "TBN is an extremely strong tool for tankbusters" -- always use TBN first.
+        // Mitigation is multiplicative -- spreading across TBs is more efficient than dumping all on one.
+        // DRK rule: TBN (25% shield + Dark Arts) -> Oblation (10% mit, 1 charge, hold 1 reserve)
+        //   -> ONE heavier CD if needed. Don't stack everything.
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 5f;
+
+        // With BMR active and no TB coming soon, don't waste single-target mits
+        if (BmrActive && !tbSoon)
+            return base.DefenseSingleAbility(nextGCD, out act);
+
+        // --- TB is imminent (BMR path) ---
         if (tbSoon)
         {
-            // TBN first: shield + Dark Arts generation
+            // TBN first: 25% HP shield + Dark Arts generation on break
+            // Balance: "TBN is either damage neutral or a gain -- always use it for tankbusters"
             if (CurrentMp >= 3000 && TheBlackestNightPvE.CanUse(out act, targetOverride: TargetType.Self))
                 return true;
-            // Oblation: 10% mit, use one charge
+
+            // Oblation: 10% mit, use one charge but hold one in reserve for next TB
             if (OblationPvE.CanUse(out act, skipStatusProvideCheck: false, targetOverride: TargetType.Self))
                 return true;
-            // Don't dump all long CDs — 2 mits per TB is enough
+
+            // Layer exactly ONE heavier CD, then stop -- save others for the next TB
+            // Reprisal: 10% enemy damage reduction, 60s CD -- good for shared TBs too
+            if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+
+            // Dark Mind: 20% magic mitigation (only matters for magic TBs, but no harm)
+            if (DarkMindPvE.CanUse(out act))
+                return true;
+
+            // Shadowed Vigil / Shadow Wall: heavy personal mit for big TBs (30%)
+            if (ShadowedVigilPvE.CanUse(out act))
+                return true;
+            if (!ShadowedVigilPvE.EnoughLevel && ShadowWallPvE.CanUse(out act))
+                return true;
+
+            // Rampart as fallback if heavier CDs are on CD
+            if (RampartPvE.CanUse(out act))
+                return true;
+
+            // Only one long CD per TB -- don't dump everything
             return base.DefenseSingleAbility(nextGCD, out act);
         }
 
-        // Non-BMR / reactive path
-        // Oblation: 10% mitigation, 2 charges, short CD - use first
+        // === NON-BMR / REACTIVE PATH ===
+        // Framework triggered DefenseSingle -- stagger CDs in priority order
+
+        // Oblation: 10% mitigation, 2 charges, short CD - use freely
         if (OblationPvE.CanUse(out act, usedUp: true, skipStatusProvideCheck: false, targetOverride: TargetType.Self))
             return true;
 
@@ -493,18 +672,37 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (!AutoMitigation)
             return base.DefenseAreaAbility(nextGCD, out act);
 
-        // BMR-aware: override burst-skip when raidwide is truly imminent
-        // Balance: "Dark Missionary is 10% magic mitigation for the party"
+        // === BMR-AWARE RAIDWIDE MITIGATION ===
+        // Balance: spread mits across raidwides, don't dump everything on one hit.
+        // Mitigation is multiplicative (two 10% = 19%, not 20%), so spreading is more efficient.
+        // Use 1-2 mits per raidwide max. Don't fire if raidwide is >5s away.
+        //
+        // Dark Missionary: 10% magic mitigation for the party (90s CD)
+        // Reprisal: 10% enemy damage reduction (60s CD) -- use on SEPARATE raidwides from Missionary.
         bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
 
+        // With BMR active and no raidwide coming soon, don't waste party mits
+        if (BmrActive && !rwSoon)
+            return base.DefenseAreaAbility(nextGCD, out act);
+
+        // BMR path: raidwide is imminent
         if (rwSoon)
         {
+            // Dark Missionary: primary raidwide tool -- 10% magic damage reduction for party
             if (DarkMissionaryPvE.CanUse(out act))
                 return true;
-            // Don't stack Reprisal on same raidwide — save for next one
+
+            // Reprisal: use when Missionary is on CD for this raidwide
+            // Don't stack Reprisal + Missionary on the same raidwide -- spread them
+            if (!StatusHelper.PlayerHasStatus(true, StatusID.DarkMissionary)
+                && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+
+            // Only 1-2 mits per raidwide
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
+        // === NON-BMR FALLBACK ===
         // Without BMR: skip during burst (oGCD slots needed for damage)
         if (!BmrActive && InBurstWindow)
             return base.DefenseAreaAbility(nextGCD, out act);
@@ -540,6 +738,27 @@ public sealed class SezuraiDRK : DarkKnightRotation
 
     #endregion
 
+    #region Heal Abilities
+
+    [RotationDesc(ActionID.TheBlackestNightPvE)]
+    protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        // TBN on self as a pseudo-heal when HP is low (shield + potential Dark Arts)
+        // Only if BMR says no TB is coming soon -- don't waste TBN on auto-damage
+        // right before a buster where we really need it
+        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 0 and <= 8f;
+
+        if (!tbComingSoon && AutoTBN && InCombat
+            && Player?.GetHealthRatio() < TBNThreshold
+            && CurrentMp >= 6000
+            && TheBlackestNightPvE.CanUse(out act, targetOverride: TargetType.Self))
+            return true;
+
+        return base.HealSingleAbility(nextGCD, out act);
+    }
+
+    #endregion
+
     #region Extra Methods
 
     /// <summary>
@@ -556,6 +775,8 @@ public sealed class SezuraiDRK : DarkKnightRotation
     /// Odd burst (60s): spend at 6000+ MP (moderate, save for next even window)
     /// Filler: spend at 8500+ MP only (overcap prevention)
     /// Darkside maintenance: always spend if Darkside is about to fall off
+    ///
+    /// BMR: dump all MP before downtime (resources idle during downtime = wasted damage)
     /// </summary>
     private bool ShouldSpendMp()
     {
@@ -574,6 +795,10 @@ public sealed class SezuraiDRK : DarkKnightRotation
 
         // Dark Arts is free - already handled in AttackAbility above
         // (this method handles MP-costing Edge/Flood only)
+
+        // BMR: dump MP before downtime -- don't let resources sit idle
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 10f)
+            return CurrentMp >= 3000;
 
         // During even-minute burst: spend aggressively (target 5 Edges)
         if (InEvenBurst || InTwoMinBurst)
@@ -602,6 +827,7 @@ public sealed class SezuraiDRK : DarkKnightRotation
     /// - Burst windows when at 50+ Blood
     /// - Overcap prevention at 90+ Blood
     /// - When party buffs are active
+    /// - BMR: before downtime to avoid wasting gauge
     ///
     /// Conserve when:
     /// - Living Shadow coming up soon (costs 50 Blood)
@@ -617,10 +843,18 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (HasDelirium)
             return true;
 
+        // BMR: dump Blood before downtime -- resources idle during downtime = wasted damage
+        // Note: the main downtime dump in GeneralGCD also catches this, but this ensures
+        // the ShouldSpendBlood path is aligned too
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 10f && Blood >= 50)
+            return true;
+
         // Save Blood for Living Shadow if it is coming up very soon
+        // BUT override this if BMR says downtime is coming (dump takes priority)
         if (LivingShadowPvE.EnoughLevel
             && LivingShadowPvE.Cooldown.WillHaveOneCharge(5)
-            && Blood < 100)
+            && Blood < 100
+            && !(BmrActive && BmrDowntimeIn is > 0 and <= 15f))
             return false;
 
         // Overcap prevention: spend at 90+ Blood since combo/Blood Weapon will push to 100

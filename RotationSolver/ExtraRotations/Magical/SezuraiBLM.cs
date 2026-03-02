@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Magical;
 
 [Rotation("SezuraiBLM", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned BLM with optimized Fire/Ice phases, Flare Star management, Manafont double AF, and movement tools.")]
+    Description = "Balance-aligned BLM with optimized Fire/Ice phases, Flare Star management, Manafont double AF, movement tools, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Magical/SezuraiBLM.cs")]
 [ExtraRotation]
 public sealed class SezuraiBLM : BlackMageRotation
@@ -27,6 +27,18 @@ public sealed class SezuraiBLM : BlackMageRotation
     [RotationConfig(CombatType.PvE, Name = "Pool Xenoglossy for movement (keep 1 charge)")]
     public bool PoolXenoForMovement { get; set; } = true;
 
+    [RotationConfig(CombatType.PvE, Name = "BMR: Use instants before downtime (Xeno/Thunder/Paradox instead of Fire IV)")]
+    public bool BmrInstantsBeforeDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Transpose to UI before downtime for Umbral Soul")]
+    public bool BmrTransposeBeforeDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Hold Ley Lines for vuln window (within 30s)")]
+    public bool BmrHoldLeyLinesForVuln { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Skip Manafont if downtime imminent (<10s)")]
+    public bool BmrSkipManafontBeforeDowntime { get; set; } = true;
+
     #endregion
 
     #region Burst State
@@ -40,6 +52,36 @@ public sealed class SezuraiBLM : BlackMageRotation
     /// True when Ley Lines is active (our only personal buff window for burst alignment).
     /// </summary>
     private bool InBurstWindow => HasLeyLines;
+
+    #endregion
+
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR reports downtime within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrDowntimeWithin(float seconds)
+        => BmrActive && BmrDowntimeIn is > 0 and < float.MaxValue && BmrDowntimeIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a vulnerability window within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrVulnWithin(float seconds)
+        => BmrActive && BmrVulnerableIn is > 0 and < float.MaxValue && BmrVulnerableIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a raidwide within the specified seconds.
+    /// </summary>
+    private bool BmrRaidwideWithin(float seconds)
+        => BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a knockback within the specified seconds.
+    /// </summary>
+    private bool BmrKnockbackWithin(float seconds)
+        => BmrActive && BmrKnockbackIn is > 0 and < float.MaxValue && BmrKnockbackIn <= seconds;
 
     #endregion
 
@@ -100,6 +142,22 @@ public sealed class SezuraiBLM : BlackMageRotation
         }
     }
 
+    /// <summary>
+    /// BMR: True when downtime is imminent and we should prefer instant GCDs
+    /// over long Fire IV/Despair casts to frontload damage.
+    /// Fire IV cast is ~2.8s base, so < 3s downtime means the cast would ghost.
+    /// </summary>
+    private bool ShouldUseInstantsForDowntime
+        => BmrInstantsBeforeDowntime && BmrDowntimeWithin(3.5f);
+
+    /// <summary>
+    /// BMR: True when downtime is coming soon enough that we should start
+    /// transitioning to Umbral Ice for Umbral Soul maintenance.
+    /// Transpose at ~5s gives us time for Transpose + 1-2 Umbral Souls.
+    /// </summary>
+    private bool ShouldPrepareForDowntime
+        => BmrTransposeBeforeDowntime && BmrDowntimeWithin(5f);
+
     #endregion
 
     #region UpdateInfo
@@ -150,14 +208,42 @@ public sealed class SezuraiBLM : BlackMageRotation
         ImGui.Text($"NeedIceTransition: {NeedIceTransition}");
         ImGui.Text($"MpFullForFire: {MpFullForFire}");
         ImGui.Text($"TargetNeedsThunder: {TargetNeedsThunder}");
-        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"ShouldUseInstantsForDowntime: {ShouldUseInstantsForDowntime}");
+        ImGui.Text($"ShouldPrepareForDowntime: {ShouldPrepareForDowntime}");
+
+        ImGui.Separator();
+        ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.6f, 1f, 1f), "--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- BMR Decisions --");
+            ImGui.Text($"DowntimeWithin(3.5): {BmrDowntimeWithin(3.5f)} (use instants)");
+            ImGui.Text($"DowntimeWithin(5): {BmrDowntimeWithin(5f)} (transpose prep)");
+            ImGui.Text($"DowntimeWithin(10): {BmrDowntimeWithin(10f)} (skip Manafont)");
+            ImGui.Text($"DowntimeWithin(15): {BmrDowntimeWithin(15f)} (skip Ley Lines)");
+            ImGui.Text($"DowntimeWithin(30): {BmrDowntimeWithin(30f)} (Ley Lines wasted)");
+            ImGui.Text($"RaidwideWithin(3): {BmrRaidwideWithin(3f)} (Manaward)");
+            ImGui.Text($"RaidwideWithin(5): {BmrRaidwideWithin(5f)} (Addle)");
+            ImGui.Text($"VulnWithin(30): {BmrVulnWithin(30f)} (hold LL)");
+            ImGui.Text($"KnockbackWithin(5): {BmrKnockbackWithin(5f)} (Arms Length)");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -165,24 +251,24 @@ public sealed class SezuraiBLM : BlackMageRotation
 
     #region Countdown & Opener
     // === BLM OPENER (7.4 Balance — "Standard" opener) ===
-    // Pre-pull: Pot(-2s) → Fire III precast(-3.5s)
-    // GCD1: Fire III (enters AF3) → Triplecast (weave)
+    // Pre-pull: Pot(-2s) -> Fire III precast(-3.5s)
+    // GCD1: Fire III (enters AF3) -> Triplecast (weave)
     // GCD2-5: Fire IV x4 (instant via Triplecast + Swiftcast)
-    // → Ley Lines (weave between F4s)
-    // GCD6: Fire IV → GCD7: Despair (all remaining MP) → GCD8: Flare Star (6 Astral Soul)
-    // → Manafont (weave) → Triplecast (weave)
-    // GCD9-11: Fire IV x3 (instant) → GCD12: Despair → GCD13: Flare Star
-    // → Transpose into UI → Umbral Soul → UI spells
+    // -> Ley Lines (weave between F4s)
+    // GCD6: Fire IV -> GCD7: Despair (all remaining MP) -> GCD8: Flare Star (6 Astral Soul)
+    // -> Manafont (weave) -> Triplecast (weave)
+    // GCD9-11: Fire IV x3 (instant) -> GCD12: Despair -> GCD13: Flare Star
+    // -> Transpose into UI -> Umbral Soul -> UI spells
     //
     // === BURST ALIGNMENT ===
-    // BLM has no traditional even/odd — largely self-sufficient DPS
+    // BLM has no traditional even/odd -- largely self-sufficient DPS
     // Ley Lines (120s): align with party buffs when possible for haste value
     // Triplecast (60s, 2 charges): use for instant Fire IVs + mobility
-    // Maximize Fire IV count per AF phase, always end AF with Despair → Flare Star
+    // Maximize Fire IV count per AF phase, always end AF with Despair -> Flare Star
     //
     // === FILLER / SUSTAIN ===
-    // AF phase: Fire III → Fire IV spam → Despair → Flare Star → repeat
-    // UI phase: Transpose/Blizzard III → Blizzard IV (restore Umbral Hearts) → Thunder → back to AF
+    // AF phase: Fire III -> Fire IV spam -> Despair -> Flare Star -> repeat
+    // UI phase: Transpose/Blizzard III -> Blizzard IV (restore Umbral Hearts) -> Thunder -> back to AF
     // Umbral Soul: free UI maintenance during downtime
     // Thunder III/IV: refresh during UI phase, don't clip in AF
     // Xenoglossy (Polyglot): instant GCD for movement or weaving, don't overcap at 2 stacks
@@ -228,8 +314,12 @@ public sealed class SezuraiBLM : BlackMageRotation
     [RotationDesc(ActionID.ManawardPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: Manaward before raidwide for self-shield
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // BMR-aware: Manaward before raidwide for self-shield.
+        // Manaward is BLM's only personal defensive -- "a solid personal shield which can
+        // be used proactively to help with mitigation" (The Balance).
+        // With BMR: time precisely to raidwide (within 3s for the shield to be active when hit).
+        // Without BMR: use whenever the framework triggers defense.
+        bool rwSoon = BmrRaidwideWithin(3f);
 
         if ((rwSoon || !BmrActive) && ManawardPvE.CanUse(out act))
             return true;
@@ -240,10 +330,22 @@ public sealed class SezuraiBLM : BlackMageRotation
     [RotationDesc(ActionID.AddlePvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: Addle when raidwide imminent (magic damage reduction on boss)
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // BMR-aware: Addle when raidwide imminent (magic damage reduction on boss).
+        // Addle: "Used to lower damage dealt by the target, more effective on magic-based damage.
+        // Consider planning uses in a static environment" (The Balance).
+        // With BMR: Addle within 5s of raidwide so the debuff is active when damage resolves.
+        // Without BMR: use whenever the framework triggers area defense.
+        bool rwSoon = BmrRaidwideWithin(5f);
 
-        if ((rwSoon || !BmrActive) && AddlePvE.CanUse(out act))
+        if (rwSoon)
+        {
+            if (AddlePvE.CanUse(out act))
+                return true;
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Non-BMR fallback
+        if (!BmrActive && AddlePvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -252,7 +354,12 @@ public sealed class SezuraiBLM : BlackMageRotation
     [RotationDesc]
     protected sealed override bool AntiKnockbackAbility(IAction nextGCD, out IAction? act)
     {
-        if (ArmsLengthPvE.CanUse(out act))
+        // BMR-aware: Arms Length for knockback prevention.
+        // With BMR: only use when knockback is actually imminent (within 5s).
+        // Without BMR: use whenever the framework triggers anti-knockback.
+        bool kbSoon = BmrKnockbackWithin(5f);
+
+        if ((kbSoon || !BmrActive) && ArmsLengthPvE.CanUse(out act))
             return true;
         return base.AntiKnockbackAbility(nextGCD, out act);
     }
@@ -267,8 +374,15 @@ public sealed class SezuraiBLM : BlackMageRotation
         // When out of MP in Astral Fire and Manafont is available,
         // use it immediately to extend the AF phase with another full set of Fire IVs.
         // Manafont grants: full MP + 3 Umbral Hearts + Thunderhead + Paradox marker.
-        if (ShouldManafont && ManafontPvE.CanUse(out act))
-            return true;
+        // BMR: Skip Manafont if downtime is imminent (<10s) -- the second AF phase
+        // won't complete and we'd waste the 100s CD. Better to transition to UI and
+        // use Umbral Soul during downtime.
+        if (ShouldManafont)
+        {
+            bool bmrBlockManafont = BmrSkipManafontBeforeDowntime && BmrDowntimeWithin(10f);
+            if (!bmrBlockManafont && ManafontPvE.CanUse(out act))
+                return true;
+        }
 
         // === TRANSPOSE: Emergency ice transition ===
         // If we're out of MP in AF and Manafont is on CD, Transpose to UI.
@@ -276,12 +390,23 @@ public sealed class SezuraiBLM : BlackMageRotation
         if (NeedIceTransition && TransposePvE.CanUse(out act))
             return true;
 
+        // === BMR: TRANSPOSE TO UI BEFORE DOWNTIME ===
+        // "Utilizing Umbral Soul to recover full MP with three Umbral Hearts avoids
+        // needing Blizzard III and Blizzard IV" for re-entry (The Balance).
+        // Transpose from AF to UI ~5s before downtime so we can Umbral Soul during
+        // the untargetable phase and re-enter with full resources.
+        if (ShouldPrepareForDowntime && InAstralFire && CurrentMp == 0
+            && TransposePvE.CanUse(out act))
+            return true;
+
         // === TRANSPOSE OPTIMIZATION: Firestarter proc transition ===
         // In UI with Firestarter proc and full MP: Transpose to AF1 then use Fire III proc
         // for free instant Fire III -> AF3. This is a small optimization from The Balance.
+        // BMR: Don't do this optimization if downtime is imminent -- stay in UI for Umbral Soul.
         if (UseTransposeOptimization && InUmbralIce && MpFullForFire
             && UmbralIceStacks == MaxSoulCount && UmbralHearts >= 3
-            && HasFire && TransposePvE.CanUse(out act))
+            && HasFire && !BmrDowntimeWithin(10f)
+            && TransposePvE.CanUse(out act))
             return true;
 
         // === MEDICINE: During Ley Lines burst ===
@@ -298,10 +423,23 @@ public sealed class SezuraiBLM : BlackMageRotation
         // Never let this drift. Use on CD or when Burst is enabled.
         // Balance: "Ley Lines is a 120-second cooldown that should be used as close
         // to on cooldown as possible."
-        // BMR-aware: Don't place Ley Lines if downtime < 15s (30s duration, waste half)
+        // Balance: "Timing and placement are important to consider to maximize your
+        // Ley Lines uptime in a given fight."
+        //
+        // BMR-aware:
+        // 1) Don't place if downtime < 30s (Ley Lines lasts 30s, would waste most of it)
+        // 2) Hold for vulnerability window if within 30s (for extra haste during vuln)
         {
-            bool bmrBlockLeyLines = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
-            if (InCombat && HasHostilesInRange && !bmrBlockLeyLines)
+            bool bmrBlockLeyLines = BmrDowntimeWithin(30f);
+
+            // Hold Ley Lines for upcoming vulnerability window -- but only if LL is ready
+            // and the vuln window is within 30s (don't hold forever)
+            bool bmrHoldForVuln = BmrHoldLeyLinesForVuln
+                && BmrVulnWithin(30f)
+                && BmrVulnerableIn > 3f  // Don't hold if vuln is already happening
+                && LeyLinesPvE.Cooldown.HasOneCharge;
+
+            if (InCombat && HasHostilesInRange && !bmrBlockLeyLines && !bmrHoldForVuln)
             {
                 bool useLeyLines = LeyLinesOnCooldown || CanBurst;
                 if (useLeyLines && LeyLinesPvE.CanUse(out act))
@@ -324,11 +462,26 @@ public sealed class SezuraiBLM : BlackMageRotation
         // In AF: use Triplecast for instant Fire IVs (movement or just efficiency).
         // Save at least one charge for movement if possible.
         // In UI: use if Paradox is not available and we need an instant for transition.
+        // "Instant casts from Triplecast and Swiftcast are valuable for weaving other
+        // oGCD abilities, as well as continuing casting while moving" (The Balance).
+        //
+        // BMR-aware: Use Triplecast proactively when movement/knockback is imminent
+        // to ensure we have instant casts ready for forced movement phases.
         if (InAstralFire)
         {
             // Use Triplecast during AF for instant Fire IVs.
             // Prefer to use when we have multiple Fire IVs remaining.
             if (AstralSoulStacks <= 3 && TriplecastPvE.CanUse(out act, gcdCountForAbility: 5))
+                return true;
+        }
+
+        // BMR: Pop Triplecast proactively when knockback/movement mechanic is imminent
+        // so we have instant casts available during forced movement.
+        if (BmrKnockbackWithin(5f) && !NextGCDisInstant && InCombat && HasHostilesInRange)
+        {
+            if (TriplecastPvE.CanUse(out act))
+                return true;
+            if (SwiftcastPvE.CanUse(out act))
                 return true;
         }
 
@@ -370,6 +523,20 @@ public sealed class SezuraiBLM : BlackMageRotation
             return true;
 
         // ============================================================
+        // BMR: INSTANT GCD DUMP BEFORE DOWNTIME
+        // "An instant cast frontloads its damage at the start of the GCD, so it is
+        // good practice to plan to end on an instant cast before the downtime/end
+        // of fight." (The Balance)
+        // When downtime is < 3.5s away, use instant GCDs (Xenoglossy, Thunder procs,
+        // Paradox) instead of starting a long Fire IV/Despair cast that would ghost.
+        // ============================================================
+        if (ShouldUseInstantsForDowntime && InCombat && HasHostilesInRange)
+        {
+            if (BmrDowntimeInstants(out act))
+                return true;
+        }
+
+        // ============================================================
         // AoE ROTATION (3+ targets)
         // Loop: UI (Freeze/HighBlizzard2 -> Thunder AoE) ->
         //   AF (HighFire2/Flare x2 -> Flare Star) -> repeat
@@ -399,6 +566,7 @@ public sealed class SezuraiBLM : BlackMageRotation
         // --- NEUTRAL STATE (no AF or UI active) ---
         // Enter the rotation from neutral: start with Fire III if MP is high,
         // Blizzard III if MP is low.
+        // BMR: If downtime is imminent from neutral, enter UI for Umbral Soul maintenance.
         if (!InAstralFire && !InUmbralIce)
         {
             if (NeutralStart(out act))
@@ -428,16 +596,66 @@ public sealed class SezuraiBLM : BlackMageRotation
 
     #endregion
 
+    #region BMR Downtime Instants
+
+    /// <summary>
+    /// BMR: Use instant GCDs when downtime is imminent (&lt;3.5s).
+    /// Priority: Xenoglossy (instant, high potency) > Thunder proc (instant) >
+    /// Paradox (instant in UI, or in AF with marker) > Firestarter proc (instant Fire III).
+    /// This prevents ghosted casts and frontloads damage before the boss goes untargetable.
+    /// </summary>
+    private bool BmrDowntimeInstants(out IAction? act)
+    {
+        act = null;
+
+        // Xenoglossy: highest potency instant, always good
+        if (PolyglotStacks > 0 && XenoglossyPvE.CanUse(out act))
+            return true;
+
+        // Thunder proc: instant with Thunderhead, refresh DoT before downtime
+        if (HasThunder && ApplyThunder(out act))
+            return true;
+
+        // Paradox: instant in UI, instant in AF with marker
+        if (IsParadoxActive && ParadoxPvE.CanUse(out act))
+            return true;
+
+        // Firestarter proc: instant Fire III
+        if (HasFire && FireIiiPvE.CanUse(out act))
+            return true;
+
+        // Foul: AoE polyglot if Xeno isn't available
+        if (PolyglotStacks > 0 && FoulPvE.CanUse(out act, skipAoeCheck: true))
+            return true;
+
+        return false;
+    }
+
+    #endregion
+
     #region Single Target Phases
 
     /// <summary>
     /// Astral Fire single-target phase.
     /// Standard: Fire IV x3 -> Paradox -> Fire IV x3 -> Flare Star -> Despair
     /// Manafont: extends with Fire IV x3-4 -> Despair -> Flare Star
+    /// BMR: When downtime is approaching (~5s), prefer to finish AF cleanly
+    /// (Despair -> Flare Star -> Transpose to UI) rather than starting new Fire IVs.
     /// </summary>
     private bool AstralFirePhase(out IAction? act)
     {
         act = null;
+
+        // BMR: If downtime is ~5s away and we're in AF with some MP left,
+        // try to finish the phase cleanly: Despair now -> Flare Star -> Transpose to UI.
+        // This gives us time to Umbral Soul during the untargetable phase.
+        // Only skip Fire IV if we already have some Astral Soul stacks (don't abort early in phase).
+        if (ShouldPrepareForDowntime && AstralSoulStacks >= 3 && CurrentMp > 0
+            && CurrentMp < 3200 && DespairPvE.EnoughLevel)
+        {
+            if (DespairPvE.CanUse(out act))
+                return true;
+        }
 
         // 1. PARADOX IN AF: Grants guaranteed Firestarter proc.
         // Use when we have the Paradox marker and enough MP to keep casting Fire IVs after.
@@ -521,6 +739,8 @@ public sealed class SezuraiBLM : BlackMageRotation
     /// Umbral Ice single-target phase.
     /// Standard: Blizzard IV (Umbral Hearts) -> Paradox -> Thunder -> Fire III (transition)
     /// With Firestarter: Can Transpose -> Fire III proc for optimized transition.
+    /// BMR: If downtime is imminent while in UI, stay in UI and prepare for Umbral Soul.
+    /// Don't transition to AF if we'd just waste the Fire III cast.
     /// </summary>
     private bool UmbralIcePhase(out IAction? act)
     {
@@ -581,7 +801,10 @@ public sealed class SezuraiBLM : BlackMageRotation
         }
 
         // 7. TRANSITION TO FIRE: When MP is full and hearts are stocked.
-        if (MpFullForFire && UmbralHearts >= 3)
+        // BMR: Don't transition to AF if downtime is imminent -- stay in UI for Umbral Soul.
+        // Starting Fire III with 5s to downtime means the AF phase gets cut short and we
+        // lose Enochian. Better to stay in UI and Umbral Soul through the transition.
+        if (MpFullForFire && UmbralHearts >= 3 && !ShouldPrepareForDowntime)
         {
             // Firestarter proc: use Fire III instant for free AF3 entry.
             if (HasFire)
@@ -617,6 +840,23 @@ public sealed class SezuraiBLM : BlackMageRotation
             // (Already handled in EmergencyAbility for Transpose optimization.)
         }
 
+        // BMR: If downtime is imminent and we're in UI with full resources, use Umbral Soul
+        // to build/maintain hearts rather than transitioning to AF.
+        if (ShouldPrepareForDowntime && MpFullForFire && UmbralHearts >= 3)
+        {
+            // Dump Xeno for damage before downtime
+            if (PolyglotStacks > 0 && XenoglossyPvE.CanUse(out act))
+                return true;
+
+            // Thunder to keep DoT ticking through downtime
+            if (HasThunder && ApplyThunder(out act))
+                return true;
+
+            // Umbral Soul to maintain and stock up
+            if (UmbralSoulPvE.CanUse(out act))
+                return true;
+        }
+
         // 9. SAFETY: Blizzard to refresh UI if nothing else works.
         if (UmbralHearts < 3)
         {
@@ -629,10 +869,22 @@ public sealed class SezuraiBLM : BlackMageRotation
 
     /// <summary>
     /// Enter the rotation from neutral state (neither AF nor UI active).
+    /// BMR: If downtime is imminent, enter UI with Blizzard III regardless of MP
+    /// so we can Umbral Soul during the downtime phase.
     /// </summary>
     private bool NeutralStart(out IAction? act)
     {
         act = null;
+
+        // BMR: If downtime is approaching, always enter UI for Umbral Soul maintenance
+        // regardless of current MP. This preserves Enochian through the transition.
+        if (ShouldPrepareForDowntime)
+        {
+            if (BlizzardIiiPvE.CanUse(out act))
+                return true;
+            if (BlizzardPvE.CanUse(out act))
+                return true;
+        }
 
         // High MP: enter AF with Fire III.
         if (CurrentMp >= 7200)
@@ -783,6 +1035,9 @@ public sealed class SezuraiBLM : BlackMageRotation
     /// Out-of-combat or downtime maintenance.
     /// Umbral Soul in UI to maintain Enochian and build hearts.
     /// Transpose from AF to UI if no targets available.
+    /// BMR: Also handle proactive Transpose when BMR signals imminent downtime.
+    /// "For moderate downtime, utilizing Umbral Soul to recover full MP with three
+    /// Umbral Hearts avoids needing Blizzard III and Blizzard IV" (The Balance).
     /// </summary>
     private bool DowntimeMaintenance(out IAction? act)
     {
@@ -797,6 +1052,13 @@ public sealed class SezuraiBLM : BlackMageRotation
 
         // Transpose from AF to UI if no enemies in range (downtime).
         if (InAstralFire && !HasHostilesInRange && TransposePvE.CanUse(out act))
+            return true;
+
+        // BMR: Proactive Transpose from AF to UI when downtime is imminent
+        // and we have no MP left (already finished Despair/Flare Star).
+        // This gets us into UI early so Umbral Soul can start immediately.
+        if (BmrTransposeBeforeDowntime && BmrDowntimeWithin(3f)
+            && InAstralFire && CurrentMp == 0 && TransposePvE.CanUse(out act))
             return true;
 
         return false;

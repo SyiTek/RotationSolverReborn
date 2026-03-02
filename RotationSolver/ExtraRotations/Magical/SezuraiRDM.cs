@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Magical;
 
 /// <summary>
-/// Balance-aligned Red Mage rotation for Dawntrail 7.4x.
+/// Balance-aligned Red Mage rotation for Dawntrail 7.4x with BossModReborn timeline integration.
 ///
 /// Key design principles (The Balance / Icy Veins 7.4):
 ///   - Dualcast loop: hardcast a short spell -> instant long spell, never waste Dualcast on a short cast.
@@ -16,9 +16,19 @@ namespace RotationSolver.ExtraRotations.Magical;
 ///   - Acceleration: use on cooldown for Grand Impact generation, hold 1 charge if Embolden imminent.
 ///   - Swiftcast: alignment tool for double-instant, used after long-cast when no procs available.
 ///   - AoE: Verthunder II / Veraero II -> Impact (3+ targets), Enchanted Moulinet x3 (50/50).
+///
+/// BMR integration (BossModReborn timeline):
+///   - Spread Addle and Magick Barrier across separate raidwides (never stack on same RW).
+///   - Proactive Vercure self-heal before incoming raidwides when HP is low.
+///   - Block melee combo entry when downtime < 8s (combo takes 6-7 GCDs to complete).
+///   - Dump Embolden/Manafication before downtime for gauge value.
+///   - Hold Embolden for vulnerability windows (within 30s).
+///   - Avoid starting hardcasts when downtime < 3s.
+///   - Force melee combo / mana dump before downtime to preserve gauge value.
+///   - Full debug panel with BMR timeline breakdown.
 /// </summary>
 [Rotation("SezuraiRDM", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned RDM with Embolden burst, mana balance optimization, double melee combo, and Dawntrail abilities.")]
+    Description = "Balance-aligned RDM with Embolden burst, mana balance optimization, double melee combo, Dawntrail abilities, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Magical/SezuraiRDM.cs")]
 [ExtraRotation]
 public sealed class SezuraiRDM : RedMageRotation
@@ -54,6 +64,18 @@ public sealed class SezuraiRDM : RedMageRotation
     [RotationConfig(CombatType.PvE, Name = "Mana threshold for melee combo entry (40-100, step 5)")]
     public int ManaPoolTarget { get; set; } = 50;
 
+    [RotationConfig(CombatType.PvE, Name = "BMR: Hold Embolden for vulnerability window (within 30s)")]
+    public bool BmrHoldEmboldenForVuln { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Dump mana/burst before downtime")]
+    public bool BmrDumpBeforeDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Spread Addle/Magick Barrier across raidwides")]
+    public bool BmrSpreadMitigation { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Proactive Vercure self-heal before raidwide")]
+    public bool BmrProactiveVercure { get; set; } = true;
+
     #endregion
 
     #region Burst State
@@ -87,6 +109,47 @@ public sealed class SezuraiRDM : RedMageRotation
     /// </summary>
     private bool NextGCDIsInstant =>
         HasDualcast || HasSwift || HasAccelerate || CanGrandImpact;
+
+    #endregion
+
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR reports downtime within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrDowntimeWithin(float seconds)
+        => BmrActive && BmrDowntimeIn is > 0 and < float.MaxValue && BmrDowntimeIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a vulnerability window within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrVulnWithin(float seconds)
+        => BmrActive && BmrVulnerableIn is > 0 and < float.MaxValue && BmrVulnerableIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a raidwide within the specified seconds.
+    /// </summary>
+    private bool BmrRaidwideWithin(float seconds)
+        => BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a tankbuster within the specified seconds.
+    /// </summary>
+    private bool BmrTankbusterWithin(float seconds)
+        => BmrActive && BmrTankbusterIn is > 0 and < float.MaxValue && BmrTankbusterIn <= seconds;
+
+    /// <summary>
+    /// Tracks whether we used Addle on the most recent raidwide to spread mitigation.
+    /// Reset when raidwide timer goes far enough (> 20s means we are past the previous RW).
+    /// </summary>
+    private bool _lastRwUsedAddle;
+
+    /// <summary>
+    /// The BmrRaidwideIn value when we last used a mitigation, used to detect new raidwides.
+    /// </summary>
+    private float _lastRwMitTime;
 
     #endregion
 
@@ -151,6 +214,22 @@ public sealed class SezuraiRDM : RedMageRotation
     protected override void UpdateInfo()
     {
         DataCenter.RotationActionAheadOverride = ActionAheadOverride > 0f ? ActionAheadOverride : null;
+
+        // BMR: Reset mitigation spread tracking when raidwide timer jumps
+        // (indicates we've moved past the previous raidwide to a new one)
+        if (BmrActive && BmrRaidwideIn < float.MaxValue)
+        {
+            // If the raidwide timer increased significantly, a new RW event appeared
+            if (BmrRaidwideIn > _lastRwMitTime + 10f)
+            {
+                // New raidwide detected - reset alternation
+            }
+        }
+        else
+        {
+            // No raidwide in sight, reset for next encounter
+            _lastRwMitTime = 0f;
+        }
     }
 
     #endregion
@@ -172,16 +251,43 @@ public sealed class SezuraiRDM : RedMageRotation
         ImGui.Text($"Manafication CD: {ManaficationPvE.Cooldown.RecastTimeRemain:F1}s");
         ImGui.Text($"Fleche CD: {FlechePvE.Cooldown.RecastTimeRemain:F1}s");
         ImGui.Text($"C6 CD: {ContreSixtePvE.Cooldown.RecastTimeRemain:F1}s");
+        ImGui.Text($"Addle CD: {(AddlePvE.Cooldown.IsCoolingDown ? $"{AddlePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"MagickBarrier CD: {(MagickBarrierPvE.Cooldown.IsCoolingDown ? $"{MagickBarrierPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"EnoughManaForCombo: {HasEnoughManaForCombo}");
         ImGui.Text($"PoolMana: {PoolMana}  ManaNeededW: {ManaNeededWhite()}  ManaNeededB: {ManaNeededBlack()}");
+        ImGui.Spacing();
         ImGui.Text("--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s type={BmrDamageType}" : "None")}");
+            ImGui.Spacing();
+            ImGui.Text($"-- BMR Decision State --");
+            ImGui.Text($"RW within 5s: {BmrRaidwideWithin(5f)}");
+            ImGui.Text($"TB within 5s: {BmrTankbusterWithin(5f)}");
+            ImGui.Text($"Downtime <8s: {BmrDowntimeWithin(8f)}");
+            ImGui.Text($"Downtime <15s: {BmrDowntimeWithin(15f)}");
+            ImGui.Text($"Vuln <30s: {BmrVulnWithin(30f)}");
+            ImGui.Text($"LastRwUsedAddle: {_lastRwUsedAddle}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -189,26 +295,26 @@ public sealed class SezuraiRDM : RedMageRotation
 
     #region Countdown & Opener
     // === RDM OPENER (7.4 Balance) ===
-    // Pre-pull: Acceleration(-5s) → Pot(-2s) → Veraero III precast (hardcast w/ Accel for Grand Impact proc)
-    // GCD1: Veraero III → GCD2: Grand Impact (instant, from Acceleration)
-    // → Fleche (weave) → GCD3: Verthunder III/Veraero III (Dualcast)
-    // → Embolden (weave) → Manafication (weave) → GCD4: Veraero III (Dualcast)
-    // GCD5: Enchanted Riposte → Vice of Thorns (weave)
-    // GCD6: Enchanted Zwerchhau → GCD7: Enchanted Redoublement
-    // → Prefulgence (weave) → GCD8: Verholy/Verflare → GCD9: Scorch → GCD10: Resolution
-    // → Second melee combo under remaining Embolden
+    // Pre-pull: Acceleration(-5s) -> Pot(-2s) -> Veraero III precast (hardcast w/ Accel for Grand Impact proc)
+    // GCD1: Veraero III -> GCD2: Grand Impact (instant, from Acceleration)
+    // -> Fleche (weave) -> GCD3: Verthunder III/Veraero III (Dualcast)
+    // -> Embolden (weave) -> Manafication (weave) -> GCD4: Veraero III (Dualcast)
+    // GCD5: Enchanted Riposte -> Vice of Thorns (weave)
+    // GCD6: Enchanted Zwerchhau -> GCD7: Enchanted Redoublement
+    // -> Prefulgence (weave) -> GCD8: Verholy/Verflare -> GCD9: Scorch -> GCD10: Resolution
+    // -> Second melee combo under remaining Embolden
     //
     // === EVEN BURST (120s) ===
     // Embolden (party buff) + Manafication (instant melee combo stacks)
-    // Double melee combo: 2x Riposte→Zwerchhau→Redoublement→finisher chain
+    // Double melee combo: 2x Riposte->Zwerchhau->Redoublement->finisher chain
     // Prefulgence + Vice of Thorns + Grand Impact + Fleche + Contre Sixte under buffs
     //
     // === ODD BURST (60s) ===
-    // Single melee combo only — Embolden + Manafication are 120s
+    // Single melee combo only -- Embolden + Manafication are 120s
     // Fleche + Contre Sixte on cooldown, pool mana for even window
     //
     // === FILLER / SUSTAIN ===
-    // Dualcast loop: hardcast Verthunder/Veraero III → instant Dualcast proc → repeat
+    // Dualcast loop: hardcast Verthunder/Veraero III -> instant Dualcast proc -> repeat
     // Mana balance: keep White and Black mana roughly equal (within 30)
     // Melee entry at 50/50 mana minimum (Enchanted combo costs 50 of each)
     // Acceleration: use on CD for Grand Impact proc + instant cast, save 1 for movement
@@ -249,6 +355,15 @@ public sealed class SezuraiRDM : RedMageRotation
         // Block healing during burst sequences to prevent DPS loss
         if (PreventBurstHeal && InBurstSequence)
             return base.HealSingleGCD(out act);
+
+        // BMR: Proactive Vercure self-heal before raidwide damage.
+        // If a raidwide is coming within 5s and player HP is below 70%, cast Vercure
+        // to top up before the hit. This also procs Dualcast for an instant GCD after.
+        // Only when not in burst sequence (already blocked above).
+        if (BmrProactiveVercure && BmrRaidwideWithin(5f)
+            && Player?.GetHealthRatio() < 0.70f
+            && VercurePvE.CanUse(out act, skipStatusProvideCheck: true))
+            return true;
 
         if (VercurePvE.CanUse(out act, skipStatusProvideCheck: true))
             return true;
@@ -299,12 +414,60 @@ public sealed class SezuraiRDM : RedMageRotation
     [RotationDesc(ActionID.AddlePvE, ActionID.MagickBarrierPvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: spread Addle and Magick Barrier across separate raidwides
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwSoon = BmrRaidwideWithin(5f);
+
+        if (rwSoon && BmrSpreadMitigation)
+        {
+            // BMR-aware: spread Addle and Magick Barrier across separate raidwides.
+            // Addle (90s CD, 10% magic damage reduction on boss, 15s duration)
+            // Magick Barrier (120s CD, 10% party magic mit + 5% heal boost, 10s duration)
+            //
+            // Strategy: alternate which one we use per raidwide.
+            // Track via _lastRwUsedAddle: if we used Addle last time, prefer Barrier this time.
+            // If the preferred one is on CD, fall through to the other.
+            // Only use ONE per raidwide to maximize coverage across the fight.
+
+            bool preferAddle = !_lastRwUsedAddle;
+
+            if (preferAddle)
+            {
+                if (AddlePvE.CanUse(out act))
+                {
+                    _lastRwUsedAddle = true;
+                    _lastRwMitTime = BmrRaidwideIn;
+                    return true;
+                }
+                // Addle on CD, fall through to Barrier
+                if (MagickBarrierPvE.CanUse(out act))
+                {
+                    _lastRwUsedAddle = false;
+                    _lastRwMitTime = BmrRaidwideIn;
+                    return true;
+                }
+            }
+            else
+            {
+                if (MagickBarrierPvE.CanUse(out act))
+                {
+                    _lastRwUsedAddle = false;
+                    _lastRwMitTime = BmrRaidwideIn;
+                    return true;
+                }
+                // Barrier on CD, fall through to Addle
+                if (AddlePvE.CanUse(out act))
+                {
+                    _lastRwUsedAddle = true;
+                    _lastRwMitTime = BmrRaidwideIn;
+                    return true;
+                }
+            }
+
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
 
         if (rwSoon)
         {
-            // Use whichever is available first, but only 1 per raidwide
+            // BMR active but spread disabled: use whichever is available first, 1 per raidwide
             if (AddlePvE.CanUse(out act))
                 return true;
             if (MagickBarrierPvE.CanUse(out act))
@@ -321,6 +484,14 @@ public sealed class SezuraiRDM : RedMageRotation
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 
+    protected sealed override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        // RDM has no oGCD self-defense abilities.
+        // Vercure is a GCD handled in HealSingleGCD.
+        // Addle/Magick Barrier are area mitigation handled in DefenseAreaAbility.
+        return base.DefenseSingleAbility(nextGCD, out act);
+    }
+
     #endregion
 
     #region Emergency Ability (Embolden + Manafication)
@@ -332,6 +503,7 @@ public sealed class SezuraiRDM : RedMageRotation
         // Manafication grants Magicked Swordplay (3 free melee stacks) + Prefulgence Ready.
         // In 7.4: Manafication no longer doubles mana, it purely grants free combo stacks.
         // Optimal: use shortly after Embolden for double combo.
+        // BMR: Also use before downtime if Embolden is active (get value from Swordplay stacks before boss leaves)
         if (HasEmbolden
             || EmboldenPvE.Cooldown.HasOneCharge
             || (EmboldenPvE.Cooldown.WillHaveOneCharge(4f) && !IsInMeleeCombo))
@@ -340,12 +512,52 @@ public sealed class SezuraiRDM : RedMageRotation
                 return true;
         }
 
+        // BMR: Force Manafication before downtime for gauge value
+        // If downtime is within 15s and we have Embolden or it won't come back before downtime,
+        // use Manafication now to get free combo stacks we can spend before boss is untargetable.
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(15f)
+            && InCombat && HasHostilesInMaxRange
+            && !CanMagickedSwordplay && !HasManafication
+            && ManaficationPvE.CanUse(out act))
+        {
+            return true;
+        }
+
         // === EMBOLDEN ===
         // 120s party buff: 5% party damage, 10% personal magic damage for 20s.
         // Use on cooldown, aligned with 2-min party buffs.
         // Grants Thorned Flourish -> Vice of Thorns.
-        if (CanBurst && InCombat && HasHostilesInRange && EmboldenPvE.CanUse(out act))
-            return true;
+        {
+            // BMR: Don't use Embolden if downtime is very soon (< 5s) -- buff would be wasted
+            bool bmrBlockEmbolden = BmrDowntimeWithin(5f);
+
+            // BMR: Hold Embolden for upcoming vulnerability window -- but only if within 30s
+            // and not already happening (> 3s away). Don't hold forever.
+            bool bmrHoldForVuln = BmrHoldEmboldenForVuln
+                && BmrVulnWithin(30f)
+                && BmrVulnerableIn > 3f
+                && EmboldenPvE.Cooldown.HasOneCharge;
+
+            // BMR: Force Embolden before downtime if it won't come back before boss returns
+            // Use within 20s of downtime so the 20s buff duration gets some value
+            bool bmrForceBeforeDowntime = BmrDumpBeforeDowntime
+                && BmrDowntimeWithin(20f)
+                && !BmrDowntimeWithin(5f)
+                && EmboldenPvE.Cooldown.HasOneCharge;
+
+            if (CanBurst && InCombat && HasHostilesInRange && !bmrBlockEmbolden && !bmrHoldForVuln)
+            {
+                if (EmboldenPvE.CanUse(out act))
+                    return true;
+            }
+
+            // BMR: Force dump Embolden before downtime even without CanBurst
+            if (bmrForceBeforeDowntime && InCombat && HasHostilesInRange && !bmrHoldForVuln)
+            {
+                if (EmboldenPvE.CanUse(out act))
+                    return true;
+            }
+        }
 
         // === MEDICINE ===
         // Use during Embolden window for maximum burst value.
@@ -397,10 +609,18 @@ public sealed class SezuraiRDM : RedMageRotation
                 && EmboldenPvE.Cooldown.WillHaveOneCharge(10f);
             bool holdForBurst = emboldenSoon && BlackMana >= 50 && WhiteMana >= 50 && !IsInMeleeCombo;
 
+            // BMR: Don't hold Acceleration if downtime is imminent -- spend it for value
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(10f))
+                holdForBurst = false;
+
             if (!holdForBurst)
             {
                 bool useUp = HasEmbolden || !EmboldenPvE.EnoughLevel
                     || AccelerationPvE.Cooldown.WillHaveXChargesGCD(2, 1);
+
+                // BMR: Spend Acceleration more aggressively before downtime
+                if (BmrDumpBeforeDowntime && BmrDowntimeWithin(15f))
+                    useUp = true;
 
                 if (EnhancedAccelerationIiTrait.EnoughLevel)
                 {
@@ -434,6 +654,10 @@ public sealed class SezuraiRDM : RedMageRotation
         {
             bool holdForEmbolden = EmboldenPvE.EnoughLevel && !HasEmbolden
                 && EmboldenPvE.Cooldown.WillHaveOneCharge(30);
+
+            // BMR: Don't hold Swiftcast if downtime is imminent
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(10f))
+                holdForEmbolden = false;
 
             if (!holdForEmbolden || !EmboldenPvE.EnoughLevel)
             {
@@ -474,20 +698,24 @@ public sealed class SezuraiRDM : RedMageRotation
         // 1200 potency oGCD, available after Manafication.
         // Lasts 30s, so we can hold it for Embolden if desired.
         // Safety: if about to expire, use immediately.
+        // BMR: Use immediately before downtime rather than hold for Embolden that won't happen.
         if (CanPrefulgence)
         {
             bool aboutToExpire = StatusHelper.PlayerWillStatusEndGCD(1, 0, true, StatusID.PrefulgenceReady);
 
+            // BMR: Force use before downtime (don't lose 1200 potency to boss going away)
+            bool bmrForceUse = BmrDumpBeforeDowntime && BmrDowntimeWithin(5f);
+
             if (!DelayBurstOGCDs)
             {
-                // No delay: use under Embolden or before expiry
-                if ((HasEmbolden || aboutToExpire) && PrefulgencePvE.CanUse(out act))
+                // No delay: use under Embolden or before expiry or before downtime
+                if ((HasEmbolden || aboutToExpire || bmrForceUse) && PrefulgencePvE.CanUse(out act))
                     return true;
             }
             else
             {
-                // Delayed: prefer inside Embolden, fallback on expiry
-                if ((HasEmbolden || aboutToExpire) && PrefulgencePvE.CanUse(out act))
+                // Delayed: prefer inside Embolden, fallback on expiry or downtime dump
+                if ((HasEmbolden || aboutToExpire || bmrForceUse) && PrefulgencePvE.CanUse(out act))
                     return true;
             }
         }
@@ -495,8 +723,11 @@ public sealed class SezuraiRDM : RedMageRotation
         // === VICE OF THORNS (Embolden follow-up) ===
         // Available after using Embolden (Thorned Flourish buff).
         // Use inside Embolden window for buff value.
+        // BMR: Use before downtime rather than lose it.
         if (HasThornedFlourish)
         {
+            bool bmrForceUse = BmrDumpBeforeDowntime && BmrDowntimeWithin(5f);
+
             if (!DelayBurstOGCDs)
             {
                 if (ViceOfThornsPvE.CanUse(out act))
@@ -504,8 +735,8 @@ public sealed class SezuraiRDM : RedMageRotation
             }
             else
             {
-                // Delayed: only inside Embolden
-                if (HasEmbolden && ViceOfThornsPvE.CanUse(out act))
+                // Delayed: only inside Embolden, or forced by BMR downtime dump
+                if ((HasEmbolden || bmrForceUse) && ViceOfThornsPvE.CanUse(out act))
                     return true;
             }
         }
@@ -513,9 +744,15 @@ public sealed class SezuraiRDM : RedMageRotation
         // === ENGAGEMENT (2 charges, 35s CD) ===
         // Spend freely during Embolden. Outside buffs: prevent overcap.
         // Preferred over Displacement for safety.
+        // BMR: Spend charges before downtime.
         {
             bool useUp = HasEmbolden || !EmboldenPvE.EnoughLevel
                 || EngagementPvE.Cooldown.WillHaveXChargesGCD(2, 1);
+
+            // BMR: Dump charges before downtime
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(10f))
+                useUp = true;
+
             if (EngagementPvE.CanUse(out act, usedUp: useUp))
                 return true;
         }
@@ -523,9 +760,15 @@ public sealed class SezuraiRDM : RedMageRotation
         // === CORPS-A-CORPS (2 charges, 35s CD) ===
         // Spend freely during Embolden. Outside buffs: prevent overcap.
         // Only use when not moving (prevents accidental gap close).
+        // BMR: Spend charges before downtime.
         {
             bool useUp = HasEmbolden || !EmboldenPvE.EnoughLevel
                 || CorpsacorpsPvE.Cooldown.WillHaveXChargesGCD(2, 1);
+
+            // BMR: Dump charges before downtime
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(10f))
+                useUp = true;
+
             if (!IsMoving && CorpsacorpsPvE.CanUse(out act, usedUp: useUp))
                 return true;
         }
@@ -554,6 +797,10 @@ public sealed class SezuraiRDM : RedMageRotation
     {
         // Track whether we hold an instant-cast buff that should not be spent on a short spell
         bool hasInstantBuff = HasDualcast || HasSwift;
+
+        // BMR: Precompute downtime state for use throughout GCD logic
+        bool bmrDowntimeSoon = BmrDowntimeWithin(8f);
+        bool bmrDowntimeImminent = BmrDowntimeWithin(3f);
 
         // =====================================================================
         // PRIORITY 1: FINISHER CHAIN (always complete, never interrupt)
@@ -631,9 +878,19 @@ public sealed class SezuraiRDM : RedMageRotation
         // =====================================================================
         // PRIORITY 3: START MELEE COMBO (50/50+ mana, not in finisher chain)
         // =====================================================================
-        // BMR-aware: Don't start melee combo if downtime < 8s (combo takes ~6-7 GCDs)
-        bool bmrBlockMelee = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
-        if (HasEnoughManaForCombo && !InFinisherChain && !bmrBlockMelee)
+        // BMR-aware: Don't start melee combo if downtime < 8s (combo takes ~6-7 GCDs ~17s to complete)
+        // Exception: Force melee dump if we have high mana before downtime (within 15s) to avoid
+        // losing gauge value. The combo may get interrupted but partial value > no value.
+        bool bmrBlockMelee = bmrDowntimeSoon && !InBurstSequence;
+
+        // BMR: Force melee start if downtime within 15s and mana is very high
+        // (better to start and get partial combo than lose all mana to downtime)
+        bool bmrForceMeleeDump = BmrDumpBeforeDowntime
+            && BmrDowntimeWithin(15f) && !bmrDowntimeSoon
+            && BlackMana >= 50 && WhiteMana >= 50
+            && !IsInMeleeCombo && !InFinisherChain;
+
+        if (HasEnoughManaForCombo && !InFinisherChain && (!bmrBlockMelee || bmrForceMeleeDump))
         {
             // Burst start: when Manafication is active or swordplay stacks are running
             bool burstStartOK =
@@ -648,7 +905,8 @@ public sealed class SezuraiRDM : RedMageRotation
                 (WhiteMana >= 92 && BlackMana >= 81);
 
             bool canStart = burstStartOK || poolCapReached
-                || (!PoolMana && EnoughManaComboNoPooling);
+                || (!PoolMana && EnoughManaComboNoPooling)
+                || bmrForceMeleeDump;
 
             if (canStart)
             {
@@ -678,8 +936,16 @@ public sealed class SezuraiRDM : RedMageRotation
             return base.GeneralGCD(out act);
 
         // =====================================================================
-        // PRIORITY 5: ENCHANTED REPRISE (movement fallback)
+        // PRIORITY 5: ENCHANTED REPRISE (movement fallback + BMR downtime mana dump)
         // =====================================================================
+        // BMR: Use Enchanted Reprise to dump mana before downtime when we can't start a full combo
+        // (downtime < 8s, so melee combo is blocked, but we still want to spend mana)
+        if (BmrDumpBeforeDowntime && bmrDowntimeSoon && !bmrDowntimeImminent
+            && BlackMana >= 5 && WhiteMana >= 5
+            && ManaStacks == 0 && !IsInMeleeCombo && !InFinisherChain
+            && EnchantedReprisePvE.CanUse(out act))
+            return true;
+
         if (IsMoving && UseReprise
             && ManaStacks == 0 && (BlackMana < 50 || WhiteMana < 50)
             && !HasDualcast && !HasSwift && !HasAccelerate && !CanGrandImpact
@@ -692,6 +958,20 @@ public sealed class SezuraiRDM : RedMageRotation
         {
             act = null;
             return false;
+        }
+
+        // =====================================================================
+        // BMR: Don't start hardcasts when downtime is imminent (< 3s)
+        // The cast won't complete before boss goes away. Prefer instants or do nothing.
+        // =====================================================================
+        if (bmrDowntimeImminent && !hasInstantBuff && !HasAccelerate && !CanGrandImpact)
+        {
+            // Only allow instant-cast GCDs through; block hardcasts near downtime.
+            // If we have an instant buff, those will be handled below.
+            // Fall through to Vercure/base if nothing instant is available.
+            if (UseVercure && VercurePvE.CanUse(out act))
+                return true;
+            return base.GeneralGCD(out act);
         }
 
         // =====================================================================

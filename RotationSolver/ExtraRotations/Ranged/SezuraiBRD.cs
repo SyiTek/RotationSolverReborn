@@ -4,7 +4,7 @@ using ECommons.DalamudServices;
 namespace RotationSolver.ExtraRotations.Ranged;
 
 [Rotation("SezuraiBRD", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned BRD with song cycle management, Radiant Finale burst windows, Pitch Perfect optimization, and Empyreal Arrow drift prevention.")]
+    Description = "Balance-aligned BRD with song cycle management, Radiant Finale burst windows, Pitch Perfect optimization, Empyreal Arrow drift prevention, and BMR timeline integration for proactive mitigation and downtime optimization.")]
 [SourceCode(Path = "main/ExtraRotations/Ranged/SezuraiBRD.cs")]
 [ExtraRotation]
 public sealed class SezuraiBRD : BardRotation
@@ -29,6 +29,15 @@ public sealed class SezuraiBRD : BardRotation
     [RotationConfig(CombatType.PvE, Name = "Pitch Perfect stacks before spending (2 or 3)")]
     public int PitchPerfectThreshold { get; set; } = 3;
 
+    [RotationConfig(CombatType.PvE, Name = "BMR: Hold burst CDs for vulnerability window (within 30s)")]
+    public bool BmrHoldBurstForVuln { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Dump oGCDs/gauge before downtime")]
+    public bool BmrDumpBeforeDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Smart DoT management around downtime")]
+    public bool BmrSmartDoTs { get; set; } = true;
+
     #endregion
 
     #region Burst State
@@ -51,6 +60,15 @@ public sealed class SezuraiBRD : BardRotation
     /// True when any personal/party damage buff is active.
     /// </summary>
     private bool HasAnyBuff => HasRagingStrikes || HasBattleVoice || HasRadiantFinale;
+
+    /// <summary>
+    /// True when 2-minute CDs are approaching readiness (within 15s of Raging Strikes).
+    /// Used to determine whether to hold resources for burst.
+    /// </summary>
+    private bool IsPreBurst => RagingStrikesPvE.EnoughLevel
+        && RagingStrikesPvE.Cooldown.IsCoolingDown
+        && !RagingStrikesPvE.Cooldown.HasOneCharge
+        && RagingStrikesPvE.Cooldown.RecastTimeRemain <= 15;
 
     #endregion
 
@@ -106,6 +124,42 @@ public sealed class SezuraiBRD : BardRotation
 
     #endregion
 
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR reports downtime within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrDowntimeWithin(float seconds)
+        => BmrActive && BmrDowntimeIn is > 0 and < float.MaxValue && BmrDowntimeIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a vulnerability window within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrVulnWithin(float seconds)
+        => BmrActive && BmrVulnerableIn is > 0 and < float.MaxValue && BmrVulnerableIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a raidwide within the specified seconds.
+    /// </summary>
+    private bool BmrRaidwideWithin(float seconds)
+        => BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a tankbuster within the specified seconds.
+    /// </summary>
+    private bool BmrTankbusterWithin(float seconds)
+        => BmrActive && BmrTankbusterIn is > 0 and < float.MaxValue && BmrTankbusterIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports incoming damage (any type) within the specified seconds.
+    /// </summary>
+    private bool BmrDamageWithin(float seconds)
+        => BmrActive && BmrDamageIn is > 0 and < float.MaxValue && BmrDamageIn <= seconds;
+
+    #endregion
+
     #region Weave Helpers
 
     private static float LateWeaveWindow => WeaponTotal * 0.45f;
@@ -125,27 +179,35 @@ public sealed class SezuraiBRD : BardRotation
 
     #region Countdown & Opener
     // === BRD OPENER (7.4 Balance) ===
-    // Pre-pull: Pot(-2s) → Wanderer's Minuet (late weave, starts song cycle)
-    // GCD1: Stormbite (DoT) → GCD2: Caustic Bite (DoT)
-    // → Raging Strikes (weave) → Empyreal Arrow (weave)
-    // GCD3: Burst Shot → Battle Voice (weave) → Radiant Finale (weave)
-    // GCD4: Burst Shot → Barrage (weave) → GCD5: Refulgent Arrow (forced proc)
-    // → Sidewinder (weave) → Heartbreak Shot dump
-    // → Continue Burst Shot / Refulgent Arrow under buffs
+    // Pre-pull: Pot(-2s) -> Wanderer's Minuet (late weave, starts song cycle)
+    // GCD1: Stormbite (DoT) -> GCD2: Caustic Bite (DoT)
+    // -> Raging Strikes (weave) -> Empyreal Arrow (weave)
+    // GCD3: Burst Shot -> Battle Voice (weave) -> Radiant Finale (weave)
+    // GCD4: Burst Shot -> Barrage (weave) -> GCD5: Refulgent Arrow (forced proc)
+    // -> Sidewinder (weave) -> Heartbreak Shot dump
+    // -> Continue Burst Shot / Refulgent Arrow under buffs
     //
-    // === BURST WINDOWS (120s cycle — no distinct even/odd) ===
+    // === BURST WINDOWS (120s cycle -- no distinct even/odd) ===
     // Raging Strikes + Battle Voice + Radiant Finale (triple stack, all 120s)
     // Barrage + Sidewinder + Empyreal Arrow + Heartbreak Shot dump
     // Apex Arrow at 80+ Soul Voice gauge under full buffs
     // Blast Arrow follow-up under remaining buffs
     //
     // === FILLER / SUSTAIN ===
-    // Song cycle: Wanderer's Minuet (43s) → Mage's Ballad (43s) → Army's Paeon (34s)
-    // DoTs: refresh Stormbite + Caustic Bite at ≤3s remaining (snapshot under buffs when possible)
+    // Song cycle: Wanderer's Minuet (43s) -> Mage's Ballad (43s) -> Army's Paeon (34s)
+    // DoTs: refresh Stormbite + Caustic Bite at <=3s remaining (snapshot under buffs when possible)
     // Empyreal Arrow: strictly on cooldown, never hold
     // Pitch Perfect: spend at 3 stacks in WM, or 2+ if WM is about to end
     // Heartbreak Shot: use charges to avoid overcap (3 max), pool for burst
     // Apex Arrow: fire at 80+ Soul Voice, or 100 for Blast Arrow follow-up
+    //
+    // === BMR INTEGRATION ===
+    // Troubadour: party 10% mit, proactive use 5s before raidwide
+    // Nature's Minne: 20% heal potency buff, proactive on tank 5s before tankbuster
+    // DoT management: don't refresh if downtime < 5s, force-refresh if 5-15s away and DoTs would fall off
+    // Burst dump: spend Apex Arrow, Heartbreak charges, procs before downtime
+    // Burst hold: delay Raging/BV/RF if vulnerability window within 30s
+    // Song management: don't start new song if downtime < 5s
 
     protected override IAction? CountDownAction(float remainTime)
     {
@@ -163,8 +225,11 @@ public sealed class SezuraiBRD : BardRotation
     [RotationDesc(ActionID.TroubadourPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: Troubadour when raidwide imminent (override burst-skip for genuine raidwides)
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // === BMR-aware: Troubadour when raidwide imminent ===
+        // Troubadour: 15s party 10% damage reduction, 90s CD.
+        // Proactive use 5s before raidwide is optimal (covers the hit + some aftermath).
+        // Override burst-skip for genuine raidwides -- 10% party mit > marginal personal DPS.
+        bool rwSoon = BmrRaidwideWithin(5f);
 
         if (rwSoon)
         {
@@ -173,7 +238,7 @@ public sealed class SezuraiBRD : BardRotation
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
-        // Non-BMR: skip during burst
+        // Non-BMR: skip during burst to avoid clipping weave-heavy windows
         if (InFullBurst)
             return base.DefenseAreaAbility(nextGCD, out act);
 
@@ -184,17 +249,55 @@ public sealed class SezuraiBRD : BardRotation
     }
 
     [RotationDesc(ActionID.NaturesMinnePvE)]
+    protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        // === BMR-aware: Nature's Minne for tankbusters ===
+        // Nature's Minne: 15s, 20% healing received buff on target.
+        // For TBs: apply to tank 5s before hit so healers/tank self-heals get the bonus.
+        // For RWs: apply to self/party to boost healer AoE heals post-hit.
+        bool tbSoon = BmrTankbusterWithin(5f);
+
+        if (tbSoon)
+        {
+            if (NaturesMinnePvE.CanUse(out act))
+                return true;
+        }
+
+        // Also use for raidwides if Troubadour is on CD (stacks with Troub for extra survivability)
+        bool rwSoon = BmrRaidwideWithin(5f);
+        if (rwSoon && TroubadourPvE.Cooldown.IsCoolingDown)
+        {
+            if (NaturesMinnePvE.CanUse(out act))
+                return true;
+        }
+
+        // Non-BMR fallback: let framework handle
+        if (!BmrActive)
+        {
+            if (NaturesMinnePvE.CanUse(out act))
+                return true;
+        }
+
+        return base.DefenseSingleAbility(nextGCD, out act);
+    }
+
+    [RotationDesc(ActionID.NaturesMinnePvE)]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
         // BMR-aware: Nature's Minne before raidwide to boost healer heals
-        // 15s duration, 20% heal potency buff on target — time it so healers benefit
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+        // 15s duration, 20% heal potency buff on target -- time it so healers benefit
+        bool rwSoon = BmrRaidwideWithin(8f);
 
         if (rwSoon && NaturesMinnePvE.CanUse(out act))
             return true;
 
         // Non-BMR: use when framework triggers heal
         if (!BmrActive && NaturesMinnePvE.CanUse(out act))
+            return true;
+
+        // Self-healing: Second Wind when low HP, especially before incoming damage
+        bool damageSoon = BmrDamageWithin(5f) || BmrRaidwideWithin(5f);
+        if (damageSoon && Player.GetHealthRatio() < 0.6f && SecondWindPvE.CanUse(out act))
             return true;
 
         if (SecondWindPvE.CanUse(out act))
@@ -275,10 +378,26 @@ public sealed class SezuraiBRD : BardRotation
         // === SONG CYCLE: WM -> MB -> AP ===
         // The song cycle is BRD's most important mechanic. Maintain 100% song uptime.
         // Standard cycle: WM 42s -> MB 42s -> AP 33s = ~117s per cycle (close to 120s burst).
+        //
+        // BMR: Don't start a new song if downtime is very imminent (<5s).
+        // The song's value comes from procs over time -- starting one just to lose it
+        // during downtime wastes the CD and misaligns the song cycle post-downtime.
+        // Exception: always start WM (burst song) even near downtime for Pitch Perfect value.
 
         // Priority 1: Start first song (Wanderer's Minuet opens the fight)
         if (NoSong)
         {
+            // BMR: Don't start non-WM songs if downtime is very imminent
+            // WM is always worth starting (Pitch Perfect has immediate value)
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(5f))
+            {
+                // Still start WM for PP value
+                if (TheWanderersMinuetPvE.CanUse(out act))
+                    return true;
+                // Skip MB/AP if downtime imminent -- they need time to generate value
+                return base.GeneralAbility(nextGCD, out act);
+            }
+
             if (TryStartSong(out act))
                 return true;
         }
@@ -291,6 +410,11 @@ public sealed class SezuraiBRD : BardRotation
             if (Repertoire > 0 && PitchPerfectPvE.CanUse(out act))
                 return true;
 
+            // BMR: If downtime is imminent, don't transition to MB -- let WM expire
+            // and restart song cycle post-downtime with fresh alignment
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(5f))
+                return base.GeneralAbility(nextGCD, out act);
+
             if (MagesBalladPvE.CanUse(out act))
                 return true;
         }
@@ -298,6 +422,10 @@ public sealed class SezuraiBRD : BardRotation
         // MB -> AP at 3s remaining
         if (InMages && SongEndAfter(MB_EXIT_TIME))
         {
+            // BMR: Skip transition if downtime is imminent
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(5f))
+                return base.GeneralAbility(nextGCD, out act);
+
             if (ArmysPaeonPvE.CanUse(out act))
                 return true;
         }
@@ -330,43 +458,87 @@ public sealed class SezuraiBRD : BardRotation
         if (!EnoughWeaveTime)
             return base.AttackAbility(nextGCD, out act);
 
+        // === BMR: DUMP oGCDs BEFORE DOWNTIME ===
+        // When downtime is imminent (<=10s), aggressively spend all oGCD charges
+        // and resources that would be wasted during the untargetable phase.
+        // Heartbreak Shot charges, Sidewinder, and Barrage should all go out.
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(10f))
+        {
+            // Sidewinder: high potency single oGCD, don't let it sit during downtime
+            if (SidewinderPvE.CanUse(out act))
+                return true;
+
+            // Barrage: fire it even without RS if it would be wasted
+            // (gives Resonant Arrow proc to use immediately)
+            if (BarragePvE.CanUse(out act))
+                return true;
+
+            // Heartbreak Shot dump: spend all charges aggressively
+            if (RainOfDeathPvE.CanUse(out act, usedUp: true))
+                return true;
+            if (HeartbreakShotPvE.CanUse(out act, usedUp: true))
+                return true;
+            if (BloodletterPvE.CanUse(out act, usedUp: true))
+                return true;
+        }
+
         // === 2-MINUTE BURST BUFFS (Radiant Finale -> Battle Voice -> Raging Strikes) ===
         // Apply in this order so Radiant Finale snapshots all 3 Coda, then BV + RS stack on top.
         // All three should be used during Wanderer's Minuet for Pitch Perfect value.
+        //
+        // BMR: Don't start burst if downtime is too close (< 20s).
+        // Full burst window needs ~20s to get all GCDs under buffs.
+        // Also hold burst for upcoming vulnerability window if configured.
         if (CanBurst && InCombat && HasHostilesInRange)
         {
-            // Radiant Finale: use when we have Coda stored (ideally 3 for 6% buff)
-            // Gate behind WM being active for proper song cycle alignment.
-            if (RadiantFinalePvE.EnoughLevel && InWanderers)
+            // BMR: Block burst activation if downtime is imminent
+            // The 20s burst window would be truncated, wasting the 120s CDs.
+            // Exception: if buffs are already rolling, keep spending (don't waste active buffs).
+            bool bmrBlockBurst = BmrDumpBeforeDowntime && BmrDowntimeWithin(20f) && !HasAnyBuff;
+
+            // BMR: Hold burst for upcoming vulnerability window
+            // If boss becomes vulnerable within 30s, delay burst for the damage bonus.
+            // Don't hold if vuln is already happening (< 3s) -- that means it's active now.
+            bool bmrHoldForVuln = BmrHoldBurstForVuln
+                && BmrVulnWithin(30f)
+                && BmrVulnerableIn > 3f
+                && RagingStrikesPvE.Cooldown.HasOneCharge;
+
+            if (!bmrBlockBurst && !bmrHoldForVuln)
             {
-                // First burst: use when BV is up (opener sequence)
-                // Subsequent bursts: use when BV is about to come off CD
-                if ((HasBattleVoice || BattleVoicePvE.Cooldown.WillHaveOneCharge(WeaponTotal))
-                    && RadiantFinalePvE.CanUse(out act))
-                    return true;
-            }
+                // Radiant Finale: use when we have Coda stored (ideally 3 for 6% buff)
+                // Gate behind WM being active for proper song cycle alignment.
+                if (RadiantFinalePvE.EnoughLevel && InWanderers)
+                {
+                    // First burst: use when BV is up (opener sequence)
+                    // Subsequent bursts: use when BV is about to come off CD
+                    if ((HasBattleVoice || BattleVoicePvE.Cooldown.WillHaveOneCharge(WeaponTotal))
+                        && RadiantFinalePvE.CanUse(out act))
+                        return true;
+                }
 
-            // Battle Voice: 20s party buff, use after/with Radiant Finale
-            if (BattleVoicePvE.EnoughLevel && InWanderers)
-            {
-                bool rfReady = !RadiantFinalePvE.EnoughLevel
-                    || HasRadiantFinale
-                    || IsLastAbility(ActionID.RadiantFinalePvE);
+                // Battle Voice: 20s party buff, use after/with Radiant Finale
+                if (BattleVoicePvE.EnoughLevel && InWanderers)
+                {
+                    bool rfReady = !RadiantFinalePvE.EnoughLevel
+                        || HasRadiantFinale
+                        || IsLastAbility(ActionID.RadiantFinalePvE);
 
-                if (rfReady && BattleVoicePvE.CanUse(out act))
-                    return true;
-            }
+                    if (rfReady && BattleVoicePvE.CanUse(out act))
+                        return true;
+                }
 
-            // Raging Strikes: personal 15% damage buff, use after party buffs are up
-            if (RagingStrikesPvE.EnoughLevel)
-            {
-                bool partyBuffsUp =
-                    (!BattleVoicePvE.EnoughLevel && !RadiantFinalePvE.EnoughLevel)
-                    || (!RadiantFinalePvE.EnoughLevel && HasBattleVoice)
-                    || (HasBattleVoice && HasRadiantFinale);
+                // Raging Strikes: personal 15% damage buff, use after party buffs are up
+                if (RagingStrikesPvE.EnoughLevel)
+                {
+                    bool partyBuffsUp =
+                        (!BattleVoicePvE.EnoughLevel && !RadiantFinalePvE.EnoughLevel)
+                        || (!RadiantFinalePvE.EnoughLevel && HasBattleVoice)
+                        || (HasBattleVoice && HasRadiantFinale);
 
-                if (partyBuffsUp && RagingStrikesPvE.CanUse(out act))
-                    return true;
+                    if (partyBuffsUp && RagingStrikesPvE.CanUse(out act))
+                        return true;
+                }
             }
         }
 
@@ -413,6 +585,18 @@ public sealed class SezuraiBRD : BardRotation
         if (HasRadiantEncore && RadiantEncorePvE.CanUse(out act))
             return true;
 
+        // === BMR: PRE-DOWNTIME GCD OPTIMIZATION ===
+        // When downtime is imminent, prioritize high-potency GCDs over DoT refresh.
+        // Apex Arrow (600 potency at 100 gauge) + Blast Arrow > Iron Jaws > filler.
+        // Fire Apex even at lower thresholds if it would be lost to downtime.
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(8f))
+        {
+            // Apex Arrow: dump Soul Voice before downtime (gauge resets are bad)
+            // Lower threshold for pre-downtime dump: 20+ gauge (minimum for Apex to fire)
+            if (SoulVoice >= 20 && !HasBarrage && ApexArrowPvE.CanUse(out act))
+                return true;
+        }
+
         // === APEX ARROW: Soul Voice gauge spender ===
         // Fire at threshold (default 80+, ideally 100 during burst).
         // During burst: use at 80+ to fit under buffs.
@@ -423,6 +607,7 @@ public sealed class SezuraiBRD : BardRotation
         // === IRON JAWS: DoT refresh ===
         // Refreshes both Caustic Bite and Stormbite. Requires both to be active.
         // Priority: during burst (snapshot raid buffs), or when DoTs are about to expire.
+        // BMR: Smart DoT management around downtime (see TryUseIronJaws).
         if (TryUseIronJaws(out act))
             return true;
 
@@ -449,18 +634,27 @@ public sealed class SezuraiBRD : BardRotation
 
         // === DOT APPLICATION (initial application, before Iron Jaws is available) ===
         // Stormbite first (higher initial potency), then Caustic Bite
+        // BMR: Skip initial DoT application if downtime < 5s (DoTs wouldn't tick enough)
         if (!IronJawsPvE.EnoughLevel || !TargetHasDoTs)
         {
-            if (StormbitePvE.CanUse(out act))
-                return true;
-            if (CausticBitePvE.CanUse(out act))
-                return true;
+            // BMR: Don't apply fresh DoTs if boss goes untargetable very soon
+            if (BmrSmartDoTs && BmrDowntimeWithin(5f))
+            {
+                // Skip DoT application, fall through to fillers
+            }
+            else
+            {
+                if (StormbitePvE.CanUse(out act))
+                    return true;
+                if (CausticBitePvE.CanUse(out act))
+                    return true;
 
-            // Low level: Windbite and Venomous Bite
-            if (WindbitePvE.CanUse(out act))
-                return true;
-            if (VenomousBitePvE.CanUse(out act))
-                return true;
+                // Low level: Windbite and Venomous Bite
+                if (WindbitePvE.CanUse(out act))
+                    return true;
+                if (VenomousBitePvE.CanUse(out act))
+                    return true;
+            }
         }
 
         // Low level fillers
@@ -505,6 +699,7 @@ public sealed class SezuraiBRD : BardRotation
     /// - Always use at 3 stacks (max potency)
     /// - Use at 2 stacks if Empyreal Arrow is about to come off CD (would overflow to 4)
     /// - Use any remaining stacks before WM ends (can't use PP outside WM)
+    /// - BMR: Dump any PP stacks before downtime (lose them if WM expires during transition)
     /// </summary>
     private bool TryUsePitchPerfect(out IAction? act)
     {
@@ -529,6 +724,12 @@ public sealed class SezuraiBRD : BardRotation
         if (Repertoire > 0 && SongEndAfter(WM_EXIT_TIME + WeaponTotal))
             return true;
 
+        // BMR: Dump any PP stacks before downtime
+        // During downtime WM timer pauses but we can't target -- stacks are effectively wasted.
+        // Spend at any count if downtime is imminent.
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(5f) && Repertoire > 0)
+            return true;
+
         return false;
     }
 
@@ -537,10 +738,16 @@ public sealed class SezuraiBRD : BardRotation
     /// - Use during Raging Strikes for burst value
     /// - Don't use when Hawk's Eye is active (wastes the guaranteed proc, it would be consumed first)
     /// - Don't use at 3 Repertoire (EA proc might overflow)
+    /// - BMR: Don't waste Barrage if downtime is imminent and we can't get value
     /// </summary>
     private bool TryUseBarrage(out IAction? act)
     {
         act = null;
+
+        // BMR: Don't Barrage if downtime is < 3s (can't even use the Refulgent + Resonant)
+        // The pre-downtime dump path in AttackAbility handles the aggressive dump case.
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(3f))
+            return false;
 
         // Hold for Raging Strikes if configured and RS is available soon
         if (HoldBarrageForBurst && RagingStrikesPvE.EnoughLevel)
@@ -570,10 +777,16 @@ public sealed class SezuraiBRD : BardRotation
     /// <summary>
     /// Sidewinder: 60s cooldown, high potency oGCD.
     /// Use on cooldown. Ideally during Raging Strikes but don't hold excessively.
+    /// BMR: Don't hold for burst if downtime would eat the CD.
     /// </summary>
     private bool TryUseSidewinder(out IAction? act)
     {
         act = null;
+
+        // BMR: If downtime is within 10s, don't hold Sidewinder for burst --
+        // it's better to use it now than lose it during the untargetable phase.
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(10f))
+            return SidewinderPvE.CanUse(out act);
 
         // Hold briefly for burst if RS is coming soon
         if (RagingStrikesPvE.EnoughLevel
@@ -590,6 +803,7 @@ public sealed class SezuraiBRD : BardRotation
     /// - Spend during burst (dump all charges under buffs)
     /// - Prevent overcap (use when at max charges)
     /// - Rain of Death for 3+ AoE targets
+    /// - BMR: Aggressively dump before downtime
     /// </summary>
     private bool TryUseHeartbreakShot(out IAction? act)
     {
@@ -599,21 +813,27 @@ public sealed class SezuraiBRD : BardRotation
         bool willOvercap = BloodletterPvE.Cooldown.CurrentCharges >= BloodletterMax - 1
             && InMages; // MB resets give extra charges
 
-        bool shouldSpend = InFullBurst || HasRagingStrikes || atMaxCharges || willOvercap;
+        // BMR: Dump charges before downtime (they'd recharge during downtime anyway)
+        bool bmrDump = BmrDumpBeforeDowntime && BmrDowntimeWithin(10f)
+            && BloodletterPvE.Cooldown.CurrentCharges > 0;
+
+        bool shouldSpend = InFullBurst || HasRagingStrikes || atMaxCharges || willOvercap || bmrDump;
 
         if (!shouldSpend)
             return false;
 
+        bool usedUp = InFullBurst || atMaxCharges || bmrDump;
+
         // AoE: Rain of Death
-        if (RainOfDeathPvE.CanUse(out act, usedUp: InFullBurst || atMaxCharges))
+        if (RainOfDeathPvE.CanUse(out act, usedUp: usedUp))
             return true;
 
         // ST: Heartbreak Shot (upgraded Bloodletter)
-        if (HeartbreakShotPvE.CanUse(out act, usedUp: InFullBurst || atMaxCharges))
+        if (HeartbreakShotPvE.CanUse(out act, usedUp: usedUp))
             return true;
 
         // Low level fallback
-        if (BloodletterPvE.CanUse(out act, usedUp: InFullBurst || atMaxCharges))
+        if (BloodletterPvE.CanUse(out act, usedUp: usedUp))
             return true;
 
         return false;
@@ -626,11 +846,14 @@ public sealed class SezuraiBRD : BardRotation
     /// - During burst: fire at 80+ to fit under buffs
     /// - Outside burst: fire at 100 to prevent waste, or 80+ during Mage's Ballad
     /// - Grants Blast Arrow Ready as follow-up
+    /// - BMR: Fire at lower threshold before downtime (gauge lost during untargetable)
     /// </summary>
     private bool TryUseApexArrow(out IAction? act)
     {
         act = null;
 
+        // BMR pre-downtime dump is handled in GeneralGCD (fires at 20+ gauge)
+        // This method handles normal Apex Arrow logic.
         if (SoulVoice < ApexArrowThreshold)
             return false;
 
@@ -639,7 +862,8 @@ public sealed class SezuraiBRD : BardRotation
             return false;
 
         // Don't use if DoTs are about to fall off (Iron Jaws is more urgent)
-        if (DoTsEnding)
+        // BMR exception: if downtime is imminent, DoTs don't matter
+        if (DoTsEnding && !BmrDowntimeWithin(8f))
             return false;
 
         if (!ApexArrowPvE.CanUse(out act))
@@ -658,9 +882,18 @@ public sealed class SezuraiBRD : BardRotation
         if (InMages && SongTime <= 22f && SoulVoice >= ApexArrowThreshold)
             return true;
 
+        // BMR: Fire at threshold if downtime is approaching (15s)
+        // Better to get Apex + Blast Arrow value than hold and lose gauge
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(15f) && SoulVoice >= ApexArrowThreshold)
+            return true;
+
         // Hold for upcoming burst if close (within 25s of BV)
+        // BMR override: don't hold if downtime would eat the burst anyway
         if (BattleVoicePvE.EnoughLevel && BattleVoicePvE.Cooldown.WillHaveOneCharge(25))
-            return false;
+        {
+            if (!BmrDowntimeWithin(25f))
+                return false;
+        }
 
         // Otherwise fire at threshold to prevent overcap during next WM
         if (SoulVoice >= ApexArrowThreshold)
@@ -674,7 +907,11 @@ public sealed class SezuraiBRD : BardRotation
     /// - Refresh when DoTs have less than ~3s remaining
     /// - Snapshot during burst (refresh early under raid buffs for stronger DoT ticks)
     /// - Never let DoTs fall off
-    /// - BMR-aware: Don't refresh DoTs if downtime < 5s (DoTs would be wasted on untargetable boss)
+    /// - BMR-aware DoT management:
+    ///   - Don't refresh if downtime < 5s (DoTs wasted on untargetable boss)
+    ///   - Force refresh if downtime is 15-30s away and DoTs would fall off during downtime
+    ///     (want strong DoTs ticking when boss returns, if DoTs persist through transition)
+    ///   - Skip refresh entirely if downtime < 5s (boss gone, DoTs meaningless)
     /// </summary>
     private bool TryUseIronJaws(out IAction? act)
     {
@@ -687,9 +924,29 @@ public sealed class SezuraiBRD : BardRotation
         if (!TargetHasDoTs)
             return false;
 
-        // BMR-aware: Don't refresh if downtime imminent (DoTs wasted on untargetable boss)
-        if (BmrActive && BmrDowntimeIn is > 0 and <= 5f)
-            return false;
+        // === BMR SMART DOT MANAGEMENT ===
+        if (BmrSmartDoTs && BmrActive && BmrDowntimeIn is > 0 and < float.MaxValue)
+        {
+            float dtIn = BmrDowntimeIn;
+
+            // Don't refresh if downtime < 5s -- DoTs would tick on an untargetable boss.
+            // Use remaining GCDs on Burst Shot/Refulgent (direct damage) instead.
+            if (dtIn <= 5f)
+                return false;
+
+            // Downtime 5-15s away: refresh DoTs IF they would fall off before boss returns.
+            // This ensures DoTs are ticking when boss comes back.
+            // Check if DoTs will expire within the downtime window.
+            if (dtIn is > 5f and <= 15f && DoTsEnding)
+            {
+                if (IronJawsPvE.CanUse(out act))
+                    return true;
+            }
+        }
+        else if (BmrSmartDoTs && !BmrActive)
+        {
+            // Non-BMR: original logic (no downtime awareness)
+        }
 
         // Snapshot during burst: refresh with ~4-7s remaining while buffed
         // This gives us stronger DoT ticks for the full 45s duration
@@ -726,6 +983,7 @@ public sealed class SezuraiBRD : BardRotation
         ImGui.Text("--- Burst ---");
         ImGui.Text($"CanBurst: {CanBurst}");
         ImGui.Text($"InFullBurst: {InFullBurst}");
+        ImGui.Text($"IsPreBurst: {IsPreBurst}");
         ImGui.Text($"HasAnyBuff: {HasAnyBuff}");
         ImGui.Text($"HasRagingStrikes: {HasRagingStrikes}");
         ImGui.Text($"HasBattleVoice: {HasBattleVoice}");
@@ -747,19 +1005,42 @@ public sealed class SezuraiBRD : BardRotation
         ImGui.Text($"SW: {(SidewinderPvE.Cooldown.IsCoolingDown ? $"{SidewinderPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Barrage: {(BarragePvE.Cooldown.IsCoolingDown ? $"{BarragePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"BL Charges: {BloodletterPvE.Cooldown.CurrentCharges}/{BloodletterMax}");
+        ImGui.Text($"Troubadour: {(TroubadourPvE.Cooldown.IsCoolingDown ? $"{TroubadourPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Minne: {(NaturesMinnePvE.Cooldown.IsCoolingDown ? $"{NaturesMinnePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
 
         ImGui.Text("--- Weave ---");
         ImGui.Text($"WeaponRemain: {WeaponRemain:F2}s | WeaponTotal: {WeaponTotal:F2}s");
         ImGui.Text($"EnoughWeaveTime: {EnoughWeaveTime}");
         ImGui.Text($"CanLateWeave: {CanLateWeave}");
+
         ImGui.Text("--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"-- BMR Decision State --");
+            ImGui.Text($"DowntimeWithin5: {BmrDowntimeWithin(5f)} | DT10: {BmrDowntimeWithin(10f)} | DT20: {BmrDowntimeWithin(20f)}");
+            ImGui.Text($"RaidwideWithin5: {BmrRaidwideWithin(5f)} | TBWithin5: {BmrTankbusterWithin(5f)}");
+            ImGui.Text($"VulnWithin30: {BmrVulnWithin(30f)}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 

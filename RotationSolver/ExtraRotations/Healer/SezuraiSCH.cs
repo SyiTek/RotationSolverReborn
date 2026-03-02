@@ -3,7 +3,7 @@ using System.ComponentModel;
 namespace RotationSolver.ExtraRotations.Healer;
 
 [Rotation("SezuraiSCH", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned SCH with Chain Stratagem burst, Energy Drain optimization, and 3 healing modes.")]
+    Description = "Balance-aligned SCH with BMR timeline integration, Chain Stratagem burst, Energy Drain optimization, and 3 healing modes.")]
 [SourceCode(Path = "main/ExtraRotations/Healer/SezuraiSCH.cs")]
 [ExtraRotation]
 public sealed class SezuraiSCH : ScholarRotation
@@ -118,24 +118,24 @@ public sealed class SezuraiSCH : ScholarRotation
 
     #region Countdown & Opener
     // === SCH OPENER (7.4 Balance / Icy Veins — Aetherflow-first) ===
-    // Pre-pull: Summon Eos(-7s) → Broil IV precast(-2.4s) → Pot (weave on land)
-    // GCD1: Biolysis (instant) → Aetherflow (weave, grants 3 stacks)
-    // GCD2: Broil IV → Chain Stratagem (weave)
-    // GCD3: Broil IV → Energy Drain (weave)
-    // GCD4: Broil IV → Energy Drain (weave)
-    // GCD5: Broil IV → Energy Drain (weave)
-    // GCD6: Broil IV → Dissipation (weave, +3 more stacks, removes fairy 30s)
-    // GCD7: Broil IV → Baneful Impaction (weave)
-    // GCD8: Broil IV → Energy Drain (weave)
-    // GCD9: Broil IV → Energy Drain (weave)
-    // GCD10: Biolysis (early refresh to snapshot buffs) → Energy Drain (weave)
+    // Pre-pull: Summon Eos(-7s) -> Broil IV precast(-2.4s) -> Pot (weave on land)
+    // GCD1: Biolysis (instant) -> Aetherflow (weave, grants 3 stacks)
+    // GCD2: Broil IV -> Chain Stratagem (weave)
+    // GCD3: Broil IV -> Energy Drain (weave)
+    // GCD4: Broil IV -> Energy Drain (weave)
+    // GCD5: Broil IV -> Energy Drain (weave)
+    // GCD6: Broil IV -> Dissipation (weave, +3 more stacks, removes fairy 30s)
+    // GCD7: Broil IV -> Baneful Impaction (weave)
+    // GCD8: Broil IV -> Energy Drain (weave)
+    // GCD9: Broil IV -> Energy Drain (weave)
+    // GCD10: Biolysis (early refresh to snapshot buffs) -> Energy Drain (weave)
     //
     // === EVEN BURST (120s) ===
     // Chain Stratagem (10% crit, 120s) + Baneful Impaction + 6x Energy Drain
     //   (3 from Aetherflow + 3 from Dissipation) + Biolysis snapshot refresh
     //
     // === ODD BURST (60s) ===
-    // Aetherflow (60s) → 3x Energy Drain only. No Chain Strat
+    // Aetherflow (60s) -> 3x Energy Drain only. No Chain Strat
     // Dump stacks before next Aetherflow to avoid overcapping
     //
     // === FILLER ===
@@ -198,50 +198,105 @@ public sealed class SezuraiSCH : ScholarRotation
 
     #region Defense
 
-    [RotationDesc(ActionID.ExpedientPvE, ActionID.FeyIlluminationPvE)]
+    [RotationDesc(ActionID.SacredSoilPvE, ActionID.ExpedientPvE, ActionID.FeyIlluminationPvE, ActionID.SummonSeraphPvE, ActionID.ConsolationPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: time party mit to raidwide (1-2 mits max, spread across events)
-        // Balance: "Expedient is your best party mit — 10% + sprint for repositioning"
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // === BMR-AWARE PARTY MITIGATION ===
+        // Per Balance/Icy Veins: spread mits across raidwides, don't stack everything on one hit.
+        // Mitigation is multiplicative (two 10% = 19%, not 20%), so spreading is more efficient.
+        // SCH has: Sacred Soil (10% ground mit + HoT), Expedient (10% party mit + sprint),
+        //          Fey Illumination (5% magic mit + heal potency), Seraph/Consolation (shields).
+        // Use at most 2 mits per raidwide event. Sacred Soil needs placement time (8s window).
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+        bool rwImminent = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool canSpendAetherflowOnHeal = HealMode != HealModeStrategy.DPSBot || !HasAetherflow;
+        int mitsUsed = 0;
 
         if (rwSoon)
         {
-            // Expedient first: 10% party mit + sprint (best SCH party CD)
-            if (ExpedientPvE.CanUse(out act))
+            // Sacred Soil: ground 10% mit + HoT — needs to be placed BEFORE damage lands.
+            // 8s window gives time for ground placement + party to be inside the bubble.
+            // Per Balance: "your most powerful usage of Aetherflow" for healing/mit combined.
+            if (canSpendAetherflowOnHeal && SacredSoilPvE.CanUse(out act))
                 return true;
 
-            // Fey Illumination: 5% magic mit + heal potency buff
-            if (FeyIlluminationPvE.CanUse(out act))
+            // Seraph + Consolation: pre-shield the party before raidwide.
+            // Summon Seraph gives 2 Consolation charges (250p heal + 250 shield each).
+            // Per Balance: "especially if there are multiple raidwides within a short interval."
+            // Only summon Seraph proactively if Consolation isn't already available.
+            if (!ConsolationPvE.Cooldown.HasOneCharge && SummonSeraphPvE.CanUse(out act))
                 return true;
 
-            // Max 1-2 per raidwide — stop
+            // Consolation: Seraph AoE shield — use one charge for this RW, save one for next.
+            // Do NOT usedUp: true here — spread charges across multiple raidwides.
+            if (ConsolationPvE.CanUse(out act))
+            {
+                mitsUsed++;
+                return true;
+            }
+
+            // Expedient: 10% party mit + sprint for 20s — best SCH party CD.
+            // Per Balance: "20s AoE mitigation (10%) and 10s AoE move speed buff."
+            // Use when RW is imminent (5s) so the mit window covers the damage snapshot.
+            if (rwImminent && ExpedientPvE.CanUse(out act))
+            {
+                mitsUsed++;
+                if (mitsUsed >= 2) return true;
+                return true;
+            }
+
+            // Fey Illumination: 5% magic mit + 10% heal potency buff.
+            // Per Balance: combine with heals after raidwide for amplified recovery.
+            // Only if we haven't already stacked 2 mits on this raidwide.
+            if (mitsUsed < 2 && FeyIlluminationPvE.CanUse(out act))
+                return true;
+
+            // Max 2 mits per raidwide — stop. Let the next RW get its own coverage.
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
-        // Non-BMR: use Expedient whenever framework triggers defense
+        // === NON-BMR FALLBACK ===
+        // Without BMR timeline data, use mits whenever the framework triggers defense.
+        // Expedient is always good — it's the strongest general-purpose party CD.
         if (ExpedientPvE.CanUse(out act))
+            return true;
+
+        if (FeyIlluminationPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.ProtractionPvE, ActionID.ExcogitationPvE)]
+    [RotationDesc(ActionID.ExcogitationPvE, ActionID.ProtractionPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: when TB imminent, place Excogitation + Protraction on tank
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+        // === BMR-AWARE TANK MITIGATION ===
+        // Per Balance: Excogitation is a delayed heal that triggers at <50% HP or on expiry.
+        // Place it on the tank BEFORE the tankbuster so it auto-heals after damage.
+        // Recitation + Excog = guaranteed crit + free (no Aetherflow cost) — the dream combo.
+        // Protraction: 10% max HP increase + healing received buff — stacks with Excog.
+        // 8s window: enough time to weave Recitation -> Excogitation -> Protraction.
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 8f;
+        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 5f;
 
         if (tbSoon)
         {
-            // Excogitation first: auto-heal at <50% HP, strongest single-target tool
-            // Recitation + Excog is even better (guaranteed crit + free)
+            // Prep Recitation first if TB isn't imminent yet — sets up the free crit Excog.
+            // If TB is 5-8s out, we have time to weave Recitation now, then Excog next oGCD.
+            if (!tbImminent && !HasRecitation && RecitationPvE.CanUse(out act))
+                return true;
+
+            // Excogitation: auto-heal at <50% HP, strongest single-target tool.
+            // Recitation + Excog is even better (guaranteed crit + free).
+            // Per Balance: "if needed for preemptive tank healing, especially when Holmgang
+            // or Living Dead are used."
             if (HasRecitation && ExcogitationPvE.CanUse(out act))
                 return true;
             if (ExcogitationPvE.CanUse(out act))
                 return true;
 
-            // Protraction: 10% max HP increase + healing received buff
+            // Protraction: 10% max HP increase + healing received buff.
+            // Per Balance: "Most effective on tanks." Stacks multiplicatively with Excog.
             if (ProtractionPvE.CanUse(out act))
                 return true;
 
@@ -249,7 +304,8 @@ public sealed class SezuraiSCH : ScholarRotation
             return base.DefenseSingleAbility(nextGCD, out act);
         }
 
-        // Non-BMR: Protraction when framework triggers defense
+        // === NON-BMR FALLBACK ===
+        // Without BMR data, use Protraction when the framework triggers single defense.
         if (ProtractionPvE.CanUse(out act))
             return true;
 
@@ -307,50 +363,72 @@ public sealed class SezuraiSCH : ScholarRotation
         ActionID.ConsolationPvE, ActionID.SacredSoilPvE, ActionID.IndomitabilityPvE, ActionID.SeraphismPvE)]
     protected override bool HealAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: place Sacred Soil proactively before raidwide for 10% mit + regen
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+        // === BMR-AWARE HEAL TIMING: MIT BEFORE RAIDWIDE, HEAL AFTER DAMAGE ===
+        // Per Balance/Icy Veins: the heal priority is free oGCDs > Aetherflow oGCDs > GCD heals.
+        // When BMR knows a raidwide is coming, HOLD heals — let DefenseAreaAbility handle mit.
+        // Heals should fire AFTER damage, not before. The framework triggers HealAreaAbility
+        // when party HP drops, which should be after the raidwide hits.
+        //
+        // Exception: Sacred Soil has BOTH mit AND HoT, so it goes in DefenseAreaAbility for pre-placement.
+        // Exception: Consolation is a shield — it goes in DefenseAreaAbility for pre-shielding.
+        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
         bool canSpendAetherflowOnHeal = HealMode != HealModeStrategy.DPSBot || !HasAetherflow;
 
-        if (rwSoon && canSpendAetherflowOnHeal && SacredSoilPvE.CanUse(out act))
-            return true;
-
         // === Seraphism: emergency healing super mode ===
+        // Per Balance: capstone ability — converts GCD heals to instant casts with 20% potency increase.
+        // Use in true emergencies or when party HP is critically low.
         if (HealMode == HealModeStrategy.HealBot && SeraphismPvE.CanUse(out act))
             return true;
 
         if (HealMode != HealModeStrategy.DPSBot && PartyMembersAverHP < 0.5f && SeraphismPvE.CanUse(out act))
             return true;
 
-        // === Free oGCD Heals (no Aetherflow cost) ===
-
-        // Consolation: Seraph AoE heal + shield (2 charges during Seraph)
+        // === Consolation: Seraph AoE heal + shield ===
+        // Per Balance: 2 charges during Seraph — spread across raidwides for best value.
+        // If Seraph is active, use Consolation freely as it's the primary reason we summoned.
+        // usedUp: true to spend both charges since Seraph window is short (22s).
         if (ConsolationPvE.CanUse(out act, usedUp: true))
             return true;
 
-        // Fey Blessing: fairy AoE heal
+        // === BMR HOLD: if raidwide is coming soon, STOP healing — wait for damage to land ===
+        // MIT is already running from DefenseAreaAbility. Don't waste heals before the hit.
+        // After the raidwide hits, party HP will drop and the framework re-triggers this method.
+        if (rwComingSoon)
+            return base.HealAreaAbility(nextGCD, out act);
+
+        // === POST-DAMAGE HEALING (raidwide already hit, party HP is low) ===
+
+        // === Free oGCD Heals (no Aetherflow cost) ===
+
+        // Fey Blessing: fairy AoE heal — instant, free, strong.
         if (PartyMembersAverHP < FeyBlessingThreshold && FeyBlessingPvE.CanUse(out act))
             return true;
 
-        // Whispering Dawn: fairy AoE HoT (21s regen)
+        // Whispering Dawn: fairy AoE HoT (21s regen) — best sustained AoE heal.
+        // Per Balance: "Strong HoT from faerie, typically your primary AoE heal."
         if (PartyMembersAverHP < WhisperingDawnThreshold && WhisperingDawnPvE.CanUse(out act))
             return true;
 
-        // Fey Illumination: 10% magic damage reduction + 10% healing potency buff
+        // Fey Illumination: 5% magic damage reduction + 10% healing potency buff.
+        // Per Balance: combine with post-raidwide heals for amplified recovery.
         if (PartyMembersAverHP < 0.7f && FeyIlluminationPvE.CanUse(out act))
             return true;
 
         // === Recitation Combo: guaranteed crit + free Aetherflow ===
+        // Per Balance: "Recitation + Indomitability is the most common usage in raids
+        // for guaranteed critical AoE healing."
         if (HasRecitation && IndomitabilityPvE.CanUse(out act))
             return true;
 
         // === Aetherflow oGCD Heals ===
         if (canSpendAetherflowOnHeal)
         {
-            // Sacred Soil: ground AoE regen + 10% mitigation (best Aetherflow AoE heal)
+            // Sacred Soil: ground AoE regen + 10% mitigation (best Aetherflow AoE heal).
+            // Per Balance: "your most powerful usage of Aetherflow" when party stays in bubble.
             if (PartyMembersAverHP < SacredSoilThreshold && SacredSoilPvE.CanUse(out act))
                 return true;
 
-            // Indomitability: instant AoE heal
+            // Indomitability: instant AoE heal — reliable burst recovery.
             if (PartyMembersAverHP < IndomThreshold && IndomitabilityPvE.CanUse(out act))
                 return true;
         }
@@ -371,14 +449,26 @@ public sealed class SezuraiSCH : ScholarRotation
         if (!InCombat)
             return base.AttackAbility(nextGCD, out act);
 
-        // === Chain Stratagem (120s raid buff - crit rate up on target) ===
-        // Align with party burst windows. This is SCH's most important raid contribution.
-        if (CanBurst && ChainStratagemPvE.CanUse(out act))
+        // === CHAIN STRATAGEM (120s raid buff — 10% crit rate on target for 20s) ===
+        // This is SCH's most important raid contribution. Align with party burst windows.
+        // Per Balance: "Use during the opener, then use on cooldown." Delay only for raid coordination.
+        //
+        // BMR vuln window: if BMR knows a vulnerability window is coming, hold Chain Strat
+        // to align the crit buff with the vuln debuff for maximum party DPS.
+        bool vulnSoon = BmrActive && BmrVulnerableIn is > 0 and <= 10f;
+        bool holdForVuln = vulnSoon && ChainStratagemPvE.Cooldown.HasOneCharge;
+
+        if (CanBurst && !holdForVuln && ChainStratagemPvE.CanUse(out act))
+            return true;
+
+        // If vuln window is imminent (1-3s), fire Chain Strat regardless of burst flag
+        // so it lands right as the boss becomes vulnerable.
+        if (vulnSoon && BmrVulnerableIn <= 3f && ChainStratagemPvE.CanUse(out act))
             return true;
 
         // === Baneful Impaction (follow-up to Chain Stratagem) ===
         // Requires Impact Imminent status granted by Chain Stratagem.
-        // Use immediately after Chain Strat - applies DoT to all nearby enemies.
+        // Use immediately after Chain Strat — applies DoT to all nearby enemies.
         if (BanefulImpactionPvE.CanUse(out act))
             return true;
 
@@ -391,6 +481,8 @@ public sealed class SezuraiSCH : ScholarRotation
         // DPS Bot: use on CD for extra Energy Drains
         // Balanced: use only when Aetherflow is on CD and stacks are needed
         // Heal Bot: save for emergency healing stacks
+        // Per Balance: "Use as a damage cooldown (spending stacks on Energy Drain) or save
+        // for emergencies to amplify shield potency with the healing buff."
         if (UseDissipation && DissipationPvE.CanUse(out act))
         {
             if (HealMode == HealModeStrategy.DPSBot)
@@ -416,9 +508,19 @@ public sealed class SezuraiSCH : ScholarRotation
         // DPS Bot: dump all stacks
         // Balanced: dump stacks above reserve threshold
         // Heal Bot: only dump if Aetherflow is about to come off CD and we'd waste stacks
+        //
+        // BMR downtime: dump all remaining stacks before downtime to avoid waste.
+        // Aetherflow stacks don't persist through phase transitions in savage.
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+
         if (HasAetherflow && EnergyDrainPvE.CanUse(out act))
         {
             if (HealMode == HealModeStrategy.DPSBot)
+                return true;
+
+            // BMR: dump ALL stacks before downtime — they'll be wasted otherwise.
+            // Override reserve thresholds since there's nothing to heal during downtime.
+            if (downtimeSoon)
                 return true;
 
             // Spend stacks above threshold
@@ -686,15 +788,31 @@ public sealed class SezuraiSCH : ScholarRotation
         ImGui.Text($"CanHealSingleSpell: {CanHealSingleSpell}");
         ImGui.Text($"CanHealAreaSpell: {CanHealAreaSpell}");
         ImGui.Text($"PartyHP: {PartyMembersAverHP:P0}");
+
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 

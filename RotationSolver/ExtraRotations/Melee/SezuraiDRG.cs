@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("SezuraiDRG", CombatType.PvE, GameVersion = "7.41", Description = "Balance-aligned DRG with proper burst ordering, Life Surge targeting, and Geirskogul timing.")]
+[Rotation("SezuraiDRG", CombatType.PvE, GameVersion = "7.41", Description = "Balance-aligned DRG with proper burst ordering, Life Surge targeting, Geirskogul timing, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiDRG.cs")]
 [ExtraRotation]
 public sealed class SezuraiDRG : DragoonRotation
@@ -25,6 +25,9 @@ public sealed class SezuraiDRG : DragoonRotation
     [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
     public float ActionAheadOverride { get; set; } = 0f;
 
+    [RotationConfig(CombatType.PvE, Name = "Use BMR timeline for proactive Feint, downtime planning, and burst hold")]
+    public bool UseBmr { get; set; } = true;
+
     #endregion
 
     #region Burst State
@@ -45,6 +48,71 @@ public sealed class SezuraiDRG : DragoonRotation
     /// </summary>
     private bool InLOTD => LOTDTime > 0;
 
+    /// <summary>
+    /// True when any personal burst buff is active (LC or BL or LOTD).
+    /// Used to gate Feint so it doesn't clip damage oGCDs during burst.
+    /// </summary>
+    private bool InAnyBurst => HasLanceCharge || HasBattleLitany || InLOTD;
+
+    #endregion
+
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR is active AND the user has enabled our BMR config toggle.
+    /// All BMR checks go through this so there's a single kill-switch.
+    /// </summary>
+    private bool BmrUsable => UseBmr && BmrActive;
+
+    /// <summary>
+    /// BMR: downtime is coming within ~25s. Broad window for resource planning.
+    /// Used for deciding whether to dump burst CDs early.
+    /// </summary>
+    private bool BmrDowntimeSoon => BmrUsable && BmrDowntimeIn is > 0 and <= 25f;
+
+    /// <summary>
+    /// BMR: downtime is imminent (~10s). Dump remaining oGCDs and jumps.
+    /// </summary>
+    private bool BmrDowntimeImminent => BmrUsable && BmrDowntimeIn is > 0 and <= 10f;
+
+    /// <summary>
+    /// BMR: downtime too close to enter Life of the Dragon (~12s).
+    /// LOTD lasts 20s and we need time for Nastrond + Stardiver.
+    /// </summary>
+    private bool BmrBlockLOTD => BmrUsable && BmrDowntimeIn is > 0 and <= 12f;
+
+    /// <summary>
+    /// BMR: downtime too close to start a new 5-GCD combo (~8s).
+    /// A full combo is 5 GCDs at ~2.5s each = 12.5s, but partial combos waste potency.
+    /// At 8s we can finish a combo already in progress but shouldn't start fresh.
+    /// </summary>
+    private bool BmrBlockNewCombo => BmrUsable && BmrDowntimeIn is > 0 and <= 8f;
+
+    /// <summary>
+    /// BMR: downtime too close to start Lance Charge (~6s).
+    /// LC buff is 20s but no point starting if boss leaves in 6s.
+    /// </summary>
+    private bool BmrBlockBurstStart => BmrUsable && BmrDowntimeIn is > 0 and <= 6f;
+
+    /// <summary>
+    /// BMR: vulnerability window coming within 30s -- hold burst CDs.
+    /// Per Balance intermediate: align burst with party buff / vuln windows.
+    /// </summary>
+    private bool BmrHoldBurstForVuln => BmrUsable
+        && BmrVulnerableIn is > 0 and <= 30f
+        && LanceChargePvE.Cooldown.HasOneCharge;
+
+    /// <summary>
+    /// BMR: raidwide damage incoming within Feint's application window (~5s).
+    /// </summary>
+    private bool BmrFeintWindow => BmrUsable && BmrRaidwideIn is > 0 and <= 5f;
+
+    /// <summary>
+    /// BMR: raidwide or generic damage incoming within ~3s. Use self-healing proactively.
+    /// </summary>
+    private bool BmrDamageSoon => BmrUsable
+        && ((BmrRaidwideIn is > 0 and <= 3f) || (BmrDamageIn is > 0 and <= 3f));
+
     #endregion
 
     #region UpdateInfo
@@ -60,23 +128,56 @@ public sealed class SezuraiDRG : DragoonRotation
 
     public override void DisplayRotationStatus()
     {
+        ImGui.Text($"--- Burst State ---");
         ImGui.Text($"CanBurst: {CanBurst}");
         ImGui.Text($"InEvenBurst: {InEvenBurst}");
         ImGui.Text($"InLOTD: {InLOTD}");
+        ImGui.Text($"InAnyBurst: {InAnyBurst}");
         ImGui.Text($"LOTDTime: {LOTDTime:F1}");
         ImGui.Text($"FocusCount: {FocusCount}");
+        ImGui.Text($"--- Buffs ---");
         ImGui.Text($"HasLanceCharge: {HasLanceCharge}");
         ImGui.Text($"HasBattleLitany: {HasBattleLitany}");
         ImGui.Text($"HasPowerSurge: {HasPowerSurge}");
         ImGui.Text($"HasDraconianFire: {HasDraconianFire}");
+        ImGui.Text($"--- Cooldowns ---");
+        ImGui.Text($"LC CD: {(LanceChargePvE.Cooldown.IsCoolingDown ? $"{LanceChargePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"BL CD: {(BattleLitanyPvE.Cooldown.IsCoolingDown ? $"{BattleLitanyPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Geirskogul CD: {(GeirskogulPvE.Cooldown.IsCoolingDown ? $"{GeirskogulPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"HighJump CD: {(HighJumpPvE.Cooldown.IsCoolingDown ? $"{HighJumpPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"DfD CD: {(DragonfireDivePvE.Cooldown.IsCoolingDown ? $"{DragonfireDivePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Stardiver CD: {(StardiverPvE.Cooldown.IsCoolingDown ? $"{StardiverPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"LifeSurge: {LifeSurgePvE.Cooldown.CurrentCharges}/{LifeSurgePvE.Cooldown.MaxCharges}");
+        ImGui.Text($"--- BMR Decisions ---");
+        ImGui.Text($"BmrUsable: {BmrUsable} | UseBmr: {UseBmr}");
+        ImGui.Text($"DowntimeSoon: {BmrDowntimeSoon} | DowntimeImminent: {BmrDowntimeImminent}");
+        ImGui.Text($"BlockLOTD: {BmrBlockLOTD} | BlockNewCombo: {BmrBlockNewCombo}");
+        ImGui.Text($"BlockBurstStart: {BmrBlockBurstStart} | HoldBurstForVuln: {BmrHoldBurstForVuln}");
+        ImGui.Text($"FeintWindow: {BmrFeintWindow} | DamageSoon: {BmrDamageSoon}");
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -84,14 +185,14 @@ public sealed class SezuraiDRG : DragoonRotation
 
     #region Countdown & Opener
     // === DRG OPENER (7.4 Balance) ===
-    // Pre-pull: True North(-5s) → Pot(-2s)
-    // GCD1: True Thrust → Lance Charge (weave) → Battle Litany (weave)
-    // GCD2: Spiral Blow (grants Power Surge) → Life Surge (weave)
-    // GCD3: Chaotic Spring (rear) → Geirskogul (weave, enters LotD) → High Jump (weave)
-    // GCD4: Wheeling Thrust → Dragonfire Dive (weave) → Nastrond (weave)
-    // GCD5: Fang and Claw → Starcross (weave) → Rise of the Dragon (weave)
-    // GCD6: Raiden Thrust (proc from combo finisher) → Wyrmwind Thrust (weave) → Mirage Dive (weave)
-    // Continue with Lance Barrage → Heavens' Thrust combo
+    // Pre-pull: True North(-5s) -> Pot(-2s)
+    // GCD1: True Thrust -> Lance Charge (weave) -> Battle Litany (weave)
+    // GCD2: Spiral Blow (grants Power Surge) -> Life Surge (weave)
+    // GCD3: Chaotic Spring (rear) -> Geirskogul (weave, enters LotD) -> High Jump (weave)
+    // GCD4: Wheeling Thrust -> Dragonfire Dive (weave) -> Nastrond (weave)
+    // GCD5: Fang and Claw -> Starcross (weave) -> Rise of the Dragon (weave)
+    // GCD6: Raiden Thrust (proc from combo finisher) -> Wyrmwind Thrust (weave) -> Mirage Dive (weave)
+    // Continue with Lance Barrage -> Heavens' Thrust combo
     //
     // === EVEN BURST (120s) ===
     // Lance Charge + Battle Litany + Dragonfire Dive + Starcross + Rise of the Dragon
@@ -99,13 +200,13 @@ public sealed class SezuraiDRG : DragoonRotation
     // Life Surge on Heavens' Thrust (highest potency single-target GCD)
     //
     // === ODD BURST (60s) ===
-    // Lance Charge only — Battle Litany is 120s
-    // Geirskogul → LotD → Nastrond chain, hold Dragonfire Dive for even
+    // Lance Charge only -- Battle Litany is 120s
+    // Geirskogul -> LotD -> Nastrond chain, hold Dragonfire Dive for even
     //
     // === FILLER / SUSTAIN ===
-    // 10-GCD repeating loop: True Thrust → Spiral Blow → Chaotic Spring →
-    //   Wheeling Thrust → Fang and Claw → Raiden Thrust → Lance Barrage →
-    //   Heavens' Thrust → Fang and Claw → Wheeling Thrust
+    // 10-GCD repeating loop: True Thrust -> Spiral Blow -> Chaotic Spring ->
+    //   Wheeling Thrust -> Fang and Claw -> Raiden Thrust -> Lance Barrage ->
+    //   Heavens' Thrust -> Fang and Claw -> Wheeling Thrust
     // Use Wyrmwind Thrust before next Raiden Thrust to avoid overcap (2 stacks max)
     // Life Surge on Heavens' Thrust or Chaotic Spring (highest potency GCDs)
     // Keep Power Surge buff active (refreshed by Spiral Blow)
@@ -155,17 +256,49 @@ public sealed class SezuraiDRG : DragoonRotation
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // BMR-aware: Feint proactively when raidwide imminent
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // Skip during active burst to avoid clipping damage oGCDs
+        if (BmrFeintWindow && !InAnyBurst && FeintPvE.CanUse(out act, skipComboCheck: true))
+            return true;
 
-        if ((rwSoon || !BmrActive) && FeintPvE.CanUse(out act, skipComboCheck: true))
+        // Non-BMR fallback: Feint when framework triggers defense
+        if (!BmrUsable && FeintPvE.CanUse(out act, skipComboCheck: true))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 
+    [RotationDesc(ActionID.BloodbathPvE)]
+    protected sealed override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        // Skip right after Stardiver (animation lock)
+        if (IsLastAction(false, StardiverPvE))
+            return base.DefenseSingleAbility(nextGCD, out act);
+
+        // BMR-aware: Bloodbath before raidwide/damage for self-sustain (heals on damage dealt)
+        if (BmrDamageSoon && BloodbathPvE.CanUse(out act))
+            return true;
+
+        // BMR-aware: Second Wind before incoming damage
+        if (BmrDamageSoon && SecondWindPvE.CanUse(out act))
+            return true;
+
+        // Non-BMR fallback: use when framework triggers personal defense
+        if (!BmrUsable && BloodbathPvE.CanUse(out act))
+            return true;
+
+        return base.DefenseSingleAbility(nextGCD, out act);
+    }
+
     [RotationDesc]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-proactive: pre-heal before raidwide/damage hits so we survive
+        if (BmrDamageSoon && BloodbathPvE.CanUse(out act))
+            return true;
+        if (BmrDamageSoon && SecondWindPvE.CanUse(out act))
+            return true;
+
+        // Standard self-healing (framework-triggered or non-BMR)
         if (SecondWindPvE.CanUse(out act))
             return true;
         if (BloodbathPvE.CanUse(out act))
@@ -197,12 +330,20 @@ public sealed class SezuraiDRG : DragoonRotation
     {
         // Stardiver: single-weave only (1.5s animation lock), distance check
         // Must be in LOTD. Place early in LOTD window for flexibility.
+        // BMR: Force Stardiver before downtime even outside ideal conditions
         if (IsLastAction() == IsLastGCD())
         {
             if (StardiverPvE.CanUse(out act))
             {
                 if (StardiverPvE.Target.Target.DistanceToPlayer() <= StardiverDistance)
+                {
+                    // BMR: Always use Stardiver if downtime imminent and in LOTD
+                    if (BmrDowntimeImminent)
+                        return true;
+
+                    // Normal: use in burst or on cooldown
                     return true;
+                }
             }
         }
 
@@ -223,18 +364,58 @@ public sealed class SezuraiDRG : DragoonRotation
         if (DisembowelPvE.EnoughLevel && !HasPowerSurge)
             return base.AttackAbility(nextGCD, out act);
 
+        // === BMR: Dump burst CDs before downtime ===
+        // If downtime is coming within ~25s and we have burst CDs, fire them now
+        // so we get value rather than sitting on them through untargetable.
+        // But don't start a new burst if downtime < 6s (not enough GCDs to benefit).
+        if (BmrDowntimeSoon && !BmrBlockBurstStart && !BmrHoldBurstForVuln
+            && CanBurst && InCombat && HasHostilesInRange)
+        {
+            // Fire Lance Charge early before downtime
+            if (LanceChargePvE.CanUse(out act))
+                return true;
+            // Fire Battle Litany early before downtime
+            if (BattleLitanyPvE.CanUse(out act))
+                return true;
+        }
+
+        // === BMR: Dump jumps before downtime ===
+        // Use Dragonfire Dive and High Jump before boss goes away
+        // so they come off cooldown sooner after the phase transition.
+        if (BmrDowntimeImminent && InCombat && HasHostilesInRange)
+        {
+            if (DragonfireDivePvE.CanUse(out act))
+            {
+                if (DragonfireDivePvE.Target.Target.DistanceToPlayer() <= DragonfireDiveDistance)
+                    return true;
+            }
+            if (HighJumpPvE.CanUse(out act))
+                return true;
+            if (!HighJumpPvE.EnoughLevel && JumpPvE.CanUse(out act))
+                return true;
+
+            // Dump Geirskogul before downtime even without LC
+            if (GeirskogulPvE.CanUse(out act))
+                return true;
+        }
+
+        // === BMR: Hold burst for vulnerability window ===
+        bool bmrBlockBurst = BmrHoldBurstForVuln || BmrBlockBurstStart;
+
         // === BUFF APPLICATION (burst enabled, in combat, hostiles in range) ===
         if (CanBurst && InCombat && HasHostilesInRange)
         {
             // 1. Lance Charge: use on cooldown (60s)
             // Guide: "always press this button as soon as it is available"
             // LC is checked first so it fires before BL, matching the standard opener
-            // (GCD2 → LC, GCD3 → BL + Geirskogul)
-            if (LanceChargePvE.CanUse(out act))
+            // (GCD2 -> LC, GCD3 -> BL + Geirskogul)
+            // BMR: skip if holding for vuln or downtime too close
+            if (!bmrBlockBurst && LanceChargePvE.CanUse(out act))
                 return true;
 
             // 2. Battle Litany: raid buff, align with 2-minute party bursts
-            if (BattleLitanyPvE.CanUse(out act))
+            // BMR: skip if holding for vuln or downtime too close
+            if (!bmrBlockBurst && BattleLitanyPvE.CanUse(out act))
                 return true;
 
             // 3. Life Surge: guaranteed crit on next weaponskill
@@ -267,6 +448,13 @@ public sealed class SezuraiDRG : DragoonRotation
                     if (LifeSurgePvE.CanUse(out act))
                         return true;
                 }
+
+                // BMR: dump Life Surge charges before downtime on any valid target
+                if (BmrDowntimeImminent && (lsOnBigHit || lsOnAoE || lsLowLevel))
+                {
+                    if (LifeSurgePvE.CanUse(out act, usedUp: true))
+                        return true;
+                }
             }
         }
 
@@ -287,8 +475,9 @@ public sealed class SezuraiDRG : DragoonRotation
         // === GEIRSKOGUL: enters Life of the Dragon (15% damage buff for 20s) ===
         // Guide: "used last to ensure its own potency is buffed by all our personal buffs"
         // Gate behind HasLanceCharge so it fires AFTER Lance Charge is applied.
-        // This naturally orders: LC → BL → Geirskogul in the opener.
-        if ((HasLanceCharge || !LanceChargePvE.EnoughLevel) && GeirskogulPvE.CanUse(out act))
+        // This naturally orders: LC -> BL -> Geirskogul in the opener.
+        // BMR: Don't enter LOTD if downtime < 12s -- not enough time to use Nastrond + Stardiver
+        if (!BmrBlockLOTD && (HasLanceCharge || !LanceChargePvE.EnoughLevel) && GeirskogulPvE.CanUse(out act))
             return true;
 
         // === HARD COOLDOWN JUMPS (use on cooldown, don't drift) ===
@@ -346,12 +535,12 @@ public sealed class SezuraiDRG : DragoonRotation
 
         // 10. Wyrmwind Thrust: flexible, prefer in buffs but MUST use before overcap
         // Guide: "you have up until the next Raiden Thrust to use WWT in order to not overcap"
-        // Use in buffs, during LOTD, or when next GCD would grant a Focus stack (overcap)
-        // Balance: "you have up until the next Raiden Thrust to use WWT in order to not overcap"
         // Use in buffs, during LOTD, at 2 Focus stacks (next RT would overcap), or when next GCD grants Focus
+        // BMR: also dump before downtime
         if (HasBattleLitany || HasLanceCharge || InLOTD
             || FocusCount >= 2
-            || nextGCD.IsTheSameTo(true, RaidenThrustPvE, DraconianFuryPvE))
+            || nextGCD.IsTheSameTo(true, RaidenThrustPvE, DraconianFuryPvE)
+            || BmrDowntimeImminent)
         {
             if (WyrmwindThrustPvE.CanUse(out act, usedUp: true))
                 return true;
@@ -395,6 +584,8 @@ public sealed class SezuraiDRG : DragoonRotation
         }
 
         // === Single Target Combo ===
+        // Always finish combos in progress (steps 2-5) regardless of BMR state.
+        // BMR only blocks starting NEW combos (step 1: True Thrust / Raiden Thrust).
 
         // Combo finisher: Drakesbane (5th hit, no positional)
         if (DrakesbanePvE.CanUse(out act, skipStatusProvideCheck: true))
@@ -453,6 +644,20 @@ public sealed class SezuraiDRG : DragoonRotation
         {
             if (VorpalThrustPvE.CanUse(out act))
                 return true;
+        }
+
+        // === BMR: Don't start a new combo if downtime is imminent ===
+        // At this point, all mid-combo GCDs have been checked above.
+        // If we reach here, the next GCD would be True Thrust / Raiden Thrust (combo starter).
+        // BMR: block new combo start if downtime < 8s (won't finish the 5-GCD combo).
+        // Instead, fall through to Piercing Talon for ranged uptime or base GCD.
+        if (BmrBlockNewCombo)
+        {
+            // Still use Piercing Talon for some damage uptime
+            if (!IsLastAction(true, WingedGlidePvE) && PiercingTalonPvE.CanUse(out act))
+                return true;
+
+            return base.GeneralGCD(out act);
         }
 
         // 1st hit: Raiden Thrust (if Draconian Fire) or True Thrust

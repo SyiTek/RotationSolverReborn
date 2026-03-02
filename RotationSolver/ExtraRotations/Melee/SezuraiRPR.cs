@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("SezuraiRPR", CombatType.PvE, GameVersion = "7.41", Description = "Balance-aligned RPR with double Enshroud burst, Arcane Circle alignment, and gauge optimization.")]
+[Rotation("SezuraiRPR", CombatType.PvE, GameVersion = "7.41", Description = "Balance-aligned RPR with double Enshroud burst, Arcane Circle alignment, gauge optimization, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiRPR.cs")]
 [ExtraRotation]
 public sealed class SezuraiRPR : ReaperRotation
@@ -26,6 +26,9 @@ public sealed class SezuraiRPR : ReaperRotation
 
     [RotationConfig(CombatType.PvE, Name = "Use Harvest Moon as ranged filler when out of melee range")]
     public bool UseHarvestMoonRanged { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "Use BMR timeline for proactive mitigation, downtime planning, and burst hold")]
+    public bool UseBmr { get; set; } = true;
 
     #endregion
 
@@ -94,6 +97,81 @@ public sealed class SezuraiRPR : ReaperRotation
     /// </summary>
     private static bool CanLateWeave => WeaponRemain <= LateWeaveWindow && EnoughWeaveTime;
 
+    /// <summary>
+    /// True when not in a special combo state that would be interrupted by defensives.
+    /// RPR equivalent of VPR's NoAbilityReady — blocks defensives during active combos.
+    /// </summary>
+    private static bool NotInActiveCombo => !HasSoulReaver && !HasEnshrouded && !HasExecutioner;
+
+    #endregion
+
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR is active AND the user has enabled our BMR config toggle.
+    /// All BMR checks go through this so there's a single kill-switch.
+    /// </summary>
+    private bool BmrUsable => UseBmr && BmrActive;
+
+    /// <summary>
+    /// BMR: downtime is imminent and close enough to worry about (~20s).
+    /// Used for Arcane Circle dump decisions and resource management.
+    /// </summary>
+    private bool BmrDowntimeSoon => BmrUsable && BmrDowntimeIn is > 0 and <= 20f;
+
+    /// <summary>
+    /// BMR: downtime is very close (~8s). Dump remaining Soul gauge via Blood Stalk / Gibbet/Gallows.
+    /// Also use Harvest Moon and Soulsow prep.
+    /// </summary>
+    private bool BmrDowntimeImminent => BmrUsable && BmrDowntimeIn is > 0 and <= 8f;
+
+    /// <summary>
+    /// BMR: downtime too close for Enshroud (~12s). Full Enshroud window is 5 GCDs + Communio + Perfectio.
+    /// At ~2.5s GCD that's roughly 12-13s minimum. Don't enter if we can't finish.
+    /// </summary>
+    private bool BmrBlockEnshroud => BmrUsable && BmrDowntimeIn is > 0 and <= 12f;
+
+    /// <summary>
+    /// BMR: downtime too close to start a new 1-2-3 combo (~5s). 3 GCDs at 2.5s = 7.5s,
+    /// but a partial combo is worse than ranged filler or gauge dump.
+    /// </summary>
+    private bool BmrBlockNewCombo => BmrUsable && BmrDowntimeIn is > 0 and <= 5f;
+
+    /// <summary>
+    /// BMR: vulnerability window coming within 30s -- hold Arcane Circle for it.
+    /// Per Balance: align burst with party buff / vuln windows for maximum value.
+    /// </summary>
+    private bool BmrHoldACForVuln => BmrUsable
+        && BmrVulnerableIn is > 0 and <= 30f
+        && ArcaneCirclePvE.Cooldown.HasOneCharge;
+
+    /// <summary>
+    /// BMR: Arcane Circle won't be useful before downtime (too late to burst).
+    /// Don't waste AC if downtime < 15s and we can't meaningfully use the entire burst.
+    /// The double Enshroud + Gluttony window needs ~12-15s minimum.
+    /// </summary>
+    private bool BmrBlockACBeforeDowntime => BmrUsable
+        && BmrDowntimeIn is > 0 and <= 15f
+        && !InActiveBurst;
+
+    /// <summary>
+    /// BMR: raidwide damage incoming soon (~3s). Use self-healing proactively.
+    /// Bloodbath before raidwide heals on damage dealt, Second Wind is a flat heal.
+    /// </summary>
+    private bool BmrRaidwideSoon => BmrUsable && BmrRaidwideIn is > 0 and <= 3f;
+
+    /// <summary>
+    /// BMR: raidwide damage incoming within Feint/Arcane Crest application window (~5s).
+    /// Feint lasts 10s and reduces physical damage by 10% + magic by 5%.
+    /// Arcane Crest provides a self shield that grants party regen when broken.
+    /// </summary>
+    private bool BmrFeintWindow => BmrUsable && BmrRaidwideIn is > 0 and <= 5f;
+
+    /// <summary>
+    /// BMR: knockback incoming within Arm's Length application window (~5s).
+    /// </summary>
+    private bool BmrKnockbackSoon => BmrUsable && BmrKnockbackIn is > 0 and <= 5f;
+
     #endregion
 
     #region Countdown & Opener
@@ -120,7 +198,7 @@ public sealed class SezuraiRPR : ReaperRotation
     //
     // === FILLER / SUSTAIN ===
     // Combo: Slice → Waxing Slice → Infernal Slice (build Soul gauge)
-    // Shadow of Death: refresh when ≤30s remains (don't clip too early)
+    // Shadow of Death: refresh when <=30s remains (don't clip too early)
     // Soul Slice: use charges to build gauge, don't overcap at 2 charges
     // Spend Soul: Gibbet/Gallows at 50+ to avoid overcap, pool for burst
     // Harvest Moon: ranged GCD for movement if Soulsow was prepped
@@ -194,14 +272,37 @@ public sealed class SezuraiRPR : ReaperRotation
         ImGui.Text("--- Weave ---");
         ImGui.Text($"WeaponRemain: {WeaponRemain:F2}s | WeaponTotal: {WeaponTotal:F2}s");
         ImGui.Text($"CanLateWeave: {CanLateWeave} | EnoughWeaveTime: {EnoughWeaveTime}");
-        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text($"--- BMR Decisions ---");
+        ImGui.Text($"BmrUsable: {BmrUsable} | UseBmr: {UseBmr}");
+        ImGui.Text($"BlockEnshroud: {BmrBlockEnshroud} | BlockNewCombo: {BmrBlockNewCombo}");
+        ImGui.Text($"DowntimeSoon: {BmrDowntimeSoon} | DowntimeImminent: {BmrDowntimeImminent}");
+        ImGui.Text($"HoldACForVuln: {BmrHoldACForVuln} | BlockACBeforeDowntime: {BmrBlockACBeforeDowntime}");
+        ImGui.Text($"FeintWindow: {BmrFeintWindow} | RaidwideSoon: {BmrRaidwideSoon}");
+        ImGui.Text($"KnockbackSoon: {BmrKnockbackSoon}");
+        ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -238,6 +339,14 @@ public sealed class SezuraiRPR : ReaperRotation
     [RotationDesc(ActionID.SecondWindPvE)]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-proactive: pre-heal before raidwide hits so we survive the damage
+        // Bloodbath first (heals on damage dealt — active mitigation during the hit)
+        if (BmrRaidwideSoon && NotInActiveCombo && BloodbathPvE.CanUse(out act))
+            return true;
+        if (BmrRaidwideSoon && NotInActiveCombo && SecondWindPvE.CanUse(out act))
+            return true;
+
+        // Standard self-healing (framework-triggered or non-BMR)
         if (SecondWindPvE.CanUse(out act))
             return true;
         if (BloodbathPvE.CanUse(out act))
@@ -245,40 +354,48 @@ public sealed class SezuraiRPR : ReaperRotation
         return base.HealSingleAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.FeintPvE)]
+    [RotationDesc(ActionID.FeintPvE, ActionID.ArcaneCrestPvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // Skip during active combos (Soul Reaver / Enshroud / Executioner)
-        if (HasSoulReaver || HasEnshrouded || HasExecutioner)
+        // Skip during active combos (Soul Reaver / Enshroud / Executioner) to avoid clipping
+        if (!NotInActiveCombo)
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // BMR-aware: Feint + Arcane Crest proactively when raidwide imminent
-        // Arcane Crest grants party shield on break — great for raidwides
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
-
-        if (rwSoon)
+        // Arcane Crest grants party shield on break -- great for raidwides
+        // Skip Feint during active burst to preserve weave slots for damage oGCDs
+        if (BmrFeintWindow)
         {
-            if (FeintPvE.CanUse(out act))
+            if (!InActiveBurst && FeintPvE.CanUse(out act))
                 return true;
             if (ArcaneCrestPvE.CanUse(out act))
                 return true;
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
-        // Non-BMR: Feint when framework triggers defense
-        if (FeintPvE.CanUse(out act))
+        // Non-BMR fallback: Feint when framework triggers defense
+        if (!BmrUsable && FeintPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.ArcaneCrestPvE)]
+    [RotationDesc(ActionID.ArcaneCrestPvE, ActionID.BloodbathPvE)]
     protected sealed override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        if (HasSoulReaver || HasEnshrouded || HasExecutioner)
+        if (!NotInActiveCombo)
             return base.DefenseSingleAbility(nextGCD, out act);
 
-        if (ArcaneCrestPvE.CanUse(out act))
+        // BMR-aware: Arcane Crest before raidwide for self-shield (breaks into party regen)
+        if (BmrRaidwideSoon && ArcaneCrestPvE.CanUse(out act))
+            return true;
+
+        // BMR-aware: Bloodbath before raidwide for self-sustain (heals on damage dealt)
+        if (BmrRaidwideSoon && BloodbathPvE.CanUse(out act))
+            return true;
+
+        // Non-BMR fallback: Arcane Crest when framework triggers personal defense
+        if (!BmrUsable && ArcaneCrestPvE.CanUse(out act))
             return true;
 
         return base.DefenseSingleAbility(nextGCD, out act);
@@ -309,9 +426,25 @@ public sealed class SezuraiRPR : ReaperRotation
         bool isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
         bool isTargetDying = CurrentTarget?.IsDying() ?? false;
 
+        // === BMR: Dump Arcane Circle before downtime ===
+        // If downtime < 20s and AC is available, fire it now to spend resources before boss leaves.
+        // But don't fire if vuln window is coming (hold for better timing).
+        if (BmrDowntimeSoon && !BmrHoldACForVuln && CanBurst
+            && (CurrentTarget?.HasStatus(true, StatusID.DeathsDesign) ?? false)
+            && ArcaneCirclePvE.CanUse(out act, skipAoeCheck: true))
+        {
+            return true;
+        }
+
+        // === BMR: Hold Arcane Circle for vulnerability window ===
+        // Don't use AC if a vuln window is coming within 30s -- save burst for it.
+        // Also don't use if downtime is < 15s and we can't meaningfully complete the burst.
+        bool bmrBlockAC = BmrHoldACForVuln || BmrBlockACBeforeDowntime;
+
         // --- Arcane Circle (120s party buff) ---
         // Use when: burst enabled, Death's Design on target, not too early in combat
-        if (CanBurst
+        if (!bmrBlockAC
+            && CanBurst
             && (CurrentTarget?.HasStatus(true, StatusID.DeathsDesign) ?? false)
             && !CombatElapsedLess(3.5f)
             && ArcaneCirclePvE.CanUse(out act, skipAoeCheck: true))
@@ -321,7 +454,8 @@ public sealed class SezuraiRPR : ReaperRotation
 
         // --- Enshroud ---
         // Priority 1: Ideal Host (free Enshroud from Plentiful Harvest) - always use immediately
-        if (HasIdealHost && !HasExecutioner && EnshroudPvE.CanUse(out act))
+        // BMR: still block even Ideal Host if downtime is too close -- Enshroud is wasted if incomplete
+        if (!BmrBlockEnshroud && HasIdealHost && !HasExecutioner && EnshroudPvE.CanUse(out act))
         {
             return true;
         }
@@ -330,8 +464,7 @@ public sealed class SezuraiRPR : ReaperRotation
         // The base class ActionCheck for Enshroud uses Soul >= 50, but Enshroud costs Shroud gauge.
         // We must check Shroud >= 50 ourselves before calling CanUse.
         // BMR-aware: Don't enter Enshroud if downtime < 12s (5 GCDs + Communio takes ~12s)
-        bool bmrBlockEnshroud = BmrActive && BmrDowntimeIn is > 0 and <= 12f;
-        if (!bmrBlockEnshroud && !HasExecutioner && Shroud >= 50)
+        if (!BmrBlockEnshroud && !HasExecutioner && Shroud >= 50)
         {
             // During active burst window (Arcane Circle active or just used)
             if (HasArcaneCircle && EnshroudPvE.CanUse(out act))
@@ -363,6 +496,11 @@ public sealed class SezuraiRPR : ReaperRotation
                     return true;
             }
 
+            // BMR: dump Enshroud before downtime when we have time to finish but AC isn't coming
+            // If downtime in 12-20s, we have time to complete one Enshroud phase
+            if (BmrDowntimeSoon && !BmrBlockEnshroud && EnshroudPvE.CanUse(out act))
+                return true;
+
             // Boss dying: dump Enshroud
             if (isTargetBoss && isTargetDying && EnshroudPvE.CanUse(out act))
                 return true;
@@ -389,9 +527,15 @@ public sealed class SezuraiRPR : ReaperRotation
 
         // --- Gluttony (60s CD, costs 50 Soul, grants 2 Executioner stacks) ---
         // Do not use if Plentiful Harvest or Perfectio are pending (avoid overwriting stacks)
+        // BMR: allow Gluttony dump before downtime even if we'd normally hold it
         if (!HasPerfectioParata && !HasImmortalSacrifice
             && (PlentifulHarvestPvE.EnoughLevel ? !HasBloodsownCircleSelf : true))
         {
+            // BMR: dump Gluttony before downtime -- Executioner stacks are instant GCDs
+            // and spending Soul is better than losing it to downtime
+            if (BmrDowntimeImminent && Soul >= 50 && GluttonyPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+
             if (GluttonyPvE.CanUse(out act, skipAoeCheck: true))
                 return true;
         }
@@ -414,9 +558,29 @@ public sealed class SezuraiRPR : ReaperRotation
                 || !GluttonyPvE.EnoughLevel
                 || Soul >= 90))
         {
+            // BMR: dump Soul gauge before downtime to avoid waste
+            // Lower the threshold -- spend at 50+ Soul when downtime is imminent
+            if (BmrDowntimeImminent && Soul >= 50)
+            {
+                if (GrimSwathePvE.CanUse(out act))
+                    return true;
+                if (BloodStalkPvE.CanUse(out act))
+                    return true;
+            }
+
             if (GrimSwathePvE.CanUse(out act))
                 return true;
 
+            if (BloodStalkPvE.CanUse(out act))
+                return true;
+        }
+
+        // BMR: extra Soul dump before downtime -- even if Gluttony is coming, don't let Soul rot
+        if (BmrDowntimeImminent && !HasBloodsownCircleSelf && !HasPerfectioParata
+            && !HasExecutioner && !HasImmortalSacrifice && Soul >= 50)
+        {
+            if (GrimSwathePvE.CanUse(out act))
+                return true;
             if (BloodStalkPvE.CanUse(out act))
                 return true;
         }
@@ -443,6 +607,8 @@ public sealed class SezuraiRPR : ReaperRotation
         // ======================================================================
         // 2. COMMUNIO (at 1 Lemure Shroud in Enshroud)
         // Final GCD of Enshroud phase. Has a cast time, so skip if moving.
+        // BMR: Force Communio before downtime even if we have extra Lemure Shroud
+        // remaining -- losing Communio + Perfectio is a huge DPS loss.
         // ======================================================================
         if (HasEnshrouded && LemureShroud == 1)
         {
@@ -465,6 +631,18 @@ public sealed class SezuraiRPR : ReaperRotation
                 if (UseEnhancedReapingGCD(out act))
                     return true;
             }
+        }
+
+        // BMR: Emergency Communio -- if we're in Enshroud and downtime is imminent,
+        // skip remaining reaping GCDs and fire Communio early to ensure we get the finisher.
+        // Communio + Perfectio is worth far more than extra reaping GCDs.
+        // Only do this when downtime < 5s (one more GCD might not happen).
+        if (HasEnshrouded && LemureShroud >= 2 && CommunioPvE.EnoughLevel
+            && BmrUsable && BmrDowntimeIn is > 0 and <= 5f)
+        {
+            // Override: force Communio if we can cast it
+            if (!IsMoving && CommunioPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
         }
 
         // ======================================================================
@@ -544,48 +722,63 @@ public sealed class SezuraiRPR : ReaperRotation
         // ======================================================================
         // 8. DEATH'S DESIGN MAINTENANCE (Shadow of Death / Whorl of Death)
         // 10% damage buff on target. Refresh before it falls off.
+        // BMR: skip refreshing Death's Design if downtime < 3s -- waste of a GCD
+        // when the buff will persist through downtime anyway.
         // ======================================================================
+        bool bmrSkipDDRefresh = BmrUsable && BmrDowntimeIn is > 0 and <= 3f;
 
-        // AoE Death's Design: Whorl of Death
-        // Check if at least 2 targets in the AoE area need/benefit from Death's Design
-        int ddNeeds = 0;
-        if (WhorlOfDeathPvE.CanUse(out _, skipAoeCheck: true) && WhorlOfDeathPvE.PreviewTarget.HasValue)
+        if (!bmrSkipDDRefresh)
         {
-            ddNeeds = WhorlOfDeathPvE.PreviewTarget.Value.AffectedTargets?.Length ?? 0;
-        }
-        if (ddNeeds >= 2)
-        {
-            if (WhorlOfDeathPvE.CanUse(out act, skipStatusProvideCheck: true))
-                return true;
-        }
-
-        // Standard Whorl of Death (framework-managed refresh)
-        if (WhorlOfDeathPvE.CanUse(out act))
-            return true;
-
-        // Shadow of Death (single target)
-        if (UseCustomDDTiming)
-        {
-            // Custom timing: refresh when target lacks DD or DD is about to expire
-            if ((!CurrentTarget?.HasStatus(true, StatusID.DeathsDesign) ?? false)
-                || (CurrentTarget?.WillStatusEnd(RefreshDDSeconds, true, StatusID.DeathsDesign) ?? false))
+            // AoE Death's Design: Whorl of Death
+            // Check if at least 2 targets in the AoE area need/benefit from Death's Design
+            int ddNeeds = 0;
+            if (WhorlOfDeathPvE.CanUse(out _, skipAoeCheck: true) && WhorlOfDeathPvE.PreviewTarget.HasValue)
             {
-                if (ShadowOfDeathPvE.CanUse(out act, skipStatusProvideCheck: true))
+                ddNeeds = WhorlOfDeathPvE.PreviewTarget.Value.AffectedTargets?.Length ?? 0;
+            }
+            if (ddNeeds >= 2)
+            {
+                if (WhorlOfDeathPvE.CanUse(out act, skipStatusProvideCheck: true))
                     return true;
             }
-        }
-        else
-        {
-            // Default: let the framework handle refresh timing via TargetStatusProvide
-            if (ShadowOfDeathPvE.CanUse(out act))
+
+            // Standard Whorl of Death (framework-managed refresh)
+            if (WhorlOfDeathPvE.CanUse(out act))
                 return true;
+
+            // Shadow of Death (single target)
+            if (UseCustomDDTiming)
+            {
+                // Custom timing: refresh when target lacks DD or DD is about to expire
+                if ((!CurrentTarget?.HasStatus(true, StatusID.DeathsDesign) ?? false)
+                    || (CurrentTarget?.WillStatusEnd(RefreshDDSeconds, true, StatusID.DeathsDesign) ?? false))
+                {
+                    if (ShadowOfDeathPvE.CanUse(out act, skipStatusProvideCheck: true))
+                        return true;
+                }
+            }
+            else
+            {
+                // Default: let the framework handle refresh timing via TargetStatusProvide
+                if (ShadowOfDeathPvE.CanUse(out act))
+                    return true;
+            }
         }
 
         // ======================================================================
         // 9. HARVEST MOON (ranged GCD from Soulsow)
         // Use when out of melee range for movement, or as a strong filler.
+        // BMR: also use before downtime as a strong instant GCD to maximize damage
         // ======================================================================
         if (UseHarvestMoonRanged && InCombat && !HasSoulReaver && !HasHostilesInRange
+            && HarvestMoonPvE.CanUse(out act, skipAoeCheck: true))
+        {
+            return true;
+        }
+
+        // BMR: dump Harvest Moon before downtime -- it's a strong instant GCD
+        // Better to use it than let it sit through a downtime phase
+        if (BmrDowntimeImminent && InCombat && !HasSoulReaver
             && HarvestMoonPvE.CanUse(out act, skipAoeCheck: true))
         {
             return true;
@@ -594,16 +787,25 @@ public sealed class SezuraiRPR : ReaperRotation
         // ======================================================================
         // 10. SOUL SLICE / SOUL SCYTHE (gauge generation, 2 charges)
         // Generates 50 Soul directly. Use to avoid overcapping charges.
+        // BMR: Don't start Soul Slice if downtime < 3s and Soul is already high,
+        // since the generated gauge will be wasted.
         // ======================================================================
-        if (SoulScythePvE.CanUse(out act, usedUp: true))
-            return true;
+        bool bmrSkipSoulSlice = BmrUsable && BmrDowntimeIn is > 0 and <= 3f && Soul >= 80;
 
-        if (SoulSlicePvE.CanUse(out act, usedUp: true))
-            return true;
+        if (!bmrSkipSoulSlice)
+        {
+            if (SoulScythePvE.CanUse(out act, usedUp: true))
+                return true;
+
+            if (SoulSlicePvE.CanUse(out act, usedUp: true))
+                return true;
+        }
 
         // ======================================================================
         // 11. COMBO CHAIN (1-2-3 / AoE equivalents)
         // Basic combo to build Soul gauge (10 per hit).
+        // BMR: Don't start a NEW combo if downtime < 5s -- use ranged GCDs instead.
+        // Always finish an in-progress combo though (framework handles combo state).
         // ======================================================================
 
         // AoE combo
@@ -616,14 +818,20 @@ public sealed class SezuraiRPR : ReaperRotation
         // ST combo (don't break Executioner stacks)
         if (!HasExecutioner)
         {
+            // Always finish an in-progress combo (Waxing/Infernal are combo continuations)
             if (InfernalSlicePvE.CanUse(out act))
                 return true;
 
             if (WaxingSlicePvE.CanUse(out act))
                 return true;
 
-            if (SlicePvE.CanUse(out act))
-                return true;
+            // BMR: don't start a fresh combo if downtime < 5s
+            // Use ranged GCDs (Harvest Moon / Harpe) instead for the remaining time
+            if (!BmrBlockNewCombo)
+            {
+                if (SlicePvE.CanUse(out act))
+                    return true;
+            }
         }
 
         // ======================================================================

@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Tank;
 
 [Rotation("SezuraiPLD", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned PLD with FoF burst, Confiteor combo, Atonement optimization, and proper defensive layering.")]
+    Description = "BMR-smart Balance-aligned PLD with timeline-aware mitigation, downtime-aware burst, FoF/Confiteor optimization, and proper defensive layering.")]
 [SourceCode(Path = "main/ExtraRotations/Tank/SezuraiPLD.cs")]
 [ExtraRotation]
 public sealed class SezuraiPLD : PaladinRotation
@@ -69,6 +69,11 @@ public sealed class SezuraiPLD : PaladinRotation
     /// </summary>
     private bool HasBladeOfHonor => BladeOfHonorReady;
 
+    /// <summary>
+    /// True when we are medicated (potion active).
+    /// </summary>
+    private static bool IsMedicated => StatusHelper.PlayerHasStatus(true, StatusID.Medicated);
+
     #endregion
 
     #region UpdateInfo
@@ -86,10 +91,13 @@ public sealed class SezuraiPLD : PaladinRotation
     {
         ImGui.Text($"--- Sezurai PLD ---");
         ImGui.Separator();
+        ImGui.Text($"--- Burst ---");
         ImGui.Text($"CanBurst: {CanBurst}");
         ImGui.Text($"InBurstWindow (FoF): {InBurstWindow}");
         ImGui.Text($"HasFightOrFlight: {HasFightOrFlight}");
+        ImGui.Text($"FoF CD: {(FightOrFlightPvE.Cooldown.IsCoolingDown ? $"{FightOrFlightPvE.Cooldown.RecastTimeRemainOneCharge:F1}s" : "Ready")}");
         ImGui.Spacing();
+        ImGui.Text($"--- Gauge & Procs ---");
         ImGui.Text($"OathGauge: {OathGauge}");
         ImGui.Text($"RequiescatStacks: {RequiescatStacks}");
         ImGui.Spacing();
@@ -105,16 +113,41 @@ public sealed class SezuraiPLD : PaladinRotation
         ImGui.Text($"HasDivineMight: {HasDivineMight}");
         ImGui.Text($"HasGoringBlade: {StatusHelper.PlayerHasStatus(true, StatusID.GoringBladeReady)}");
         ImGui.Spacing();
-        ImGui.Text($"FoF CD Remain: {FightOrFlightPvE.Cooldown.RecastTimeRemainOneCharge:F1}s");
+        ImGui.Text($"--- Status ---");
+        ImGui.Text($"IsMedicated: {IsMedicated}");
+        ImGui.Text($"InCombat: {InCombat}");
+        ImGui.Text($"HP: {Player?.GetHealthRatio():P0}");
+        ImGui.Text($"--- Defensive CDs ---");
+        ImGui.Text($"HolySheltron: {(HolySheltronPvE.Cooldown.IsCoolingDown ? $"{HolySheltronPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")} (Oath: {OathGauge})");
+        ImGui.Text($"Guardian: {(GuardianPvE.Cooldown.IsCoolingDown ? $"{GuardianPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Rampart: {(RampartPvE.Cooldown.IsCoolingDown ? $"{RampartPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Bulwark: {(BulwarkPvE.Cooldown.IsCoolingDown ? $"{BulwarkPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"DivineVeil: {(DivineVeilPvE.Cooldown.IsCoolingDown ? $"{DivineVeilPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Reprisal: {(ReprisalPvE.Cooldown.IsCoolingDown ? $"{ReprisalPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"HallowedGround: {(HallowedGroundPvE.Cooldown.IsCoolingDown ? $"{HallowedGroundPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -123,25 +156,25 @@ public sealed class SezuraiPLD : PaladinRotation
     #region Countdown & Opener
     // === PLD OPENER (7.4 Balance / Icy Veins) ===
     // Pre-pull: Holy Spirit precast(-1.75s)
-    // GCD1: Fast Blade → Pot (weave)
+    // GCD1: Fast Blade -> Pot (weave)
     // GCD2: Riot Blade
-    // GCD3: Royal Authority → FoF (weave) + Imperator (weave)
-    // GCD4: Confiteor → Circle of Scorn (weave) + Expiacion (weave)
-    // GCD5: Blade of Faith → Intervene (weave)
-    // GCD6: Blade of Truth → Intervene (weave)
-    // GCD7: Blade of Valor → Blade of Honor (weave)
+    // GCD3: Royal Authority -> FoF (weave) + Imperator (weave)
+    // GCD4: Confiteor -> Circle of Scorn (weave) + Expiacion (weave)
+    // GCD5: Blade of Faith -> Intervene (weave)
+    // GCD6: Blade of Truth -> Intervene (weave)
+    // GCD7: Blade of Valor -> Blade of Honor (weave)
     // GCD8: Goring Blade
-    // GCD9: Atonement → GCD10: Supplication → GCD11: Sepulchre
+    // GCD9: Atonement -> GCD10: Supplication -> GCD11: Sepulchre
     // GCD12: Holy Spirit (Divine Might)
     //
-    // === BURST WINDOWS (60s cycle — every window is the same) ===
+    // === BURST WINDOWS (60s cycle -- every window is the same) ===
     // PLD has FoF on 60s CD with no 120s cooldowns, so every window is identical:
-    //   FoF + Imperator → Confiteor combo (4 GCDs) → Goring Blade → Atonement chain
+    //   FoF + Imperator -> Confiteor combo (4 GCDs) -> Goring Blade -> Atonement chain
     //   Weave Circle of Scorn + Expiacion + Intervene x2 during FoF
     //
     // === FILLER (outside FoF) ===
-    // 9-GCD loop: Royal Authority → Atonement → Fast Blade → Riot Blade → Supplication
-    //   → Holy Spirit → Sepulchre → Fast Blade → Riot Blade → (repeat)
+    // 9-GCD loop: Royal Authority -> Atonement -> Fast Blade -> Riot Blade -> Supplication
+    //   -> Holy Spirit -> Sepulchre -> Fast Blade -> Riot Blade -> (repeat)
     // Use Circle of Scorn + Expiacion on CD between FoF windows
     // Never use Royal Authority before spending ALL existing procs
 
@@ -170,22 +203,65 @@ public sealed class SezuraiPLD : PaladinRotation
         return base.MoveForwardAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.DivineVeilPvE, ActionID.PassageOfArmsPvE)]
+    [RotationDesc(ActionID.DivineVeilPvE, ActionID.PassageOfArmsPvE, ActionID.ReprisalPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: time Divine Veil before raidwides (shield needs a heal to pop)
-        // Balance: "Divine Veil creates a party barrier when you receive a heal"
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        if (!AutoMitigation)
+            return base.DefenseAreaAbility(nextGCD, out act);
 
-        if (rwSoon && DivineVeilPvE.CanUse(out act))
+        // === BMR-AWARE RAIDWIDE MITIGATION ===
+        // Balance: spread mits across raidwides, don't dump everything on one hit.
+        // Mitigation is multiplicative (two 10% = 19%, not 20%), so spreading is more efficient.
+        // Use 1-2 mits per raidwide max. Don't fire if raidwide is >8s away.
+        //
+        // Divine Veil: party barrier that activates when PLD receives a heal.
+        // Must be used 3-5s before the raidwide so healers have time to trigger it.
+        // Icy Veins: "Divine Veil...shine on raidwide damage. Use liberally."
+        //
+        // Passage of Arms: 15% reduction while channeling, persists 5s after flash.
+        // Icy Veins: "flashing it briefly on the party is sufficient."
+        // DPS loss from channel, so only use when we know a big raidwide is coming.
+        //
+        // Reprisal: 10% enemy damage reduction — use on SEPARATE raidwides from Veil.
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwMedium = BmrActive && BmrRaidwideIn is > 5f and <= 8f;
+
+        // With BMR active and no raidwide coming soon, don't waste party mits
+        if (BmrActive && !rwSoon && !rwMedium)
+            return base.DefenseAreaAbility(nextGCD, out act);
+
+        // BMR: Divine Veil 3-8s before raidwide (shield needs a heal to pop)
+        // Use at medium range so healers have time to trigger it before damage snapshot
+        if ((rwSoon || rwMedium) && DivineVeilPvE.CanUse(out act))
             return true;
 
-        // Without BMR: use whenever framework triggers
+        // BMR: Reprisal when raidwide is imminent (1-5s) — don't stack with Veil on same RW
+        // Only fire if Divine Veil is already up (covering this RW) or on cooldown
+        if (rwSoon && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+        {
+            // Stack Reprisal if Veil is on CD (different RW coverage), or if Veil already activated
+            if (DivineVeilPvE.Cooldown.IsCoolingDown
+                || StatusHelper.PlayerHasStatus(true, StatusID.DivineVeil_1362))
+                return true;
+        }
+
+        // BMR: Passage of Arms flash for very heavy raidwides when other tools are on CD
+        // Only use when both Veil and Reprisal are on CD and a raidwide is imminent
+        if (rwSoon && DivineVeilPvE.Cooldown.IsCoolingDown
+            && ReprisalPvE.Cooldown.IsCoolingDown
+            && PassageOfArmsPvE.CanUse(out act))
+            return true;
+
+        // === NON-BMR FALLBACK ===
+        // Without BMR: use whenever the framework says DefenseArea is needed
         if (!BmrActive && DivineVeilPvE.CanUse(out act))
             return true;
 
+        if (!BmrActive && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+            return true;
+
         // Passage of Arms: channel-based, only for specific mechanics
-        // Don't use with BMR timing (locks you in place = DPS loss)
+        // Don't use with BMR timing by default (locks you in place = DPS loss)
         if (!BmrActive && PassageOfArmsPvE.CanUse(out act))
             return true;
 
@@ -202,46 +278,51 @@ public sealed class SezuraiPLD : PaladinRotation
         if (StatusHelper.PlayerHasStatus(true, StatusID.HallowedGround))
             return base.DefenseSingleAbility(nextGCD, out act);
 
-        // BMR-aware: when TB is imminent, Sheltron + ONE longer CD
+        // === BMR-AWARE TANKBUSTER MITIGATION ===
+        // Balance: Holy Sheltron on every TB + liberally on autos.
+        // Layer ONE of Rampart/Guardian/Bulwark for heavy TBs, don't stack all.
+        // Mitigation is multiplicative -- spreading across TBs is more efficient.
+        // Icy Veins: "Use one of Rampart, Guardian, or Bulwark on every tankbuster."
         bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
 
-        // 1. Holy Sheltron / Sheltron — always first (short CD, Oath spender)
+        // With BMR active and no TB coming soon, don't waste single-target mits
+        // Still allow Sheltron for overcap prevention (handled by GeneralAbility)
+        if (BmrActive && !tbSoon)
+            return base.DefenseSingleAbility(nextGCD, out act);
+
+        // --- TB is imminent (BMR path) ---
+
+        // 1. Holy Sheltron / Sheltron -- always first (short CD, Oath spender)
+        // Balance: "Use Holy Sheltron on every tankbuster and liberally on auto-attacks"
+        // Knight's Resolve (15% DR) + Knight's Benediction (HoT) make this very efficient
         if (UseOath(out act))
             return true;
 
-        if (tbSoon)
-        {
-            // Layer ONE longer CD for big TBs, then stop
-            if (BulwarkPvE.CanUse(out act, skipAoeCheck: true))
-                return true;
-            return base.DefenseSingleAbility(nextGCD, out act);
-        }
+        // 2. Layer ONE longer CD for the TB, then stop -- save others for next TB
+        // Priority: Bulwark (shorter CD, block rate) > Guardian/Sentinel (30% DR) > Rampart (20% DR)
+        // Don't stack -- one heavier mit per TB is the Balance-recommended approach
 
-        // Non-BMR / reactive path: stagger long CDs
-        // 2. Bulwark (block rate buff)
+        // Bulwark: block rate buff, 90s CD -- good for auto-attack heavy phases too
         if (BulwarkPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
-        // 3. Sentinel/Guardian (30% mitigation, 120s CD)
-        if ((!RampartPvE.Cooldown.IsCoolingDown || RampartPvE.Cooldown.ElapsedAfter(60))
-            && GuardianPvE.CanUse(out act) && GuardianPvE.EnoughLevel)
+        // Guardian/Sentinel: 30% mitigation, 120s CD -- use for heavier TBs
+        if (GuardianPvE.EnoughLevel && GuardianPvE.CanUse(out act))
+            return true;
+        if (!GuardianPvE.EnoughLevel && SentinelPvE.CanUse(out act))
             return true;
 
-        if ((!RampartPvE.Cooldown.IsCoolingDown || RampartPvE.Cooldown.ElapsedAfter(60))
-            && SentinelPvE.CanUse(out act) && !GuardianPvE.EnoughLevel)
+        // Rampart: 20% mitigation, 90s CD -- fallback when heavier CDs are down
+        if (RampartPvE.CanUse(out act))
             return true;
 
-        // 4. Rampart (20% mitigation, 90s CD)
-        if (((GuardianPvE.EnoughLevel && GuardianPvE.Cooldown.IsCoolingDown && GuardianPvE.Cooldown.ElapsedAfter(60))
-            || (!GuardianPvE.EnoughLevel && SentinelPvE.EnoughLevel && SentinelPvE.Cooldown.IsCoolingDown && SentinelPvE.Cooldown.ElapsedAfter(60))
-            || !SentinelPvE.EnoughLevel)
-            && RampartPvE.CanUse(out act))
+        // Reprisal: 10% enemy damage reduction -- use if all personal CDs are on CD
+        // Also helps co-tank if TB is shared
+        if (tbImminent && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
-        // 5. Reprisal (10% damage down on enemies)
-        if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
-            return true;
-
+        // BMR path: only one long CD per TB -- don't dump everything
         return base.DefenseSingleAbility(nextGCD, out act);
     }
 
@@ -289,19 +370,64 @@ public sealed class SezuraiPLD : PaladinRotation
 
     protected override bool EmergencyAbility(IAction nextGCD, out IAction? act)
     {
-        // Hallowed Ground: emergency invuln at critical HP
-        if (HallowedGroundPvE.CanUse(out act) && Player?.GetHealthRatio() <= HealthForDyingTanks)
-            return true;
+        // === HALLOWED GROUND ===
+        // Balance: "Hallowed Ground is a powerful tool and should be used proactively
+        // on high-damage sequences like multi-hit tankbusters."
+        // BMR-aware: only Hallowed if TB is actually imminent AND HP is critical.
+        // Don't panic-Hallowed from random damage -- save for planned invulns.
+        // Without BMR: use the framework's health threshold as before.
+        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool hpCritical = Player?.GetHealthRatio() <= HealthForDyingTanks;
 
-        // Medicine: use during Fight or Flight window
-        if (BurstMed && HasFightOrFlight && InCombat && UseBurstMedicine(out act))
-            return true;
+        if (HallowedGroundPvE.CanUse(out act))
+        {
+            // BMR path: only invuln if TB is about to hit and we're low
+            if (BmrActive && tbImminent && hpCritical)
+                return true;
 
-        // Fight or Flight: 60s burst buff, use on cooldown when burst is enabled
-        // Balance guide: "Fight or Flight should always be used on cooldown"
+            // Non-BMR path: use framework HP threshold
+            if (!BmrActive && hpCritical)
+                return true;
+        }
+
+        // === MEDICINE ===
+        // Balance: pot should cover the full FoF window including Confiteor chain.
+        // BMR-aware: don't pot if downtime is imminent (waste of pot duration).
+        if (BurstMed && HasFightOrFlight && InCombat)
+        {
+            bool downtimeWastesPot = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+            if (!downtimeWastesPot && UseBurstMedicine(out act))
+                return true;
+        }
+
+        // === FIGHT OR FLIGHT ===
+        // 60s burst buff, use on cooldown when burst is enabled.
+        // Balance: "Fight or Flight should always be used on cooldown"
         // Opener timing: use after Royal Authority (when we have Atonement Ready + Divine Might)
         // During combat: use on CD, preferring when we have procs to spend in the window
+        //
+        // BMR: Don't start FoF if downtime is <12s (needs ~11 GCDs to get full value).
+        // BMR: Hold briefly for vulnerability windows if very close.
         if (CanBurst && InCombat && HasHostilesInRange)
+        {
+            bool downtimeTooClose = BmrActive && BmrDowntimeIn is > 0 and < 12f;
+            bool holdForVuln = BmrActive && BmrVulnerableIn is > 0 and <= 5f
+                && !FightOrFlightPvE.Cooldown.WillHaveOneChargeGCD(2);
+
+            if (!downtimeTooClose && !holdForVuln)
+            {
+                if (FightOrFlightPvE.CanUse(out act))
+                    return true;
+            }
+        }
+
+        // === BMR: DUMP FoF BEFORE DOWNTIME ===
+        // If downtime is close (8-12s) and FoF is available, pop it NOW to get partial value
+        // rather than losing it entirely during the untargetable phase.
+        // Only if we have at least some procs/resources to spend.
+        bool downtimeVerySoon = BmrActive && BmrDowntimeIn is > 0 and <= 12f;
+        if (downtimeVerySoon && InCombat && HasHostilesInRange
+            && (HasConfiteorReady || RequiescatStacks > 0 || HasAtonementReady || HasDivineMight))
         {
             if (FightOrFlightPvE.CanUse(out act))
                 return true;
@@ -329,15 +455,47 @@ public sealed class SezuraiPLD : PaladinRotation
                 return true;
         }
 
+        // === BMR: DUMP IMPERATOR/REQUIESCAT BEFORE DOWNTIME ===
+        // If downtime is imminent and Imperator/Requiescat is available, fire it now
+        // so we can dump Confiteor chain during remaining uptime.
+        if (downtimeVerySoon && InCombat && HasHostilesInRange)
+        {
+            if (RequiescatMasteryTrait.EnoughLevel
+                && ImperatorPvE.CanUse(out act, skipAoeCheck: true, usedUp: true, skipTTKCheck: true))
+                return true;
+            if (RequiescatPvE.CanUse(out act, skipAoeCheck: true, usedUp: true))
+                return true;
+        }
+
         return base.EmergencyAbility(nextGCD, out act);
     }
 
     [RotationDesc(ActionID.BladeOfHonorPvE, ActionID.CircleOfScornPvE, ActionID.ExpiacionPvE, ActionID.IntervenePvE)]
     protected override bool AttackAbility(IAction nextGCD, out IAction? act)
     {
+        // === BMR DOWNTIME/VULNERABILITY AWARENESS ===
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
+        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+
         // 1. Blade of Honor: follow-up to Imperator, use immediately (cannot hold)
         if (BladeOfHonorPvE.CanUse(out act, skipAoeCheck: true))
             return true;
+
+        // === BMR: DUMP oGCDs BEFORE DOWNTIME ===
+        // If downtime is approaching, fire Circle of Scorn + Expiacion now
+        // rather than losing them during the untargetable phase.
+        if (downtimeSoon)
+        {
+            if (CircleOfScornPvE.CanUse(out act, skipAoeCheck: true, skipTTKCheck: true))
+                return true;
+            if (ExpiacionPvE.EnoughLevel && ExpiacionPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+            if (!ExpiacionPvE.EnoughLevel && SpiritsWithinPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+            // Dump Intervene charges before downtime
+            if (!IsMoving && IntervenePvE.CanUse(out act, usedUp: true))
+                return true;
+        }
 
         // 2. Circle of Scorn (DoT + damage, 30s CD)
         // During FoF: weave after Confiteor. Outside FoF: use on CD, don't hold.
@@ -397,6 +555,10 @@ public sealed class SezuraiPLD : PaladinRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        // === BMR DOWNTIME AWARENESS ===
+        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+
         // =======================================================
         // PRIORITY 1: Confiteor combo (MUST finish once started)
         // Confiteor -> Blade of Faith -> Blade of Truth -> Blade of Valor
@@ -446,6 +608,25 @@ public sealed class SezuraiPLD : PaladinRotation
         }
 
         // =======================================================
+        // BMR: DUMP PROCS BEFORE DOWNTIME
+        // If downtime is approaching (<10s), dump all remaining procs
+        // (Atonement chain, Divine Might, Requiescat stacks) NOW
+        // rather than losing them during the untargetable phase.
+        // =======================================================
+        if (downtimeSoon)
+        {
+            // Dump Atonement chain regardless of FoF timing
+            if (HasAtonementReady && AtonementPvE.CanUse(out act))
+                return true;
+
+            // Dump Holy Spirit/Circle with Divine Might or Requiescat stacks
+            if ((HasDivineMight || RequiescatStacks > 0) && HolyCirclePvE.CanUse(out act, skipCastingCheck: true))
+                return true;
+            if ((HasDivineMight || RequiescatStacks > 0) && HolySpiritPvE.CanUse(out act, skipCastingCheck: true))
+                return true;
+        }
+
+        // =======================================================
         // PRIORITY 4: Holy Spirit with Divine Might / Requiescat
         // Divine Might: instant-cast Holy Spirit proc from Royal Authority / Prominence
         // Requiescat stacks: instant-cast from Imperator/Requiescat
@@ -470,6 +651,37 @@ public sealed class SezuraiPLD : PaladinRotation
 
         if (TotalEclipsePvE.CanUse(out act))
             return true;
+
+        // =======================================================
+        // BMR: DON'T START NEW COMBOS BEFORE DOWNTIME
+        // If downtime is <=3s away, don't start a new combo -- it'll
+        // drop during the untargetable phase and waste combo progress.
+        // Still allow finishing an in-progress combo.
+        // =======================================================
+        if (downtimeVeryClose)
+        {
+            // Still allow finishing an in-progress combo (CanUse checks combo state)
+            if (RoyalAuthorityPvE.CanUse(out act))
+                return true;
+            if (!RoyalAuthorityPvE.Info.EnoughLevelAndQuest() && RageOfHalonePvE.CanUse(out act))
+                return true;
+            if (RiotBladePvE.CanUse(out act))
+                return true;
+            // Don't start Fast Blade -- use Shield Lob/Holy Spirit for a clean hit instead
+            if (HolySpiritRanged && StopMovingTime > 1 && HolySpiritPvE.CanUse(out act))
+                return true;
+            if (ShieldLobPvE.CanUse(out act))
+                return true;
+            return base.GeneralGCD(out act);
+        }
+
+        // =======================================================
+        // BMR: DON'T START BLADE COMBO BEFORE DOWNTIME
+        // If downtime is <10s away, don't start Royal Authority combo
+        // (takes ~3 GCDs = ~7.5s to complete). Spend existing procs instead.
+        // =======================================================
+        // (Already handled above: downtimeSoon dumps procs, and the combo
+        //  section below runs normally when downtime is >10s or non-BMR)
 
         // =======================================================
         // PRIORITY 6: Single Target Combo

@@ -3,7 +3,7 @@ using System.ComponentModel;
 namespace RotationSolver.ExtraRotations.Magical;
 
 [Rotation("SezuraiSMN", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned SMN with Searing Light burst, primal optimization, and demi-summon management.")]
+    Description = "Balance-aligned SMN with Searing Light burst, primal optimization, demi-summon management, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Magical/SezuraiSMN.cs")]
 [ExtraRotation]
 public sealed class SezuraiSMN : SummonerRotation
@@ -43,6 +43,23 @@ public sealed class SezuraiSMN : SummonerRotation
 
     [RotationConfig(CombatType.PvE, Name = "Use Swiftcast on Resurrection")]
     public bool SwiftcastRaise { get; set; } = true;
+
+    // === BMR Config Options ===
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Hold Searing Light to dump before downtime")]
+    public bool BmrDumpSearingLightBeforeDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Dump Aetherflow/Necrotize before downtime")]
+    public bool BmrDumpAetherflowBeforeDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Hold Bahamut/Phoenix if downtime imminent (<15s)")]
+    public bool BmrHoldDemiBeforeDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Avoid Ifrit if forced movement imminent")]
+    public bool BmrAvoidIfritBeforeMovement { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Spend Ruin IV procs before downtime")]
+    public bool BmrSpendProcsBeforeDowntime { get; set; } = true;
 
     #endregion
 
@@ -97,6 +114,42 @@ public sealed class SezuraiSMN : SummonerRotation
 
     #endregion
 
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR reports downtime within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrDowntimeWithin(float seconds)
+        => BmrActive && BmrDowntimeIn is > 0 and < float.MaxValue && BmrDowntimeIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a vulnerability window within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrVulnWithin(float seconds)
+        => BmrActive && BmrVulnerableIn is > 0 and < float.MaxValue && BmrVulnerableIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a raidwide within the specified seconds.
+    /// </summary>
+    private bool BmrRaidwideWithin(float seconds)
+        => BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a tankbuster within the specified seconds.
+    /// </summary>
+    private bool BmrTankbusterWithin(float seconds)
+        => BmrActive && BmrTankbusterIn is > 0 and < float.MaxValue && BmrTankbusterIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a knockback within the specified seconds.
+    /// </summary>
+    private bool BmrKnockbackWithin(float seconds)
+        => BmrActive && BmrKnockbackIn is > 0 and < float.MaxValue && BmrKnockbackIn <= seconds;
+
+    #endregion
+
     #region UpdateInfo
 
     protected override void UpdateInfo()
@@ -133,26 +186,50 @@ public sealed class SezuraiSMN : SummonerRotation
         ImGui.Text($"IsPhoenixReady: {IsPhoenixReady}");
         ImGui.Text("--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
+        ImGui.Separator();
+        ImGui.Text("--- BMR Decision Flags ---");
+        ImGui.Text($"RaidwideWithin(5): {BmrRaidwideWithin(5f)}");
+        ImGui.Text($"RaidwideWithin(3): {BmrRaidwideWithin(3f)}");
+        ImGui.Text($"DowntimeWithin(15): {BmrDowntimeWithin(15f)}");
+        ImGui.Text($"DowntimeWithin(10): {BmrDowntimeWithin(10f)}");
+        ImGui.Text($"KnockbackWithin(5): {BmrKnockbackWithin(5f)}");
+        ImGui.Text($"VulnWithin(30): {BmrVulnWithin(30f)}");
+        ImGui.Text($"InFillerPhase: {InFillerPhase}");
     }
 
     #endregion
 
     #region Countdown & Opener
     // === SMN OPENER (7.4 Balance) ===
-    // Pre-pull: Summon Carbuncle(if needed) → Pot(-2s) → Ruin III precast(-1.5s)
-    // GCD1: Ruin III (lands on pull) → Summon Solar Bahamut (weave)
-    // → Searing Light (weave, party buff) → GCD2: Umbral Impulse → Searing Flash (weave)
-    // GCD3: Umbral Impulse → Energy Drain (weave) → Enkindle Solar Bahamut (weave)
-    // GCD4: Umbral Impulse → Necrotize (weave) → Necrotize (weave)
-    // GCD5: Umbral Impulse → Sunflare (Astral Flow finisher)
-    // → Summon primals: Titan first (instant Topaz GCDs for mobility) → Garuda → Ifrit
+    // Pre-pull: Summon Carbuncle(if needed) -> Pot(-2s) -> Ruin III precast(-1.5s)
+    // GCD1: Ruin III (lands on pull) -> Summon Solar Bahamut (weave)
+    // -> Searing Light (weave, party buff) -> GCD2: Umbral Impulse -> Searing Flash (weave)
+    // GCD3: Umbral Impulse -> Energy Drain (weave) -> Enkindle Solar Bahamut (weave)
+    // GCD4: Umbral Impulse -> Necrotize (weave) -> Necrotize (weave)
+    // GCD5: Umbral Impulse -> Sunflare (Astral Flow finisher)
+    // -> Summon primals: Titan first (instant Topaz GCDs for mobility) -> Garuda -> Ifrit
     //
     // === EVEN BURST (120s) ===
     // Searing Light (party buff) + Demi-summon phase (Bahamut/Phoenix/Solar Bahamut)
@@ -160,16 +237,25 @@ public sealed class SezuraiSMN : SummonerRotation
     // Hold Necrotize charges for even windows when possible
     //
     // === ODD BURST (60s) ===
-    // Energy Drain + Necrotize/Fester only — Searing Light is 120s
+    // Energy Drain + Necrotize/Fester only -- Searing Light is 120s
     // Demi-summon naturally aligns with even windows (60s per demi cycle)
     //
     // === FILLER / SUSTAIN ===
-    // Primal order: Titan (instant GCDs, mobility) → Garuda (caster GCDs) → Ifrit (long casts)
+    // Primal order: Titan (instant GCDs, mobility) -> Garuda (caster GCDs) -> Ifrit (long casts)
     // Ruin III/IV: filler GCD between primal phases, always be casting
     // Energy Drain: use on CD, generates Aetherflow for Necrotize/Fester
     // Necrotize: hold 1 charge for even burst if close, spend to avoid overcap
     // Primal gems: use Topaz/Emerald/Ruby spells before summoning next primal
     // Radiant Aegis: free shield on 60s CD, use for survivability
+    //
+    // === BMR-AWARE ADJUSTMENTS ===
+    // Addle 5s before raidwide (Addle lasts 15s, needs to be on boss before cast)
+    // Radiant Aegis 3s before raidwide (20% HP shield, 30s duration)
+    // Don't start Bahamut/Phoenix if downtime < 15s (demi needs full 15s window)
+    // Dump Searing Light + Energy Drain + Necrotize before downtime
+    // Avoid Ifrit if forced movement imminent (2.8s hardcasts get interrupted)
+    // Spend Ruin IV procs before downtime (instant cast, don't waste the proc)
+    // Arms Length for knockback if BMR reports knockback imminent
 
     protected override IAction? CountDownAction(float remainTime)
     {
@@ -199,15 +285,18 @@ public sealed class SezuraiSMN : SummonerRotation
     [RotationDesc(ActionID.AddlePvE, ActionID.RadiantAegisPvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: Addle + Radiant Aegis proactively before raidwide
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // === BMR-aware: Addle proactively before raidwide ===
+        // Addle: 10% magic damage reduction on target for 15s, 90s CD.
+        // Apply when raidwide is 2-5s out so it is active when the hit resolves.
+        // Balance guide: "hard-hitting magical attacks" -- coordinate with healers.
+        bool rwSoon = BmrRaidwideWithin(5f);
 
         if (rwSoon)
         {
-            // Addle first for party benefit
+            // Addle first for party benefit (reduces boss damage output)
             if (AddlePvE.CanUse(out act))
                 return true;
-            // Radiant Aegis: personal shield for survivability
+            // Radiant Aegis: personal shield for survivability before raidwide
             if (!HasRadiantAegisStatus && RadiantAegisPvE.CanUse(out act))
                 return true;
             return base.DefenseAreaAbility(nextGCD, out act);
@@ -225,6 +314,20 @@ public sealed class SezuraiSMN : SummonerRotation
     [RotationDesc(ActionID.RadiantAegisPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
+        // === BMR-aware: Radiant Aegis before raidwide (self-shield) ===
+        // Radiant Aegis: 20% max HP shield, 30s duration, 60s CD (2 charges).
+        // Cannot be used during demi-summon phases (requires Carbuncle active).
+        // Balance guide: "proactive use rather than reactive panic applications"
+        // Apply 1-3s before raidwide for survivability; 30s duration means early use is fine.
+        bool rwSoon = BmrRaidwideWithin(3f);
+
+        if (rwSoon)
+        {
+            if (!HasRadiantAegisStatus && RadiantAegisPvE.CanUse(out act))
+                return true;
+        }
+
+        // Non-BMR fallback
         if (!HasRadiantAegisStatus && RadiantAegisPvE.CanUse(out act))
             return true;
 
@@ -258,6 +361,7 @@ public sealed class SezuraiSMN : SummonerRotation
     [RotationDesc]
     protected sealed override bool AntiKnockbackAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: Arms Length proactively before knockback
         if (ArmsLengthPvE.CanUse(out act))
             return true;
         return base.AntiKnockbackAbility(nextGCD, out act);
@@ -319,7 +423,25 @@ public sealed class SezuraiSMN : SummonerRotation
         // 5. Astral Flow (Deathflare / Rekindle / Sunflare) - demi-summon finisher
         // 6. Necrotize / Fester / Painflare (spend Aetherflow stacks)
         // 7. Mountain Buster (Titan Astral Flow, on each Topaz Rite)
+        //
+        // BMR Additions:
+        // - Dump Searing Light before downtime (party buff value before untargetable)
+        // - Dump Energy Drain + Necrotize/Fester before downtime (don't waste stacks)
         // ======================================================================
+
+        // === BMR: Dump Searing Light before downtime ===
+        // Balance guide: "party buff alignment takes priority over personal burst"
+        // If downtime is within 20s and SL is available, fire it now so the party
+        // gets the 5% damage buff for remaining uptime GCDs rather than losing it entirely.
+        // Only outside demi phase (inside demi, normal SL logic below handles it).
+        if (BmrDumpSearingLightBeforeDowntime && BmrDowntimeWithin(20f)
+            && !BmrDowntimeWithin(2f)  // Don't waste SL if downtime is <2s away
+            && !InDemiSummon && InCombat && CanBurst
+            && SearingLightPvE.Cooldown.HasOneCharge)
+        {
+            if (SearingLightPvE.CanUse(out act))
+                return true;
+        }
 
         // === 1. Searing Light: 120s raid buff ===
         // Balance guide: Use during demi-summon, align with party raid buffs.
@@ -356,6 +478,19 @@ public sealed class SezuraiSMN : SummonerRotation
         // Use promptly - it is a free oGCD damage hit.
         if (SearingFlashPvE.CanUse(out act))
             return true;
+
+        // === BMR: Dump Energy Drain before downtime ===
+        // Balance guide: "generally weaved early to reduce risk of losing a use"
+        // If downtime is imminent and we have no Aetherflow stacks, drain now so
+        // we get stacks to spend before the boss goes untargetable. Also generates
+        // a Further Ruin proc that we can spend before downtime.
+        if (BmrDumpAetherflowBeforeDowntime && BmrDowntimeWithin(12f) && !HasAetherflowStacks)
+        {
+            if (EnergySiphonPvE.CanUse(out act))
+                return true;
+            if (EnergyDrainPvE.CanUse(out act))
+                return true;
+        }
 
         // === 3. Energy Drain / Energy Siphon: refresh Aetherflow ===
         // Balance guide: "generally weaved early in the opener to reduce risk of losing a use"
@@ -407,6 +542,20 @@ public sealed class SezuraiSMN : SummonerRotation
             if (SunflarePvE.CanUse(out act))
                 return true;
             if (DeathflarePvE.CanUse(out act))
+                return true;
+        }
+
+        // === BMR: Dump Aetherflow stacks before downtime ===
+        // If downtime is within 10s, spend all Necrotize/Fester/Painflare stacks now.
+        // These are oGCDs so we won't waste GCD time; the stacks would be lost anyway
+        // if we entered downtime with them.
+        if (BmrDumpAetherflowBeforeDowntime && BmrDowntimeWithin(10f) && HasAetherflowStacks)
+        {
+            if (PainflarePvE.CanUse(out act))
+                return true;
+            if (NecrotizePvE.CanUse(out act))
+                return true;
+            if (FesterPvE.CanUse(out act))
                 return true;
         }
 
@@ -482,11 +631,29 @@ public sealed class SezuraiSMN : SummonerRotation
         // Phase 5: Primal favor abilities (Slipstream, Crimson Cyclone/Strike)
         // Phase 6: Summon primals
         // Phase 7: Filler (Ruin IV proc > Ruin III)
+        //
+        // BMR Additions:
+        // - Don't summon Bahamut/Phoenix if downtime < 15s
+        // - Avoid Ifrit primal if forced movement imminent
+        // - Spend Ruin IV procs before downtime (instant cast)
+        // - Prefer Garuda/Titan over Ifrit when movement is coming
         // ======================================================================
 
         // === 0. Summon Carbuncle if pet is missing ===
         if (SummonCarbunclePvE.CanUse(out act))
             return true;
+
+        // === BMR: Spend Ruin IV procs before downtime ===
+        // Ruin IV is instant cast, higher potency than Ruin III.
+        // Balance guide: "procs last one minute, should be cast once between demi phases"
+        // If downtime is imminent, don't let the proc go to waste.
+        // Do this before demi GCDs because demi GCDs replace Ruin III, not Ruin IV.
+        if (BmrSpendProcsBeforeDowntime && BmrDowntimeWithin(5f)
+            && !InDemiSummon && HasFurtherRuin)
+        {
+            if (RuinIvPvE.CanUse(out act))
+                return true;
+        }
 
         // === 1. Demi-summon GCDs: press on cooldown during demi phase ===
         // These replace Ruin III while a demi is active.
@@ -499,8 +666,17 @@ public sealed class SezuraiSMN : SummonerRotation
         // === 2. Summon Demi: enter demi-summon phase ===
         // Priority: Solar Bahamut (100) > Phoenix (if phoenix ready) > Bahamut
         // Never delay demi-summon - losing a use is the biggest DPS loss.
-        if (TrySummonDemi(out act))
-            return true;
+        //
+        // BMR override: Don't summon demi if downtime is imminent (<15s).
+        // Demi phases last 15s and losing the tail end to downtime wastes oGCDs
+        // (Enkindle, Astral Flow finisher, last GCDs). Hold for post-downtime burst.
+        // Balance guide: "delay only if you won't lose a demi-primal use"
+        {
+            bool bmrBlockDemi = BmrHoldDemiBeforeDowntime && BmrDowntimeWithin(15f);
+
+            if (!bmrBlockDemi && TrySummonDemi(out act))
+                return true;
+        }
 
         // === 3. Primal Favor abilities (special GCDs from primal buffs) ===
         // These must be used before the favor status expires.
@@ -530,6 +706,10 @@ public sealed class SezuraiSMN : SummonerRotation
         // === 5. Summon Primals ===
         // After demi resolves, cycle through primals in configured order.
         // Only summon when no demi is active and no attunement/favor remains.
+        //
+        // BMR-aware: TrySummonPrimal internally handles:
+        // - Avoiding Ifrit if forced movement is imminent (hardcasts get interrupted)
+        // - Preferring Garuda/Titan when movement is coming soon
         if (TrySummonPrimal(out act))
             return true;
 
@@ -653,6 +833,14 @@ public sealed class SezuraiSMN : SummonerRotation
     /// <summary>
     /// Attempt to summon a primal in configured order.
     /// Only called when no demi is active and no attunement/favor remains.
+    ///
+    /// BMR-aware: When forced movement is imminent (within ~8s), skip Ifrit
+    /// and prefer Titan/Garuda instead. Ifrit has 2.8s hardcasts (Ruby Rite)
+    /// that get interrupted by movement, while Titan is fully instant and
+    /// Garuda's Emerald GCDs are instant (only Slipstream is a hardcast).
+    /// Balance guide: "Ifrit has the most movement restrictions" and is
+    /// "generally best to use during parts of an encounter where it is safe
+    /// to be in melee range."
     /// </summary>
     private bool TrySummonPrimal(out IAction? act)
     {
@@ -666,6 +854,21 @@ public sealed class SezuraiSMN : SummonerRotation
         // If no primals are ready, nothing to do (wait for demi cooldown)
         if (!AnyPrimalReady) return false;
 
+        // BMR: Check if we should avoid Ifrit due to imminent forced movement.
+        // Knockback or any movement-requiring mechanic within 8s means Ifrit's
+        // 2.8s hardcasts will get interrupted. Prefer Titan (all instant) or
+        // Garuda (instant GCDs, only Slipstream is a hardcast) instead.
+        // If Ifrit is the only primal left, summon it anyway -- better than nothing.
+        bool avoidIfrit = BmrAvoidIfritBeforeMovement
+            && (BmrKnockbackWithin(8f) || (BmrDowntimeWithin(10f) && IsIfritReady))
+            && (IsTitanReady || IsGarudaReady);
+
+        if (avoidIfrit)
+        {
+            // Try non-Ifrit primals first, then Ifrit as last resort
+            return TrySummonPrimalAvoidIfrit(out act) || TrySummonIfrit(out act);
+        }
+
         return PrimalOrder switch
         {
             PrimalOrderType.TitanGarudaIfrit =>
@@ -678,6 +881,28 @@ public sealed class SezuraiSMN : SummonerRotation
                 TrySummonIfrit(out act) || TrySummonTitan(out act) || TrySummonGaruda(out act),
             _ =>
                 TrySummonTitan(out act) || TrySummonGaruda(out act) || TrySummonIfrit(out act),
+        };
+    }
+
+    /// <summary>
+    /// BMR helper: Try to summon a non-Ifrit primal (Titan or Garuda) in configured order.
+    /// Used when BMR indicates forced movement is imminent and Ifrit should be avoided.
+    /// </summary>
+    private bool TrySummonPrimalAvoidIfrit(out IAction? act)
+    {
+        act = null;
+
+        // Respect the configured order but skip Ifrit
+        return PrimalOrder switch
+        {
+            PrimalOrderType.TitanGarudaIfrit or PrimalOrderType.TitanIfritGaruda =>
+                TrySummonTitan(out act) || TrySummonGaruda(out act),
+            PrimalOrderType.GarudaTitanIfrit =>
+                TrySummonGaruda(out act) || TrySummonTitan(out act),
+            PrimalOrderType.IfritTitanGaruda =>
+                TrySummonTitan(out act) || TrySummonGaruda(out act),
+            _ =>
+                TrySummonTitan(out act) || TrySummonGaruda(out act),
         };
     }
 
@@ -758,11 +983,21 @@ public sealed class SezuraiSMN : SummonerRotation
 
     /// <summary>
     /// Handle Slipstream (Garuda's Favor GCD - 3s channel).
+    /// BMR-aware: Don't start a 3s channel if downtime is within 3s.
     /// </summary>
     private bool TrySlipstream(out IAction? act)
     {
         act = null;
         if (!HasGarudaFavor) return false;
+
+        // BMR: Don't hardcast Slipstream if downtime is within the cast time (3s).
+        // The cast would get interrupted and we'd waste the Garuda Favor proc.
+        // Exception: if the favor is about to expire, try anyway.
+        if (BmrDowntimeWithin(3.5f)
+            && !StatusHelper.PlayerWillStatusEndGCD(1, 0, true, StatusID.GarudasFavor))
+        {
+            return false;
+        }
 
         // If Swiftcast Slipstream is enabled and available, use with skipCastingCheck
         if (SwiftcastSlipstream)
@@ -813,6 +1048,8 @@ public sealed class SezuraiSMN : SummonerRotation
     /// <summary>
     /// Manage Swiftcast usage for SMN.
     /// Priority: Resurrection > Slipstream (if configured) > Ruby hardcasts while moving.
+    /// BMR: Also consider Swiftcasting Ruby/Slipstream before downtime to squeeze
+    /// in one more GCD when there isn't time for a full hardcast.
     /// </summary>
     private bool TrySwiftcast(IAction nextGCD, out IAction? act)
     {
@@ -838,6 +1075,21 @@ public sealed class SezuraiSMN : SummonerRotation
             if (!HasFurtherRuin)
                 return true;
         }
+
+        // BMR: Swiftcast Slipstream before downtime even if SwiftcastSlipstream is off.
+        // If downtime is within 4s and we're about to hardcast Slipstream (3s channel),
+        // Swiftcasting it ensures we get the damage off rather than having it interrupted.
+        if (BmrDowntimeWithin(4f) && nextGCD.IsTheSameTo(false, SlipstreamPvE)
+            && HasGarudaFavor)
+            return true;
+
+        // BMR: Swiftcast Ruby hardcasts before downtime.
+        // If downtime is within 3s and the next GCD is a Ruby hardcast (~2.8s),
+        // Swiftcasting ensures we get one more damage GCD in before untargetable.
+        if (BmrDowntimeWithin(3f) && InIfrit && AttunementCount > 0
+            && nextGCD.IsTheSameTo(false, RubyRitePvE, RubyCatastrophePvE,
+                RubyRuinIiiPvE, RubyRuinIiPvE, RubyRuinPvE))
+            return true;
 
         act = null;
         return false;

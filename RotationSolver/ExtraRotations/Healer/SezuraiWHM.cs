@@ -3,7 +3,7 @@ using System.ComponentModel;
 namespace RotationSolver.ExtraRotations.Healer;
 
 [Rotation("SezuraiWHM", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned WHM with Presence of Mind burst, Lily management, and 3 healing modes.")]
+    Description = "Balance-aligned WHM with BMR timeline integration, Presence of Mind burst, Lily management, and 3 healing modes.")]
 [SourceCode(Path = "main/ExtraRotations/Healer/SezuraiWHM.cs")]
 [ExtraRotation]
 public sealed class SezuraiWHM : WhiteMageRotation
@@ -172,12 +172,12 @@ public sealed class SezuraiWHM : WhiteMageRotation
 
     #region Countdown & Opener
     // === WHM OPENER (7.4 Balance / Icy Veins) ===
-    // Pre-pull: Divine Benison(-5s) → Glare III precast(-2.3s)
+    // Pre-pull: Divine Benison(-5s) -> Glare III precast(-2.3s)
     // Pull: Pot (weave as Glare III lands)
     // GCD1: Dia (instant DoT)
     // GCD2: Glare III
-    // GCD3: Glare III → Presence of Mind (weave)
-    // GCD4: Glare IV (Sacred Sight stack 1) → Assize (weave)
+    // GCD3: Glare III -> Presence of Mind (weave)
+    // GCD4: Glare IV (Sacred Sight stack 1) -> Assize (weave)
     // GCD5: Glare IV (Sacred Sight stack 2)
     // GCD6-11: Glare III x6 under PoM haste
     // GCD12: Glare IV (Sacred Sight stack 3)
@@ -190,7 +190,7 @@ public sealed class SezuraiWHM : WhiteMageRotation
     //
     // === ODD BURST (60s) ===
     // Assize on CD (40s, drifts naturally) + Misery if Blood Lily is full
-    // No PoM — it is 120s. Continue Glare III spam
+    // No PoM -- it is 120s. Continue Glare III spam
     //
     // === FILLER ===
     // Glare III spam (1.5s cast, ~1s weave window per GCD)
@@ -255,6 +255,8 @@ public sealed class SezuraiWHM : WhiteMageRotation
         }
 
         // --- Plenary Indulgence before AoE GCD heals ---
+        // Per Balance 7.4: Plenary grants Confession (200p bonus per AoE GCD heal)
+        // Non-consumed buff = multiple procs over 10s. Fire before planned GCD heal sequence.
         if (nextGCD.IsTheSameTo(true, AfflatusRapturePvE, MedicaPvE, MedicaIiPvE, MedicaIiiPvE, CureIiiPvE)
             && (MergedStatus.HasFlag(AutoStatus.HealAreaSpell) || MergedStatus.HasFlag(AutoStatus.HealSingleSpell)))
         {
@@ -269,39 +271,67 @@ public sealed class SezuraiWHM : WhiteMageRotation
 
     #region Defense
 
-    [RotationDesc(ActionID.TemperancePvE, ActionID.LiturgyOfTheBellPvE)]
+    [RotationDesc(ActionID.TemperancePvE, ActionID.LiturgyOfTheBellPvE, ActionID.PlenaryIndulgencePvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: time mit to land before raidwide (1-2 mits max per raidwide)
-        // Balance: "Temperance is your main party mitigation tool"
+        // === BMR-AWARE MITIGATION ===
+        // Core principle: MIT BEFORE raidwide, HEAL AFTER damage.
+        // Per Balance: "Temperance is your main party mitigation tool" (10% mit + 20% heal boost)
+        // Per Balance 7.4: Plenary Indulgence now grants damage mitigation (AoE increased to 30y)
+        // Spread mits across raidwides -- multiplicative stacking means spreading > dumping.
+        // Max 1-2 mits per raidwide to preserve CDs for the next mechanic.
+        //
+        // Liturgy of the Bell: 5 stacks, each pops for 400p heal when WHM takes damage.
+        // Must be PLACED BEFORE raidwide (needs ~3-8s lead time). Total 2000p if all 5 pop.
+        // 180s CD so plan usage around major mechanics.
+        //
+        // Temperance: 10% party mit (refreshes while in range) + 20% GCD heal buff. 120s CD.
+        // Best used for sustained heavy damage phases. The mit is the primary value in savage.
+        //
+        // Plenary Indulgence: 60s CD. In 7.4 also provides mitigation.
+        // Lighter CD -- use more liberally on lesser raidwides where Temperance is overkill.
+
         bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwMedium = BmrActive && BmrRaidwideIn is > 5f and <= 8f;
 
         if (rwSoon)
         {
-            // Temperance first: 10% party mit + 20% heal boost (best WHM party CD)
+            // Temperance first: highest-value WHM party CD (10% mit for full duration)
             if (TemperancePvE.CanUse(out act))
                 return true;
 
-            // Divine Caress follow-up shield from Temperance
+            // Divine Caress: follow-up shield from Temperance (requires DivineGrace status)
             if (DivineCaressPvE.CanUse(out act))
                 return true;
 
-            // Liturgy of the Bell: delayed healing on damage taken
+            // Plenary Indulgence: party mitigation + prepares Confession for post-RW GCD heals
+            if (PlenaryIndulgencePvE.CanUse(out act))
+                return true;
+
+            // Max 1-2 mits per raidwide -- Bell goes in the medium window below
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        if (rwMedium)
+        {
+            // Liturgy of the Bell: needs to be placed 3-8s before damage so bells pop on hits
+            // Per Balance: "5 stacks, each damage instance heals all allies within 20y for 400p"
             if ((MultiHitRestrict && IsCastingMultiHit) || !MultiHitRestrict)
             {
                 if (LiturgyOfTheBellPvE.CanUse(out act, skipAoeCheck: true))
                     return true;
             }
 
-            // Plenary Indulgence: party mitigation
-            if (PlenaryIndulgencePvE.CanUse(out act))
+            // If no Bell available and Temperance is up, use it with the longer lead time
+            if (TemperancePvE.CanUse(out act))
                 return true;
 
-            // Max 1-2 mits per raidwide — stop here
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
-        // Non-BMR: stagger cooldowns as before
+        // === NON-BMR FALLBACK ===
+        // Without BMR timeline data, stagger cooldowns to avoid dumping everything at once.
+        // Only use if the CDs are reasonably available (not deep into cooldown).
         if ((TemperancePvE.Cooldown.IsCoolingDown && !TemperancePvE.Cooldown.WillHaveOneCharge(100))
             || (LiturgyOfTheBellPvE.Cooldown.IsCoolingDown && !LiturgyOfTheBellPvE.Cooldown.WillHaveOneCharge(160)))
         {
@@ -329,7 +359,14 @@ public sealed class SezuraiWHM : WhiteMageRotation
     [RotationDesc(ActionID.DivineBenisonPvE, ActionID.AquaveilPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: when TB is imminent, shield the tank proactively
+        // === BMR-AWARE TANKBUSTER MITIGATION ===
+        // Core principle: shield/mit BEFORE tankbuster, heal AFTER damage hits.
+        // Per Balance: "Divine Benison is a 500p shield on 30s CD with 2 charges at 88.
+        //   Avoid holding charges unnecessarily. Shields have application delays."
+        // Per Balance: "Aquaveil is 15% mitigation for 8s, stacks with other mit."
+        //
+        // Strategy: Benison first (cheap, 2 charges, covers auto-attacks too),
+        // then Aquaveil for heavy TBs. Max 2 mits per TB to preserve for next mechanic.
         bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
 
         if (tbSoon)
@@ -338,15 +375,16 @@ public sealed class SezuraiWHM : WhiteMageRotation
             if (DivineBenisonPvE.CanUse(out act))
                 return true;
 
-            // Aquaveil: 15% damage reduction for 8s
+            // Aquaveil: 15% damage reduction for 8s -- stack with Benison for heavy TBs
             if (AquaveilPvE.CanUse(out act))
                 return true;
 
-            // Max 2 per TB — stop
+            // Max 2 per TB -- stop
             return base.DefenseSingleAbility(nextGCD, out act);
         }
 
-        // Non-BMR: stagger cooldowns
+        // === NON-BMR FALLBACK ===
+        // Stagger cooldowns -- don't use both if neither is really needed
         if ((DivineBenisonPvE.Cooldown.IsCoolingDown && !DivineBenisonPvE.Cooldown.WillHaveOneCharge(15))
             || (AquaveilPvE.Cooldown.IsCoolingDown && !AquaveilPvE.Cooldown.WillHaveOneCharge(52)))
         {
@@ -369,6 +407,25 @@ public sealed class SezuraiWHM : WhiteMageRotation
     [RotationDesc(ActionID.BenedictionPvE, ActionID.TetragrammatonPvE, ActionID.DivineBenisonPvE)]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
+        // === BMR-AWARE SINGLE HEAL LOGIC ===
+        // Core principle: heal AFTER damage, not before. Healing at full HP = 100% overheal.
+        // If a TB is coming in 1-4s, hold single-target heals -- the damage hasn't hit yet.
+        // DefenseSingleAbility already applied Benison/Aquaveil MIT; heals fire post-damage.
+        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 1f and <= 4f;
+
+        if (tbComingSoon)
+        {
+            // Only Benediction breaks through the hold -- if tank is critically low from
+            // auto-attacks BEFORE the TB, they need emergency healing regardless
+            if (BenedictionPvE.CanUse(out act)
+                && BenedictionPvE.Target.Target?.GetHealthRatio() < BenedictionThreshold)
+            {
+                return true;
+            }
+            return base.HealSingleAbility(nextGCD, out act);
+        }
+
+        // === POST-DAMAGE HEALING (normal priority) ===
         // Benediction: full HP heal, use at low HP threshold
         if (BenedictionPvE.CanUse(out act)
             && BenedictionPvE.Target.Target?.GetHealthRatio() < BenedictionThreshold)
@@ -388,6 +445,7 @@ public sealed class SezuraiWHM : WhiteMageRotation
         }
 
         // Divine Benison: 500 potency shield (keep on cooldown for tank)
+        // Per Balance: "Avoid holding charges unnecessarily"
         if (DivineBenisonPvE.CanUse(out act))
             return true;
 
@@ -401,17 +459,42 @@ public sealed class SezuraiWHM : WhiteMageRotation
     [RotationDesc(ActionID.AsylumPvE, ActionID.PlenaryIndulgencePvE)]
     protected override bool HealAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: place Asylum proactively before raidwide for regen + 10% heal boost
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+        // === BMR-AWARE AREA HEAL LOGIC ===
+        // Core principle: MIT before raidwide, HEAL after damage.
+        // This method fires when party HP drops (i.e., AFTER raidwide hits) or proactively.
+        //
+        // rwComingSoon guard: if a raidwide is 1-8s away, HOLD area heals.
+        // Healing before damage = wasted on full HP. MIT is already handled by DefenseAreaAbility.
+        // The heals below will fire naturally after the raidwide hits and HP drops.
+        //
+        // EXCEPTION: Asylum placement -- it is BOTH mit (10% heal received buff at L78)
+        // AND healing (regen ticks). Place it BEFORE raidwide so the regen starts ticking
+        // immediately after damage, and the 10% heal buff amplifies post-RW heals.
+        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
 
-        if (rwSoon && AsylumPvE.CanUse(out act))
+        // Asylum BEFORE raidwide: ground regen + 10% healing received buff (at L78+)
+        // Per Balance: "980p total across 8 buffed ticks + instant tick. 90s CD."
+        // Place it 2-8s before RW so regen ticks start healing immediately post-damage.
+        // The 10% heal buff also amplifies subsequent GCD heals (stacks with Temperance 20%).
+        if (rwComingSoon && AsylumPvE.CanUse(out act))
             return true;
 
-        // Asylum: ground AoE regen — always valuable even without BMR
+        // Hold all other heals if raidwide is imminent -- damage hasn't hit yet
+        if (rwComingSoon)
+            return base.HealAreaAbility(nextGCD, out act);
+
+        // === POST-DAMAGE HEALING (normal priority) ===
+        // This section fires after raidwide damage has hit (party HP is low).
+
+        // Asylum: ground AoE regen -- always valuable even without BMR
         if (AsylumPvE.CanUse(out act))
             return true;
 
-        // Plenary Indulgence: grants Confession for bonus healing on GCD heals
+        // Plenary Indulgence: grants Confession for 200p bonus on GCD heals
+        // Per Balance: "Non-consumed buff allows multiple procs over 10s duration."
+        // In post-damage context, prepares the next GCD heal to be significantly stronger.
+        // Already used for MIT in DefenseAreaAbility if BMR-aware, so only fire here
+        // if it wasn't consumed pre-RW (60s CD, should be available frequently).
         if (PlenaryIndulgencePvE.CanUse(out act))
             return true;
 
@@ -427,16 +510,29 @@ public sealed class SezuraiWHM : WhiteMageRotation
         if (!InCombat)
             return base.AttackAbility(nextGCD, out act);
 
+        // === BMR-AWARE BURST MANAGEMENT ===
+        // Per Balance: PoM is WHM's only personal DPS buff (120s).
+        // Align with party 2-minute burst windows. Grants 3x Glare IV (640p each, instant).
+        //
+        // BMR downtime awareness: if downtime is imminent, accelerate burst usage.
+        // Don't waste PoM on the last 5s before boss jumps.
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
+
         // --- Presence of Mind (120s personal haste + Sacred Sight stacks) ---
-        // WHM's only personal DPS buff. Align with party 2-minute burst windows.
-        // Grants 3x Glare IV (640 potency each, instant cast).
+        // Use during burst, or accelerate if downtime is coming soon
         if (CanBurst && PresenceOfMindPvE.CanUse(out act))
+            return true;
+
+        // If downtime is coming and PoM is available, use it now to get value before boss jumps
+        if (downtimeSoon && BmrDowntimeIn > 5f && PresenceOfMindPvE.CanUse(out act))
             return true;
 
         // --- Assize (45s CD, 400 potency damage + 400 potency heal + 500 MP) ---
         // NEVER hold Assize. It is damage, healing, AND MP recovery in one oGCD.
-        // Balance guide: "Assize should be used on cooldown in pretty much all scenarios."
-        if (AssizePvE.CanUse(out act, skipAoeCheck: true))
+        // Per Balance: "Assize should be used on cooldown in pretty much all scenarios."
+        // BMR note: if downtime is imminent (<3s), hold Assize -- it would miss the target.
+        bool downtimeImminent = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+        if (!downtimeImminent && AssizePvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
         return base.AttackAbility(nextGCD, out act);
@@ -449,6 +545,7 @@ public sealed class SezuraiWHM : WhiteMageRotation
     protected override bool GeneralAbility(IAction nextGCD, out IAction? act)
     {
         // Divine Caress: use if available (follow-up to Temperance)
+        // Per Balance: grants a party shield. Never let DivineGrace expire without using this.
         if (DivineCaressPvE.CanUse(out act))
             return true;
 
@@ -670,6 +767,11 @@ public sealed class SezuraiWHM : WhiteMageRotation
         ImGui.Text($"Benediction: {(BenedictionPvE.Cooldown.IsCoolingDown ? $"{BenedictionPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Tetra: {(TetragrammatonPvE.Cooldown.IsCoolingDown ? $"{TetragrammatonPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Temperance: {(TemperancePvE.Cooldown.IsCoolingDown ? $"{TemperancePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Asylum: {(AsylumPvE.Cooldown.IsCoolingDown ? $"{AsylumPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Bell: {(LiturgyOfTheBellPvE.Cooldown.IsCoolingDown ? $"{LiturgyOfTheBellPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Plenary: {(PlenaryIndulgencePvE.Cooldown.IsCoolingDown ? $"{PlenaryIndulgencePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Aquaveil: {(AquaveilPvE.Cooldown.IsCoolingDown ? $"{AquaveilPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Benison: {DivineBenisonPvE.Cooldown.CurrentCharges}/{DivineBenisonPvE.Cooldown.MaxCharges}");
         ImGui.Text($"ThinAir: {ThinAirPvE.Cooldown.CurrentCharges}/{ThinAirPvE.Cooldown.MaxCharges}");
         ImGui.Text($"HasThinAir: {HasThinAir}");
         ImGui.Text($"--- Healing ---");
@@ -680,13 +782,28 @@ public sealed class SezuraiWHM : WhiteMageRotation
         ImGui.Text($"PartyHP: {PartyMembersAverHP:P0}");
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"DamageIn: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 

@@ -2,7 +2,9 @@ namespace RotationSolver.ExtraRotations.Magical;
 
 [Rotation("SezuraiPCT", CombatType.PvE, GameVersion = "7.41",
     Description = "Balance-aligned PCT with Starry Muse 9-spell burst, " +
-                  "motif management, canvas cycling, and paint optimization.")]
+                  "motif management, canvas cycling, paint optimization, " +
+                  "and BMR timeline integration (Tempera/Addle spreading, " +
+                  "downtime motif painting, burst hold for vuln windows).")]
 [SourceCode(Path = "main/ExtraRotations/Magical/SezuraiPCT.cs")]
 [ExtraRotation]
 public sealed class SezuraiPCT : PictomancerRotation
@@ -38,6 +40,23 @@ public sealed class SezuraiPCT : PictomancerRotation
     [Range(20, 60, ConfigUnitType.None, 5)]
     [RotationConfig(CombatType.PvE, Name = "Seconds before Starry Muse to start drawing motifs (20-60)")]
     public int MotifPrepWindow { get; set; } = 30;
+
+    // --- BMR Config Options ---
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Draw motifs during predicted downtime")]
+    public bool BmrMotifsDuringDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Use instant GCDs before downtime (spend procs/paint)")]
+    public bool BmrDumpBeforeDowntime { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Hold Starry Muse for vulnerability window (within 15s)")]
+    public bool BmrHoldStarryForVuln { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Spread Tempera/Addle across separate raidwides")]
+    public bool BmrSpreadMits { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Hold Star Prism to use after raidwide (heal value)")]
+    public bool BmrStarPrismPostRw { get; set; } = true;
 
     #endregion
 
@@ -80,6 +99,72 @@ public sealed class SezuraiPCT : PictomancerRotation
 
     #endregion
 
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR reports downtime within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrDowntimeWithin(float seconds)
+        => BmrActive && BmrDowntimeIn is > 0 and < float.MaxValue && BmrDowntimeIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a vulnerability window within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrVulnWithin(float seconds)
+        => BmrActive && BmrVulnerableIn is > 0 and < float.MaxValue && BmrVulnerableIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a raidwide within the specified seconds.
+    /// </summary>
+    private bool BmrRaidwideWithin(float seconds)
+        => BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a tankbuster within the specified seconds.
+    /// </summary>
+    private bool BmrTankbusterWithin(float seconds)
+        => BmrActive && BmrTankbusterIn is > 0 and < float.MaxValue && BmrTankbusterIn <= seconds;
+
+    /// <summary>
+    /// True when a raidwide recently happened and party may need healing.
+    /// Uses party average HP and raidwide timing to detect post-RW state.
+    /// Used for Star Prism timing: hold before RW, use after RW for heal value.
+    /// </summary>
+    private bool BmrRaidwideJustHappened
+        => BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn > 20f
+           && PartyMembersAverHP < 0.85f;
+
+    /// <summary>
+    /// Whether Tempera Coat (or Grassa) shield is currently active on the player.
+    /// Used to avoid stacking Addle on top of Tempera for the same raidwide.
+    /// </summary>
+    private static bool HasTemperaShield =>
+        StatusHelper.PlayerHasStatus(true, StatusID.TemperaCoat)
+        || StatusHelper.PlayerHasStatus(true, StatusID.TemperaGrassa);
+
+    /// <summary>
+    /// Whether Addle debuff is currently on the target.
+    /// Used to avoid stacking Tempera on top of Addle for the same raidwide.
+    /// </summary>
+    private static bool TargetHasAddle =>
+        HostileTarget?.HasStatus(false, StatusID.Addle) ?? false;
+
+    /// <summary>
+    /// Estimated cast time of the longest motif (Creature Motif ~3s cast).
+    /// Used to decide if we have time to start a motif cast before downtime/mechanic.
+    /// </summary>
+    private const float MotifCastTime = 3.0f;
+
+    /// <summary>
+    /// Minimum remaining time before downtime/mechanic to start a motif cast.
+    /// If less than this, use instants instead.
+    /// </summary>
+    private const float MotifSafetyMargin = 4.0f;
+
+    #endregion
+
     #region UpdateInfo
 
     protected override void UpdateInfo()
@@ -93,13 +178,17 @@ public sealed class SezuraiPCT : PictomancerRotation
 
     public override void DisplayRotationStatus()
     {
-        ImGui.Text($"--- Sezurai PCT Debug ---");
+        ImGui.Text("--- Sezurai PCT Debug ---");
+        ImGui.Text("--- Burst ---");
         ImGui.Text($"CanBurst: {CanBurst}");
         ImGui.Text($"InBurstWindow: {InBurstWindow}");
         ImGui.Text($"HasStarryMuse: {HasStarryMuse}");
+        ImGui.Text($"StarryCD: {(StarryMusePvE.Cooldown.IsCoolingDown ? $"{StarryMusePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text("--- Hyperphantasia ---");
         ImGui.Text($"HasHyperphantasia: {HasHyperphantasia}");
         ImGui.Text($"HyperphantasiaStacks: {HyperphantasiaStacks}");
         ImGui.Text($"HasInspiration: {HasInspiration}");
+        ImGui.Text("--- Buffs ---");
         ImGui.Text($"HasRainbowBright: {HasRainbowBright}");
         ImGui.Text($"HasStarstruck: {HasStarstruck}");
         ImGui.Text($"HasMonochromeTones: {HasMonochromeTones}");
@@ -108,21 +197,49 @@ public sealed class SezuraiPCT : PictomancerRotation
         ImGui.Text($"HasHammerTime: {HasHammerTime}");
         ImGui.Text($"HammerStacks: {HammerStacks}");
         ImGui.Text($"SubtractiveStacks: {SubtractiveStacks}");
+        ImGui.Text("--- Gauge ---");
         ImGui.Text($"Paint: {Paint}");
         ImGui.Text($"PaletteGauge: {PaletteGauge}");
+        ImGui.Text("--- Canvas ---");
         ImGui.Text($"CreatureMotifDrawn: {CreatureMotifDrawn}");
         ImGui.Text($"WeaponMotifDrawn: {WeaponMotifDrawn}");
         ImGui.Text($"LandscapeMotifDrawn: {LandscapeMotifDrawn}");
         ImGui.Text($"MooglePortraitReady: {MooglePortraitReady}");
         ImGui.Text($"MadeenPortraitReady: {MadeenPortraitReady}");
+        ImGui.Text("--- Mitigation ---");
+        ImGui.Text($"HasTemperaShield: {HasTemperaShield}");
+        ImGui.Text($"TargetHasAddle: {TargetHasAddle}");
+        ImGui.Text($"TemperaCD: {(TemperaCoatPvE.Cooldown.IsCoolingDown ? $"{TemperaCoatPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"AddleCD: {(AddlePvE.Cooldown.IsCoolingDown ? $"{AddlePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text("--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text("-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text("-- BMR Decisions --");
+            ImGui.Text($"RW within 5s: {BmrRaidwideWithin(5f)}");
+            ImGui.Text($"Downtime within 4s: {BmrDowntimeWithin(4f)}");
+            ImGui.Text($"Vuln within 15s: {BmrVulnWithin(15f)}");
+            ImGui.Text($"RW just happened: {BmrRaidwideJustHappened}");
+            ImGui.Text("-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text("-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text("-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text("-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -266,24 +383,67 @@ public sealed class SezuraiPCT : PictomancerRotation
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
         // BMR-aware: override burst-skip for genuine raidwides
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwSoon = BmrRaidwideWithin(5f);
         bool allowDefense = rwSoon || !BlockDefenseDuringBurst || !InBurstWindow;
 
         if (allowDefense)
         {
-            // Spread mits across raidwides — use ONE per raidwide, not all at once
-            // Priority: Tempera Coat/Grassa (party shield) first, then Addle on separate raidwide
-            if (TemperaCoatPvE.CanUse(out act))
-                return true;
-            if (TemperaGrassaPvE.CanUse(out act))
-                return true;
-            // Only Addle if Tempera is on CD (spreading across different raidwides)
-            if (!TemperaCoatPvE.Cooldown.IsCoolingDown || TemperaCoatPvE.Cooldown.RecastTimeRemain > 10f)
+            // === BMR MIT SPREADING LOGIC ===
+            // When BMR is active, spread Tempera and Addle across SEPARATE raidwides.
+            // Don't stack both on the same RW -- that wastes a 90s/120s CD.
+            //
+            // Strategy:
+            //   - If Addle is already on the target, skip Tempera for THIS raidwide
+            //     (it's already mitigated). Save Tempera for the NEXT one.
+            //   - If Tempera shield is already active, skip Addle for THIS raidwide.
+            //   - When BMR is not active, use normal priority (Tempera > Addle).
+
+            if (BmrSpreadMits && BmrActive && rwSoon)
             {
-                // Tempera is available or coming back soon — save Addle for next raidwide
+                // Addle is already covering this RW -- save Tempera for next RW
+                if (!TargetHasAddle && !HasTemperaShield)
+                {
+                    // Neither mit is active -- use Tempera (party shield, higher value)
+                    if (TemperaCoatPvE.CanUse(out act))
+                        return true;
+                    if (TemperaGrassaPvE.CanUse(out act))
+                        return true;
+
+                    // Tempera on CD? Use Addle as fallback for this RW
+                    if (AddlePvE.CanUse(out act))
+                        return true;
+                }
+                else if (HasTemperaShield && !TargetHasAddle)
+                {
+                    // Tempera already active (maybe from a previous use or pre-shield).
+                    // Convert to party shield via Grassa if available.
+                    if (TemperaGrassaPvE.CanUse(out act))
+                        return true;
+                    // Don't Addle -- Tempera is already covering this RW
+                }
+                else if (TargetHasAddle && !HasTemperaShield)
+                {
+                    // Addle already covering this RW -- save Tempera for next
+                    // Only use Tempera if the NEXT raidwide is also close (double RW pattern)
+                    // Otherwise, hold it
+                }
+                // Both active: skip, we're over-mitigating
             }
-            else if (AddlePvE.CanUse(out act))
-                return true;
+            else
+            {
+                // Non-BMR fallback (original logic): Tempera > Addle
+                if (TemperaCoatPvE.CanUse(out act))
+                    return true;
+                if (TemperaGrassaPvE.CanUse(out act))
+                    return true;
+                // Only Addle if Tempera is on CD (spreading across different raidwides)
+                if (!TemperaCoatPvE.Cooldown.IsCoolingDown || TemperaCoatPvE.Cooldown.RecastTimeRemain > 10f)
+                {
+                    // Tempera is available or coming back soon -- save Addle for next raidwide
+                }
+                else if (AddlePvE.CanUse(out act))
+                    return true;
+            }
         }
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -292,8 +452,10 @@ public sealed class SezuraiPCT : PictomancerRotation
     [RotationDesc(ActionID.TemperaCoatPvE)]
     protected sealed override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
-        bool allowDefense = rwSoon || !BlockDefenseDuringBurst || !InBurstWindow;
+        // BMR-aware: use Tempera Coat as personal shield for tankbusters or raidwides
+        bool rwSoon = BmrRaidwideWithin(5f);
+        bool tbSoon = BmrTankbusterWithin(5f);
+        bool allowDefense = rwSoon || tbSoon || !BlockDefenseDuringBurst || !InBurstWindow;
 
         if (allowDefense && TemperaCoatPvE.CanUse(out act))
             return true;
@@ -348,10 +510,25 @@ public sealed class SezuraiPCT : PictomancerRotation
         // === 1. STARRY MUSE (120s burst buff) ===
         // ============================================================
         // Gate behind IsBurst (user burst toggle) and opener delay.
-        if (IsBurst && CombatTime > openerDelay
-            && StarryMusePvE.CanUse(out act, skipCastingCheck: true))
+        // BMR: Don't start Starry if downtime is imminent (< 15s) --
+        //      Starry Muse window is ~20s, would be wasted.
+        // BMR: Hold Starry for vulnerability window within 15s (boss takes more damage).
         {
-            return true;
+            bool bmrBlockStarry = BmrDowntimeWithin(15f);
+
+            // Hold for vuln: only if Starry is ready AND vuln is coming within 15s
+            // but not already happening (> 2s away)
+            bool bmrHoldForVuln = BmrHoldStarryForVuln
+                && BmrVulnWithin(15f)
+                && BmrVulnerableIn > 2f
+                && StarryMusePvE.Cooldown.HasOneCharge;
+
+            if (IsBurst && CombatTime > openerDelay
+                && !bmrBlockStarry && !bmrHoldForVuln
+                && StarryMusePvE.CanUse(out act, skipCastingCheck: true))
+            {
+                return true;
+            }
         }
 
         // ============================================================
@@ -436,7 +613,10 @@ public sealed class SezuraiPCT : PictomancerRotation
     {
         // Tempera Grassa: convert Tempera Coat shield into party shield when defense requested
         // or when Tempera Coat is about to expire unused.
+        // BMR: Also convert when raidwide is imminent and we have Tempera Coat up
+        bool rwSoon = BmrRaidwideWithin(5f);
         if ((MergedStatus.HasFlag(AutoStatus.DefenseArea)
+             || rwSoon
              || StatusHelper.PlayerWillStatusEndGCD(2, 0, true, StatusID.TemperaCoat))
             && TemperaGrassaPvE.CanUse(out act))
         {
@@ -452,6 +632,14 @@ public sealed class SezuraiPCT : PictomancerRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        // ============================================================
+        // === BMR STATE COMPUTATION (used throughout GCD logic) ===
+        // ============================================================
+        // Pre-compute downtime awareness to avoid starting long casts before boss goes away.
+        bool bmrDowntimeSoon = BmrDowntimeWithin(MotifSafetyMargin);      // < 4s: no long casts
+        bool bmrDowntimeImminent = BmrDowntimeWithin(3f);                  // < 3s: use instants only
+        bool bmrDowntimeMedium = BmrDowntimeWithin(10f);                   // < 10s: dump procs/paint
+
         // ============================================================
         // === OPENER PHASE (first 5 seconds) ===
         // ============================================================
@@ -482,9 +670,54 @@ public sealed class SezuraiPCT : PictomancerRotation
             return true;
 
         // Star Prism (instant, from Starstruck buff granted by Starry Muse).
-        // High potency (1400), AoE. Use inside burst window.
+        // High potency (1100), AoE + 400 cure potency party heal.
+        // BMR: When a raidwide is coming soon (< 5s), HOLD Star Prism to use AFTER the
+        //      raidwide hits. The 400 cure potency party heal has much more value post-RW
+        //      when the party has taken damage. Don't hold if Starstruck is about to expire.
         if (HasStarstruck && StarPrismPvE.CanUse(out act))
-            return true;
+        {
+            bool holdForPostRw = BmrStarPrismPostRw
+                && BmrRaidwideWithin(5f)
+                && !StatusHelper.PlayerWillStatusEnd(6, true, StatusID.Starstruck);
+
+            if (!holdForPostRw)
+                return true;
+        }
+
+        // ============================================================
+        // === BMR: DUMP INSTANTS BEFORE DOWNTIME ===
+        // ============================================================
+        // When downtime is imminent (< 10s), spend instant GCDs aggressively.
+        // Don't start long casts (motifs, Rainbow Drip hardcast) -- use instants.
+        // Priority: procs > paint > hammer combo.
+        if (BmrDumpBeforeDowntime && bmrDowntimeMedium && InCombat)
+        {
+            // Star Prism: high potency + heal. Use before downtime (don't waste the buff).
+            // Override the post-RW hold if we'd lose the buff during downtime.
+            if (HasStarstruck && StarPrismPvE.CanUse(out act))
+                return true;
+
+            // Comet in Black: instant, 940 potency (needs Monochrome Tones).
+            if (CometInBlackPvE.CanUse(out act))
+                return true;
+
+            // Hammer combo: instant GCDs, spend before downtime.
+            if (PolishingHammerPvE.CanUse(out act, skipComboCheck: true)) return true;
+            if (HammerBrushPvE.CanUse(out act, skipComboCheck: true)) return true;
+            if (HammerStampPvE.CanUse(out act, skipComboCheck: true)) return true;
+
+            // Holy in White: instant paint spender.
+            if (HolyInWhitePvE.CanUse(out act))
+                return true;
+
+            // If downtime is very imminent (< 3s), don't start any casts.
+            // Only instants above this point. Below here we'd start hardcasts.
+            if (bmrDowntimeImminent)
+            {
+                act = null;
+                return base.GeneralGCD(out act);
+            }
+        }
 
         // ============================================================
         // === BURST WINDOW: Starry Muse active ===
@@ -559,12 +792,33 @@ public sealed class SezuraiPCT : PictomancerRotation
         }
 
         // ============================================================
+        // === BMR: MOTIF DRAWING DURING PREDICTED DOWNTIME ===
+        // ============================================================
+        // PCT excels in fights with downtime: motifs have no potency cost, only time.
+        // When BMR knows downtime is coming in 4-15s, start drawing motifs NOW
+        // so they're ready when the boss comes back. This is a massive DPS gain.
+        // But DON'T start motif casts if downtime is < 4s (won't finish the cast).
+        if (BmrMotifsDuringDowntime && BmrDowntimeWithin(15f) && !bmrDowntimeSoon
+            && !HasStarryMuse && !HasHyperphantasia && InCombat)
+        {
+            // Priority: draw motifs we're missing, most valuable first
+            // Landscape > Creature > Weapon (Landscape enables Starry Muse)
+            if (StarrySkyMotifPvE.CanUse(out act)) return true;
+            if (PomMotifPvE.CanUse(out act)) return true;
+            if (WingMotifPvE.CanUse(out act)) return true;
+            if (ClawMotifPvE.CanUse(out act)) return true;
+            if (MawMotifPvE.CanUse(out act)) return true;
+            if (HammerMotifPvE.CanUse(out act)) return true;
+        }
+
+        // ============================================================
         // === BURST PREPARATION: Motif Drawing (30s before Starry) ===
         // ============================================================
         // Landscape Motif: must be drawn before Starry Muse can be activated.
         // Start drawing within the configured prep window before Starry is ready.
+        // BMR: Don't start motif casts if downtime is imminent (< 4s).
         if (ScenicMusePvE.Cooldown.RecastTimeRemainOneCharge <= MotifPrepWindow
-            && !HasStarryMuse && !HasHyperphantasia)
+            && !HasStarryMuse && !HasHyperphantasia && !bmrDowntimeSoon)
         {
             if (StarrySkyMotifPvE.CanUse(out act))
                 return true;
@@ -576,9 +830,10 @@ public sealed class SezuraiPCT : PictomancerRotation
 
         // Creature Motif: draw when Living Muse has a charge or is about to come up.
         // This ensures the canvas is ready when the Muse charge refreshes.
+        // BMR: Don't start motif casts if downtime is imminent (< 4s).
         if ((LivingMusePvE.Cooldown.HasOneCharge
              || LivingMusePvE.Cooldown.RecastTimeRemainOneCharge <= CreatureMotifPvE.Info.CastTime * 1.7f)
-            && !HasStarryMuse && !HasHyperphantasia)
+            && !HasStarryMuse && !HasHyperphantasia && !bmrDowntimeSoon)
         {
             if (PomMotifPvE.CanUse(out act)) return true;
             if (WingMotifPvE.CanUse(out act)) return true;
@@ -587,9 +842,10 @@ public sealed class SezuraiPCT : PictomancerRotation
         }
 
         // Weapon Motif: draw when Steel Muse has a charge or is about to come up.
+        // BMR: Don't start motif casts if downtime is imminent (< 4s).
         if ((SteelMusePvE.Cooldown.HasOneCharge
              || SteelMusePvE.Cooldown.RecastTimeRemainOneCharge <= WeaponMotifPvE.Info.CastTime)
-            && !HasStarryMuse && !HasHyperphantasia)
+            && !HasStarryMuse && !HasHyperphantasia && !bmrDowntimeSoon)
         {
             if (HammerMotifPvE.CanUse(out act))
                 return true;
@@ -646,6 +902,22 @@ public sealed class SezuraiPCT : PictomancerRotation
 
             if (!PreferCometOvercap && HolyInWhitePvE.CanUse(out act))
                 return true;
+        }
+
+        // ============================================================
+        // === BMR: Block long casts before downtime ===
+        // ============================================================
+        // If downtime is coming in < 4s, skip to instants/fallback.
+        // The filler combo spells (Fire/Aero/Water/Blizzard/Stone/Thunder) have
+        // ~2.5s cast times which won't complete before downtime.
+        // Only relevant when NOT already handled by the instant dump above.
+        if (bmrDowntimeSoon && InCombat)
+        {
+            // Try to use any remaining instants
+            if (CometInBlackPvE.CanUse(out act)) return true;
+            if (HolyInWhitePvE.CanUse(out act)) return true;
+
+            // Fall through to motif fallback (motifs are useful even if interrupted)
         }
 
         // ============================================================
