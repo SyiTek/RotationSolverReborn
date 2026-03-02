@@ -114,6 +114,15 @@ public sealed class SezuraiWAR : WarriorRotation
         ImGui.Text($"BeastGauge: {BeastGauge}");
         ImGui.Text($"IsMedicated: {IsMedicated}");
         ImGui.Text($"InCombat: {InCombat}");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -194,7 +203,11 @@ public sealed class SezuraiWAR : WarriorRotation
         if (StatusHelper.PlayerHasStatus(true, StatusID.Holmgang_409) && Player?.GetHealthRatio() < 0.3f)
             return false;
 
-        // Bloodwhetting / Raw Intuition: short CD, strong self-heal
+        // BMR-aware: when TB is imminent, use Bloodwhetting + ONE longer CD
+        // Balance: "Bloodwhetting is your go-to for every tankbuster"
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+
+        // Bloodwhetting / Raw Intuition: short CD, strong self-heal — always first for TB
         if (BloodwhettingPvE.CanUse(out act))
             return true;
         if (!BloodwhettingPvE.Info.EnoughLevelAndQuest() && RawIntuitionPvE.CanUse(out act))
@@ -204,7 +217,16 @@ public sealed class SezuraiWAR : WarriorRotation
         if (!StatusHelper.PlayerWillStatusEndGCD(0, 0, true, StatusID.Bloodwhetting, StatusID.RawIntuition))
             return false;
 
-        // Reprisal: 10% incoming damage reduction
+        // BMR TB path: layer ONE heavier mit for big TBs, then stop
+        if (tbSoon)
+        {
+            if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+            // Only one long CD per TB — don't dump everything
+            return base.DefenseSingleAbility(nextGCD, out act);
+        }
+
+        // Non-BMR / reactive path: stagger long CDs as before
         if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
@@ -235,8 +257,16 @@ public sealed class SezuraiWAR : WarriorRotation
             return false;
         }
 
-        // Shake It Off: party-wide shield + HoT
-        if (ShakeItOffPvE.CanUse(out act, skipAoeCheck: true))
+        // BMR-aware: time Shake It Off to land before raidwide
+        // Balance: "Shake It Off provides a barrier + regen to the party"
+        // Use when raidwide is imminent; without BMR use whenever framework triggers
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon && ShakeItOffPvE.CanUse(out act, skipAoeCheck: true))
+            return true;
+
+        // Without BMR: use whenever the framework says DefenseArea is needed
+        if (!BmrActive && ShakeItOffPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);

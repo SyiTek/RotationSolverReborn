@@ -549,6 +549,14 @@ public sealed class SezuraiNIN : NinjaRotation
         ImGui.Text($"CanLateWeave: {CanLateWeave} | EnoughWeaveTime: {EnoughWeaveTime}");
         ImGui.Text($"KunaiCD: {(KunaisBanePvE.Cooldown.IsCoolingDown ? $"{KunaisBanePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"DokumoriCD: {(DokumoriPvE.Cooldown.IsCoolingDown ? $"{DokumoriPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -755,8 +763,12 @@ public sealed class SezuraiNIN : NinjaRotation
     [RotationDesc(ActionID.ShadeShiftPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        if (ShadeShiftPvE.CanUse(out act))
+        // BMR-aware: Shade Shift before raidwide for self-shield
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if ((rwSoon || !BmrActive) && ShadeShiftPvE.CanUse(out act))
             return true;
+
         return base.DefenseSingleAbility(nextGCD, out act);
     }
 

@@ -131,6 +131,14 @@ public sealed class SezuraiSMN : SummonerRotation
         ImGui.Text($"IsSolarBahamutReady: {IsSolarBahamutReady}");
         ImGui.Text($"IsBahamutReady: {IsBahamutReady}");
         ImGui.Text($"IsPhoenixReady: {IsPhoenixReady}");
+        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -187,14 +195,26 @@ public sealed class SezuraiSMN : SummonerRotation
 
     #region Defense & Utility
 
-    [RotationDesc(ActionID.AddlePvE)]
+    [RotationDesc(ActionID.AddlePvE, ActionID.RadiantAegisPvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // Radiant Aegis: personal shield
+        // BMR-aware: Addle + Radiant Aegis proactively before raidwide
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            // Addle first for party benefit
+            if (AddlePvE.CanUse(out act))
+                return true;
+            // Radiant Aegis: personal shield for survivability
+            if (!HasRadiantAegisStatus && RadiantAegisPvE.CanUse(out act))
+                return true;
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: use when framework triggers defense
         if (!HasRadiantAegisStatus && RadiantAegisPvE.CanUse(out act))
             return true;
-
-        // Addle: raid-wide mitigation
         if (AddlePvE.CanUse(out act))
             return true;
 

@@ -179,6 +179,14 @@ public sealed class SezuraiSAM : SamuraiRotation
         ImGui.Text($"IkishotenCD: {(IkishotenPvE.Cooldown.IsCoolingDown ? $"{IkishotenPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"SeneiCD: {(HissatsuSeneiPvE.Cooldown.IsCoolingDown ? $"{HissatsuSeneiPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"MeikyoCharges: {MeikyoShisuiPvE.Cooldown.CurrentCharges}");
+        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -207,24 +215,42 @@ public sealed class SezuraiSAM : SamuraiRotation
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
         // Don't use defensive oGCDs when Zanshin is ready (it shares the oGCD slot)
-        if (!HasZanshinReady)
+        if (HasZanshinReady)
+            return base.DefenseAreaAbility(nextGCD, out act);
+
+        // BMR-aware: Feint + Third Eye/Tengentsu proactively when raidwide imminent
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
         {
             if (FeintPvE.CanUse(out act))
                 return true;
+            // Third Eye/Tengentsu: self-mit before raidwide damage
+            if (TengentsuPvE.CanUse(out act))
+                return true;
+            if (ThirdEyePvE.CanUse(out act))
+                return true;
+            return base.DefenseAreaAbility(nextGCD, out act);
         }
+
+        // Non-BMR: Feint when framework triggers defense
+        if (FeintPvE.CanUse(out act))
+            return true;
+
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 
     [RotationDesc(ActionID.TengentsuPvE, ActionID.ThirdEyePvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        if (!HasZanshinReady)
-        {
-            if (TengentsuPvE.CanUse(out act))
-                return true;
-            if (ThirdEyePvE.CanUse(out act))
-                return true;
-        }
+        if (HasZanshinReady)
+            return base.DefenseSingleAbility(nextGCD, out act);
+
+        if (TengentsuPvE.CanUse(out act))
+            return true;
+        if (ThirdEyePvE.CanUse(out act))
+            return true;
+
         return base.DefenseSingleAbility(nextGCD, out act);
     }
 

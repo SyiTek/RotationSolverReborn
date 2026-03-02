@@ -194,6 +194,14 @@ public sealed class SezuraiRPR : ReaperRotation
         ImGui.Text("--- Weave ---");
         ImGui.Text($"WeaponRemain: {WeaponRemain:F2}s | WeaponTotal: {WeaponTotal:F2}s");
         ImGui.Text($"CanLateWeave: {CanLateWeave} | EnoughWeaveTime: {EnoughWeaveTime}");
+        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -239,16 +247,39 @@ public sealed class SezuraiRPR : ReaperRotation
     [RotationDesc(ActionID.FeintPvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        if (!HasSoulReaver && !HasEnshrouded && !HasExecutioner && FeintPvE.CanUse(out act))
+        // Skip during active combos (Soul Reaver / Enshroud / Executioner)
+        if (HasSoulReaver || HasEnshrouded || HasExecutioner)
+            return base.DefenseAreaAbility(nextGCD, out act);
+
+        // BMR-aware: Feint + Arcane Crest proactively when raidwide imminent
+        // Arcane Crest grants party shield on break — great for raidwides
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            if (FeintPvE.CanUse(out act))
+                return true;
+            if (ArcaneCrestPvE.CanUse(out act))
+                return true;
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: Feint when framework triggers defense
+        if (FeintPvE.CanUse(out act))
             return true;
+
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 
     [RotationDesc(ActionID.ArcaneCrestPvE)]
     protected sealed override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        if (!HasSoulReaver && !HasEnshrouded && !HasExecutioner && ArcaneCrestPvE.CanUse(out act))
+        if (HasSoulReaver || HasEnshrouded || HasExecutioner)
+            return base.DefenseSingleAbility(nextGCD, out act);
+
+        if (ArcaneCrestPvE.CanUse(out act))
             return true;
+
         return base.DefenseSingleAbility(nextGCD, out act);
     }
 

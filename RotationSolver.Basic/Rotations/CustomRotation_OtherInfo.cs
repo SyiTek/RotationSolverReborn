@@ -1606,5 +1606,33 @@ public partial class CustomRotation
     /// </summary>
     [Description("Next predicted damage type")]
     public static int BmrDamageType => DataCenter.BmrNextDamageType;
+
+    /// <summary>
+    /// Seconds until the boss becomes untargetable (downtime starts).
+    /// Returns float.MaxValue if no downtime is predicted.
+    /// </summary>
+    [Description("Seconds until next downtime")]
+    public static float BmrDowntimeIn => DataCenter.BmrNextDowntimeIn;
+
+    /// <summary>
+    /// Seconds until the boss becomes targetable again (downtime ends).
+    /// Returns float.MaxValue if no downtime end is predicted.
+    /// </summary>
+    [Description("Seconds until downtime ends")]
+    public static float BmrDowntimeEndIn => DataCenter.BmrNextDowntimeEndIn;
+
+    /// <summary>
+    /// Seconds until the boss becomes vulnerable (takes extra damage).
+    /// Returns float.MaxValue if no vulnerability window is predicted.
+    /// </summary>
+    [Description("Seconds until vulnerability window")]
+    public static float BmrVulnerableIn => DataCenter.BmrNextVulnerableIn;
+
+    /// <summary>
+    /// Seconds until the vulnerability window ends.
+    /// Returns float.MaxValue if no vulnerability end is predicted.
+    /// </summary>
+    [Description("Seconds until vulnerability ends")]
+    public static float BmrVulnerableEndIn => DataCenter.BmrNextVulnerableEndIn;
     #endregion
 }

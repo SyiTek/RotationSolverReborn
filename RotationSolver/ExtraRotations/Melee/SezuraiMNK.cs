@@ -327,6 +327,16 @@ public sealed class SezuraiMNK : MonkRotation
         ImGui.EndGroup();
 
         ImGui.EndTable();
+
+        // BMR Timeline section (outside table for simplicity)
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     // Helper: colored table row
@@ -467,7 +477,14 @@ public sealed class SezuraiMNK : MonkRotation
     {
         act = null;
         if (!EnoughWeaveTime) return false;
-        return FeintPvE.CanUse(out act) || base.DefenseAreaAbility(nextGCD, out act);
+
+        // BMR-aware: Feint proactively when raidwide imminent
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if ((rwSoon || !BmrActive) && FeintPvE.CanUse(out act))
+            return true;
+
+        return base.DefenseAreaAbility(nextGCD, out act);
     }
 
     [RotationDesc(ActionID.MantraPvE)]
@@ -475,12 +492,18 @@ public sealed class SezuraiMNK : MonkRotation
     {
         act = null;
         if (!EnoughWeaveTime) return false;
-        if (EarthsReplyPvE.CanUse(out act))
-        {
-            return true;
-        }
 
-        return MantraPvE.CanUse(out act) || base.HealAreaAbility(nextGCD, out act);
+        // Earth's Reply (follow-up to Riddle of Earth)
+        if (EarthsReplyPvE.CanUse(out act))
+            return true;
+
+        // BMR-aware: Mantra proactively before raidwide (10% heal potency buff for healers)
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if ((rwSoon || !BmrActive) && MantraPvE.CanUse(out act))
+            return true;
+
+        return base.HealAreaAbility(nextGCD, out act);
     }
 
     [RotationDesc(ActionID.RiddleOfEarthPvE)]
@@ -488,7 +511,14 @@ public sealed class SezuraiMNK : MonkRotation
     {
         act = null;
         if (!EnoughWeaveTime) return false;
-        return RiddleOfEarthPvE.CanUse(out act, usedUp: true) || base.DefenseSingleAbility(nextGCD, out act);
+
+        // BMR-aware: Riddle of Earth before raidwide for self-mit
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if ((rwSoon || !BmrActive) && RiddleOfEarthPvE.CanUse(out act, usedUp: true))
+            return true;
+
+        return base.DefenseSingleAbility(nextGCD, out act);
     }
 
     protected override bool AttackAbility(IAction nextGCD, out IAction? act)

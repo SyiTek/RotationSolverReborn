@@ -272,26 +272,51 @@ public sealed class SezuraiWHM : WhiteMageRotation
     [RotationDesc(ActionID.TemperancePvE, ActionID.LiturgyOfTheBellPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // Don't stack both big cooldowns at once
+        // BMR-aware: time mit to land before raidwide (1-2 mits max per raidwide)
+        // Balance: "Temperance is your main party mitigation tool"
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            // Temperance first: 10% party mit + 20% heal boost (best WHM party CD)
+            if (TemperancePvE.CanUse(out act))
+                return true;
+
+            // Divine Caress follow-up shield from Temperance
+            if (DivineCaressPvE.CanUse(out act))
+                return true;
+
+            // Liturgy of the Bell: delayed healing on damage taken
+            if ((MultiHitRestrict && IsCastingMultiHit) || !MultiHitRestrict)
+            {
+                if (LiturgyOfTheBellPvE.CanUse(out act, skipAoeCheck: true))
+                    return true;
+            }
+
+            // Plenary Indulgence: party mitigation
+            if (PlenaryIndulgencePvE.CanUse(out act))
+                return true;
+
+            // Max 1-2 mits per raidwide — stop here
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: stagger cooldowns as before
         if ((TemperancePvE.Cooldown.IsCoolingDown && !TemperancePvE.Cooldown.WillHaveOneCharge(100))
             || (LiturgyOfTheBellPvE.Cooldown.IsCoolingDown && !LiturgyOfTheBellPvE.Cooldown.WillHaveOneCharge(160)))
         {
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
-        // Plenary Indulgence (party mitigation in 7.4)
         if (PlenaryIndulgencePvE.CanUse(out act))
             return true;
 
-        // Temperance: 10% party mitigation + 20% heal boost
         if (TemperancePvE.CanUse(out act))
             return true;
 
-        // Divine Caress: follow-up shield from Temperance
         if (DivineCaressPvE.CanUse(out act))
             return true;
 
-        // Liturgy of the Bell: delayed AoE healing on damage instances
         if ((MultiHitRestrict && IsCastingMultiHit) || !MultiHitRestrict)
         {
             if (LiturgyOfTheBellPvE.CanUse(out act, skipAoeCheck: true))
@@ -304,18 +329,33 @@ public sealed class SezuraiWHM : WhiteMageRotation
     [RotationDesc(ActionID.DivineBenisonPvE, ActionID.AquaveilPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        // Don't fire if recently used
+        // BMR-aware: when TB is imminent, shield the tank proactively
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+
+        if (tbSoon)
+        {
+            // Divine Benison first: 500p shield, 2 charges (low cost, high value)
+            if (DivineBenisonPvE.CanUse(out act))
+                return true;
+
+            // Aquaveil: 15% damage reduction for 8s
+            if (AquaveilPvE.CanUse(out act))
+                return true;
+
+            // Max 2 per TB — stop
+            return base.DefenseSingleAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: stagger cooldowns
         if ((DivineBenisonPvE.Cooldown.IsCoolingDown && !DivineBenisonPvE.Cooldown.WillHaveOneCharge(15))
             || (AquaveilPvE.Cooldown.IsCoolingDown && !AquaveilPvE.Cooldown.WillHaveOneCharge(52)))
         {
             return base.DefenseSingleAbility(nextGCD, out act);
         }
 
-        // Divine Benison: 500 potency shield, 2 charges
         if (DivineBenisonPvE.CanUse(out act))
             return true;
 
-        // Aquaveil: 15% damage reduction for 8s
         if (AquaveilPvE.CanUse(out act))
             return true;
 
@@ -361,8 +401,13 @@ public sealed class SezuraiWHM : WhiteMageRotation
     [RotationDesc(ActionID.AsylumPvE, ActionID.PlenaryIndulgencePvE)]
     protected override bool HealAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // Asylum: ground AoE regen (100 potency/tick, 10% heal boost)
-        // Always valuable - heal + regen + heal amplification
+        // BMR-aware: place Asylum proactively before raidwide for regen + 10% heal boost
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+
+        if (rwSoon && AsylumPvE.CanUse(out act))
+            return true;
+
+        // Asylum: ground AoE regen — always valuable even without BMR
         if (AsylumPvE.CanUse(out act))
             return true;
 
@@ -633,6 +678,15 @@ public sealed class SezuraiWHM : WhiteMageRotation
         ImGui.Text($"CanHealSingleSpell: {CanHealSingleSpell}");
         ImGui.Text($"CanHealAreaSpell: {CanHealAreaSpell}");
         ImGui.Text($"PartyHP: {PartyMembersAverHP:P0}");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion

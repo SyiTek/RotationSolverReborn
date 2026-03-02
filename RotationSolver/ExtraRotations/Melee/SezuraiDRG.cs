@@ -69,6 +69,14 @@ public sealed class SezuraiDRG : DragoonRotation
         ImGui.Text($"HasBattleLitany: {HasBattleLitany}");
         ImGui.Text($"HasPowerSurge: {HasPowerSurge}");
         ImGui.Text($"HasDraconianFire: {HasDraconianFire}");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -141,10 +149,16 @@ public sealed class SezuraiDRG : DragoonRotation
     [RotationDesc(ActionID.FeintPvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
+        // Skip right after Stardiver (animation lock)
         if (IsLastAction(false, StardiverPvE))
             return base.DefenseAreaAbility(nextGCD, out act);
-        if (FeintPvE.CanUse(out act, skipComboCheck: true))
+
+        // BMR-aware: Feint proactively when raidwide imminent
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if ((rwSoon || !BmrActive) && FeintPvE.CanUse(out act, skipComboCheck: true))
             return true;
+
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 

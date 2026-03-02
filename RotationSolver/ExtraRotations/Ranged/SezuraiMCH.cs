@@ -179,7 +179,19 @@ public sealed class SezuraiMCH : MachinistRotation
     [RotationDesc(ActionID.TacticianPvE, ActionID.DismantlePvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // Don't mit during burst
+        // BMR-aware: Tactician + Dismantle when raidwide imminent (override burst-skip)
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            if (TacticianPvE.CanUse(out act))
+                return true;
+            if (DismantlePvE.CanUse(out act))
+                return true;
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: skip during burst
         if (IsOverheated || HasWildfire || HasFullMetalMachinist)
             return base.DefenseAreaAbility(nextGCD, out act);
 
@@ -586,6 +598,14 @@ public sealed class SezuraiMCH : MachinistRotation
         ImGui.Text($"Drill: {DrillPvE.Cooldown.CurrentCharges}/{DrillPvE.Cooldown.MaxCharges} ({(DrillPvE.Cooldown.IsCoolingDown ? $"{DrillPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")})");
         ImGui.Text($"CS: {(ChainSawPvE.Cooldown.IsCoolingDown ? $"{ChainSawPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"LiveCombo: {(LiveComboTime > 0 ? $"{LiveComboTime:F1}s" : "None")}");
+        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion

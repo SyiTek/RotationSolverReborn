@@ -234,15 +234,32 @@ public sealed class SezuraiSGE : SageRotation
     [RotationDesc(ActionID.KeracholePvE, ActionID.HolosPvE, ActionID.PanhaimaPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // Kerachole: 10% mit + regen, 30s CD, costs 1 Addersgall
+        // BMR-aware: time party mit to raidwide (1-2 mits max per raidwide)
+        // Balance: "Kerachole is your bread-and-butter party mit — 10% + regen"
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            // Kerachole first: 10% mit + regen, best value (costs 1 Addersgall)
+            if (CanSpendAddersgall && KeracholePvE.CanUse(out act))
+                return true;
+
+            // Holos: AoE shield + 10% mit, no Addersgall cost
+            if (HolosPvE.CanUse(out act))
+                return true;
+
+            // Don't stack Panhaima on same raidwide unless multi-hit
+            // Max 1-2 mits per raidwide — stop
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: use whenever framework triggers defense
         if (CanSpendAddersgall && KeracholePvE.CanUse(out act))
             return true;
 
-        // Holos: AoE shield + 10% mit, no Addersgall cost
         if (HolosPvE.CanUse(out act))
             return true;
 
-        // Panhaima: multi-layer shields for repeated hits
         if (PanhaimaPvE.CanUse(out act))
             return true;
 
@@ -252,11 +269,27 @@ public sealed class SezuraiSGE : SageRotation
     [RotationDesc(ActionID.HaimaPvE, ActionID.TaurocholePvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        // Haima: multi-layer single-target shield (great on tanks)
+        // BMR-aware: when TB imminent, shield the tank proactively
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+
+        if (tbSoon)
+        {
+            // Taurochole first: heal + 10% mit (best single-target Addersgall tool)
+            if (CanSpendAddersgall && TaurocholePvE.CanUse(out act))
+                return true;
+
+            // Haima: multi-layer shield for heavy TBs
+            if (HaimaPvE.CanUse(out act))
+                return true;
+
+            // Max 2 per TB — stop
+            return base.DefenseSingleAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: use when framework triggers defense
         if (HaimaPvE.CanUse(out act))
             return true;
 
-        // Taurochole: heal + 10% mit
         if (CanSpendAddersgall && TaurocholePvE.CanUse(out act))
             return true;
 
@@ -299,6 +332,12 @@ public sealed class SezuraiSGE : SageRotation
     [RotationDesc(ActionID.KeracholePvE, ActionID.IxocholePvE, ActionID.HolosPvE, ActionID.PhysisIiPvE, ActionID.PanhaimaPvE, ActionID.PepsisPvE, ActionID.PhilosophiaPvE)]
     protected override bool HealAreaAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: place Kerachole proactively before raidwide for 10% mit + regen
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+
+        if (rwSoon && CanSpendAddersgall && KeracholePvE.CanUse(out act))
+            return true;
+
         // Philosophia: Dawntrail ability, party heal + GCD healing buff
         if (PhilosophiaPvE.CanUse(out act))
             return true;
@@ -734,6 +773,15 @@ public sealed class SezuraiSGE : SageRotation
         ImGui.Text($"Holos: {(HolosPvE.Cooldown.IsCoolingDown ? $"{HolosPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Panhaima: {(PanhaimaPvE.Cooldown.IsCoolingDown ? $"{PanhaimaPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Haima: {(HaimaPvE.Cooldown.IsCoolingDown ? $"{HaimaPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion

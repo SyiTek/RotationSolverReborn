@@ -106,6 +106,15 @@ public sealed class SezuraiPLD : PaladinRotation
         ImGui.Text($"HasGoringBlade: {StatusHelper.PlayerHasStatus(true, StatusID.GoringBladeReady)}");
         ImGui.Spacing();
         ImGui.Text($"FoF CD Remain: {FightOrFlightPvE.Cooldown.RecastTimeRemainOneCharge:F1}s");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -163,10 +172,20 @@ public sealed class SezuraiPLD : PaladinRotation
     [RotationDesc(ActionID.DivineVeilPvE, ActionID.PassageOfArmsPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        if (DivineVeilPvE.CanUse(out act))
+        // BMR-aware: time Divine Veil before raidwides (shield needs a heal to pop)
+        // Balance: "Divine Veil creates a party barrier when you receive a heal"
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon && DivineVeilPvE.CanUse(out act))
             return true;
 
-        if (PassageOfArmsPvE.CanUse(out act))
+        // Without BMR: use whenever framework triggers
+        if (!BmrActive && DivineVeilPvE.CanUse(out act))
+            return true;
+
+        // Passage of Arms: channel-based, only for specific mechanics
+        // Don't use with BMR timing (locks you in place = DPS loss)
+        if (!BmrActive && PassageOfArmsPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -182,16 +201,27 @@ public sealed class SezuraiPLD : PaladinRotation
         if (StatusHelper.PlayerHasStatus(true, StatusID.HallowedGround))
             return base.DefenseSingleAbility(nextGCD, out act);
 
-        // 1. Holy Sheltron / Sheltron (Oath gauge spender, short CD, use liberally)
+        // BMR-aware: when TB is imminent, Sheltron + ONE longer CD
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+
+        // 1. Holy Sheltron / Sheltron — always first (short CD, Oath spender)
         if (UseOath(out act))
             return true;
 
+        if (tbSoon)
+        {
+            // Layer ONE longer CD for big TBs, then stop
+            if (BulwarkPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+            return base.DefenseSingleAbility(nextGCD, out act);
+        }
+
+        // Non-BMR / reactive path: stagger long CDs
         // 2. Bulwark (block rate buff)
         if (BulwarkPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
         // 3. Sentinel/Guardian (30% mitigation, 120s CD)
-        // Only use if Rampart isn't also available (stagger them)
         if ((!RampartPvE.Cooldown.IsCoolingDown || RampartPvE.Cooldown.ElapsedAfter(60))
             && GuardianPvE.CanUse(out act) && GuardianPvE.EnoughLevel)
             return true;

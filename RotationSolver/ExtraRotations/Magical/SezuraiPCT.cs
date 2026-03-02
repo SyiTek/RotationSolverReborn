@@ -115,6 +115,14 @@ public sealed class SezuraiPCT : PictomancerRotation
         ImGui.Text($"LandscapeMotifDrawn: {LandscapeMotifDrawn}");
         ImGui.Text($"MooglePortraitReady: {MooglePortraitReady}");
         ImGui.Text($"MadeenPortraitReady: {MadeenPortraitReady}");
+        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -256,14 +264,20 @@ public sealed class SezuraiPCT : PictomancerRotation
     [RotationDesc(ActionID.TemperaCoatPvE, ActionID.TemperaGrassaPvE, ActionID.AddlePvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        bool allowDefense = !BlockDefenseDuringBurst || !InBurstWindow;
+        // BMR-aware: override burst-skip for genuine raidwides
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool allowDefense = rwSoon || !BlockDefenseDuringBurst || !InBurstWindow;
 
-        if (allowDefense && TemperaCoatPvE.CanUse(out act))
-            return true;
-        if (allowDefense && TemperaGrassaPvE.CanUse(out act))
-            return true;
-        if (allowDefense && AddlePvE.CanUse(out act))
-            return true;
+        if (allowDefense)
+        {
+            // Tempera Coat/Grassa: party shield — don't stack with Addle on same raidwide
+            if (TemperaCoatPvE.CanUse(out act))
+                return true;
+            if (TemperaGrassaPvE.CanUse(out act))
+                return true;
+            if (AddlePvE.CanUse(out act))
+                return true;
+        }
 
         return base.DefenseAreaAbility(nextGCD, out act);
     }
@@ -271,7 +285,8 @@ public sealed class SezuraiPCT : PictomancerRotation
     [RotationDesc(ActionID.TemperaCoatPvE)]
     protected sealed override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        bool allowDefense = !BlockDefenseDuringBurst || !InBurstWindow;
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool allowDefense = rwSoon || !BlockDefenseDuringBurst || !InBurstWindow;
 
         if (allowDefense && TemperaCoatPvE.CanUse(out act))
             return true;

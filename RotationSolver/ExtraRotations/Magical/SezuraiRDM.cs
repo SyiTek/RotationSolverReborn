@@ -174,6 +174,14 @@ public sealed class SezuraiRDM : RedMageRotation
         ImGui.Text($"C6 CD: {ContreSixtePvE.Cooldown.RecastTimeRemain:F1}s");
         ImGui.Text($"EnoughManaForCombo: {HasEnoughManaForCombo}");
         ImGui.Text($"PoolMana: {PoolMana}  ManaNeededW: {ManaNeededWhite()}  ManaNeededB: {ManaNeededBlack()}");
+        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -290,10 +298,25 @@ public sealed class SezuraiRDM : RedMageRotation
     [RotationDesc(ActionID.AddlePvE, ActionID.MagickBarrierPvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: spread Addle and Magick Barrier across separate raidwides
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            // Use whichever is available first, but only 1 per raidwide
+            if (AddlePvE.CanUse(out act))
+                return true;
+            if (MagickBarrierPvE.CanUse(out act))
+                return true;
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: use both when framework triggers
         if (AddlePvE.CanUse(out act))
             return true;
         if (MagickBarrierPvE.CanUse(out act))
             return true;
+
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 

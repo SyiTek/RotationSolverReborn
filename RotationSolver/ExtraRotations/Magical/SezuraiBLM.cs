@@ -150,6 +150,14 @@ public sealed class SezuraiBLM : BlackMageRotation
         ImGui.Text($"NeedIceTransition: {NeedIceTransition}");
         ImGui.Text($"MpFullForFire: {MpFullForFire}");
         ImGui.Text($"TargetNeedsThunder: {TargetNeedsThunder}");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -219,16 +227,24 @@ public sealed class SezuraiBLM : BlackMageRotation
     [RotationDesc(ActionID.ManawardPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        if (ManawardPvE.CanUse(out act))
+        // BMR-aware: Manaward before raidwide for self-shield
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if ((rwSoon || !BmrActive) && ManawardPvE.CanUse(out act))
             return true;
+
         return base.DefenseSingleAbility(nextGCD, out act);
     }
 
     [RotationDesc(ActionID.AddlePvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        if (AddlePvE.CanUse(out act))
+        // BMR-aware: Addle when raidwide imminent (magic damage reduction on boss)
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if ((rwSoon || !BmrActive) && AddlePvE.CanUse(out act))
             return true;
+
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 

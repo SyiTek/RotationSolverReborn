@@ -244,6 +244,14 @@ public sealed class SezuraiVPR : ViperRotation
         ImGui.Text($"WeaponRemain: {WeaponRemain:F2}s | WeaponTotal: {WeaponTotal:F2}s");
         ImGui.Text($"CanLateWeave: {CanLateWeave} | EnoughWeaveTime: {EnoughWeaveTime}");
         ImGui.Text($"IreCD: {(SerpentsIrePvE.Cooldown.IsCoolingDown ? $"{SerpentsIrePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -365,11 +373,19 @@ public sealed class SezuraiVPR : ViperRotation
         return base.HealSingleAbility(nextGCD, out act);
     }
 
-    [RotationDesc]
+    [RotationDesc(ActionID.FeintPvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        if (NoAbilityReady && FeintPvE.CanUse(out act))
+        // BMR-aware: Feint proactively when raidwide imminent (still skip mid-combo)
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon && NoAbilityReady && FeintPvE.CanUse(out act))
             return true;
+
+        // Non-BMR: Feint when framework triggers defense
+        if (!BmrActive && NoAbilityReady && FeintPvE.CanUse(out act))
+            return true;
+
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 

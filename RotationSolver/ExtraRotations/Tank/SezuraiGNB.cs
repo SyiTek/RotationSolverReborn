@@ -107,6 +107,15 @@ public sealed class SezuraiGNB : GunbreakerRotation
         ImGui.Text($"GnashingFang Charges: {GnashingFangPvE.Cooldown.CurrentCharges}");
         ImGui.Text($"DoubleDown CD: {DoubleDownPvE.Cooldown.RecastTimeRemainOneCharge:F1}s");
         ImGui.Text($"BlastingZone CD: {BlastingZonePvE.Cooldown.RecastTimeRemainOneCharge:F1}s");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -177,8 +186,19 @@ public sealed class SezuraiGNB : GunbreakerRotation
         if (!AutoMitigation)
             return base.DefenseAreaAbility(nextGCD, out act);
 
-        // Don't use mitigation if about to enter No Mercy burst (avoid clipping)
-        if (NoMercySoon && !HasNoMercy)
+        // BMR-aware: time Heart of Light to raidwide — covers both magic (10%) and phys (5%)
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            if (HeartOfLightPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+            // Don't stack Reprisal on same raidwide — save for next one
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Without BMR: skip if NM burst is imminent (avoid clipping oGCD slots)
+        if (!BmrActive && NoMercySoon && !HasNoMercy)
             return base.DefenseAreaAbility(nextGCD, out act);
 
         if (HeartOfLightPvE.CanUse(out act, skipAoeCheck: true))
@@ -197,14 +217,26 @@ public sealed class SezuraiGNB : GunbreakerRotation
         if (!AutoMitigation)
             return base.DefenseSingleAbility(nextGCD, out act);
 
-        // Heart of Corundum / Heart of Stone - short CD, use first
+        // BMR-aware: when TB is imminent, Heart of Corundum + ONE longer CD
+        // Balance: "Heart of Corundum is your primary short-CD mitigation (~28% for first 4s)"
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+
+        // Heart of Corundum / Heart of Stone - short CD, always first
         if (HeartOfCorundumPvE.CanUse(out act))
             return true;
-
         if (!HeartOfCorundumPvE.EnoughLevel && HeartOfStonePvE.CanUse(out act))
             return true;
 
-        // Camouflage - 10% parry
+        if (tbSoon)
+        {
+            // Layer ONE longer CD for big TBs
+            if (CamouflagePvE.CanUse(out act))
+                return true;
+            // Don't dump all long CDs — 2 mits per TB is enough
+            return base.DefenseSingleAbility(nextGCD, out act);
+        }
+
+        // Non-BMR / reactive path: stagger long CDs
         if (CamouflagePvE.CanUse(out act))
             return true;
 

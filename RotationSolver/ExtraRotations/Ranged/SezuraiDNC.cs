@@ -118,6 +118,14 @@ public sealed class SezuraiDNC : DancerRotation
         ImGui.Text($"StdStep: {(StandardStepPvE.Cooldown.IsCoolingDown ? $"{StandardStepPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Devilment: {(DevilmentPvE.Cooldown.IsCoolingDown ? $"{DevilmentPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Flourish: {(FlourishPvE.Cooldown.IsCoolingDown ? $"{FlourishPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -237,7 +245,17 @@ public sealed class SezuraiDNC : DancerRotation
     [RotationDesc(ActionID.ShieldSambaPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // Don't use defense during burst if configured
+        // BMR-aware: Shield Samba when raidwide imminent (override burst-skip)
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            if (ShieldSambaPvE.CanUse(out act))
+                return true;
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: skip during burst if configured
         if (NoDefenseInBurst && InBurstWindow)
             return base.DefenseAreaAbility(nextGCD, out act);
 

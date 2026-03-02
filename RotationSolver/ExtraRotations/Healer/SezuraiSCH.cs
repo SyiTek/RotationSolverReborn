@@ -198,20 +198,58 @@ public sealed class SezuraiSCH : ScholarRotation
 
     #region Defense
 
-    [RotationDesc(ActionID.ExpedientPvE)]
+    [RotationDesc(ActionID.ExpedientPvE, ActionID.FeyIlluminationPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // Expedient: party sprint + 10% mitigation
+        // BMR-aware: time party mit to raidwide (1-2 mits max, spread across events)
+        // Balance: "Expedient is your best party mit — 10% + sprint for repositioning"
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            // Expedient first: 10% party mit + sprint (best SCH party CD)
+            if (ExpedientPvE.CanUse(out act))
+                return true;
+
+            // Fey Illumination: 5% magic mit + heal potency buff
+            if (FeyIlluminationPvE.CanUse(out act))
+                return true;
+
+            // Max 1-2 per raidwide — stop
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: use Expedient whenever framework triggers defense
         if (ExpedientPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.ProtractionPvE)]
+    [RotationDesc(ActionID.ProtractionPvE, ActionID.ExcogitationPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        // Protraction: 10% max HP increase + healing buff on target
+        // BMR-aware: when TB imminent, place Excogitation + Protraction on tank
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+
+        if (tbSoon)
+        {
+            // Excogitation first: auto-heal at <50% HP, strongest single-target tool
+            // Recitation + Excog is even better (guaranteed crit + free)
+            if (HasRecitation && ExcogitationPvE.CanUse(out act))
+                return true;
+            if (ExcogitationPvE.CanUse(out act))
+                return true;
+
+            // Protraction: 10% max HP increase + healing received buff
+            if (ProtractionPvE.CanUse(out act))
+                return true;
+
+            // Max 2 per TB — stop
+            return base.DefenseSingleAbility(nextGCD, out act);
+        }
+
+        // Non-BMR: Protraction when framework triggers defense
         if (ProtractionPvE.CanUse(out act))
             return true;
 
@@ -269,8 +307,14 @@ public sealed class SezuraiSCH : ScholarRotation
         ActionID.ConsolationPvE, ActionID.SacredSoilPvE, ActionID.IndomitabilityPvE, ActionID.SeraphismPvE)]
     protected override bool HealAreaAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: place Sacred Soil proactively before raidwide for 10% mit + regen
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+        bool canSpendAetherflowOnHeal = HealMode != HealModeStrategy.DPSBot || !HasAetherflow;
+
+        if (rwSoon && canSpendAetherflowOnHeal && SacredSoilPvE.CanUse(out act))
+            return true;
+
         // === Seraphism: emergency healing super mode ===
-        // Only use in HealBot mode freely, or when party HP is critical in other modes
         if (HealMode == HealModeStrategy.HealBot && SeraphismPvE.CanUse(out act))
             return true;
 
@@ -300,8 +344,6 @@ public sealed class SezuraiSCH : ScholarRotation
             return true;
 
         // === Aetherflow oGCD Heals ===
-        bool canSpendAetherflowOnHeal = HealMode != HealModeStrategy.DPSBot || !HasAetherflow;
-
         if (canSpendAetherflowOnHeal)
         {
             // Sacred Soil: ground AoE regen + 10% mitigation (best Aetherflow AoE heal)
@@ -644,6 +686,15 @@ public sealed class SezuraiSCH : ScholarRotation
         ImGui.Text($"CanHealSingleSpell: {CanHealSingleSpell}");
         ImGui.Text($"CanHealAreaSpell: {CanHealAreaSpell}");
         ImGui.Text($"PartyHP: {PartyMembersAverHP:P0}");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion

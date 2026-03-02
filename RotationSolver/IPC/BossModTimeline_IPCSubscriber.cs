@@ -27,6 +27,18 @@ internal static class BossModTimeline_IPCSubscriber
     [EzIPC("Timeline.NextKnockbackIn", true)]
     internal static readonly Func<float>? NextKnockbackIn;
 
+    [EzIPC("Timeline.NextDowntimeIn", true)]
+    internal static readonly Func<float>? NextDowntimeIn;
+
+    [EzIPC("Timeline.NextDowntimeEndIn", true)]
+    internal static readonly Func<float>? NextDowntimeEndIn;
+
+    [EzIPC("Timeline.NextVulnerableIn", true)]
+    internal static readonly Func<float>? NextVulnerableIn;
+
+    [EzIPC("Timeline.NextVulnerableEndIn", true)]
+    internal static readonly Func<float>? NextVulnerableEndIn;
+
     [EzIPC("Hints.NextDamageIn", true)]
     internal static readonly Func<float>? NextDamageIn;
 

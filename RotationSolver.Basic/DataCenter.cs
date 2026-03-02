@@ -1965,6 +1965,10 @@ internal static class DataCenter
 	public static float BmrNextRaidwideIn { get; set; } = float.MaxValue;
 	public static float BmrNextTankbusterIn { get; set; } = float.MaxValue;
 	public static float BmrNextKnockbackIn { get; set; } = float.MaxValue;
+	public static float BmrNextDowntimeIn { get; set; } = float.MaxValue;
+	public static float BmrNextDowntimeEndIn { get; set; } = float.MaxValue;
+	public static float BmrNextVulnerableIn { get; set; } = float.MaxValue;
+	public static float BmrNextVulnerableEndIn { get; set; } = float.MaxValue;
 	public static float BmrNextDamageIn { get; set; } = float.MaxValue;
 	public static int BmrNextDamageType { get; set; }
 	public static float BmrSpecialModeIn { get; set; } = float.MaxValue;
@@ -1977,6 +1981,10 @@ internal static class DataCenter
 		BmrNextRaidwideIn = float.MaxValue;
 		BmrNextTankbusterIn = float.MaxValue;
 		BmrNextKnockbackIn = float.MaxValue;
+		BmrNextDowntimeIn = float.MaxValue;
+		BmrNextDowntimeEndIn = float.MaxValue;
+		BmrNextVulnerableIn = float.MaxValue;
+		BmrNextVulnerableEndIn = float.MaxValue;
 		BmrNextDamageIn = float.MaxValue;
 		BmrNextDamageType = 0;
 		BmrSpecialModeIn = float.MaxValue;

@@ -148,6 +148,15 @@ public sealed class SezuraiDRK : DarkKnightRotation
             ImGui.Text($"Delirium CD: {DeliriumPvE.Cooldown.RecastTimeRemainOneCharge:F1}s");
         if (ShadowbringerPvE.EnoughLevel)
             ImGui.Text($"Shadowbringer Charges: {ShadowbringerPvE.Cooldown.CurrentCharges}");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+        }
     }
 
     #endregion
@@ -425,13 +434,28 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (!AutoMitigation)
             return base.DefenseSingleAbility(nextGCD, out act);
 
+        // BMR-aware: when TB is imminent, TBN is THE tool (25% HP shield, Dark Arts if broken)
+        // Balance: "TBN is either damage neutral or a gain — always use it for tankbusters"
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+
+        if (tbSoon)
+        {
+            // TBN first: shield + Dark Arts generation
+            if (CurrentMp >= 3000 && TheBlackestNightPvE.CanUse(out act, targetOverride: TargetType.Self))
+                return true;
+            // Oblation: 10% mit, use one charge
+            if (OblationPvE.CanUse(out act, skipStatusProvideCheck: false, targetOverride: TargetType.Self))
+                return true;
+            // Don't dump all long CDs — 2 mits per TB is enough
+            return base.DefenseSingleAbility(nextGCD, out act);
+        }
+
+        // Non-BMR / reactive path
         // Oblation: 10% mitigation, 2 charges, short CD - use first
         if (OblationPvE.CanUse(out act, usedUp: true, skipStatusProvideCheck: false, targetOverride: TargetType.Self))
             return true;
 
-        // TBN: 25% HP shield, gives Dark Arts if broken
-        // Only use defensively if we have MP to spare (won't starve burst)
-        // Respects configurable HP threshold
+        // TBN: only use defensively if MP is comfortable and HP is low
         if (CurrentMp >= 6000
             && Player?.GetHealthRatio() < TBNThreshold
             && TheBlackestNightPvE.CanUse(out act, targetOverride: TargetType.Self))
@@ -468,8 +492,20 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (!AutoMitigation)
             return base.DefenseAreaAbility(nextGCD, out act);
 
-        // Don't use mitigation during burst windows (oGCD slots needed for damage)
-        if (InBurstWindow)
+        // BMR-aware: override burst-skip when raidwide is truly imminent
+        // Balance: "Dark Missionary is 10% magic mitigation for the party"
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+        if (rwSoon)
+        {
+            if (DarkMissionaryPvE.CanUse(out act))
+                return true;
+            // Don't stack Reprisal on same raidwide — save for next one
+            return base.DefenseAreaAbility(nextGCD, out act);
+        }
+
+        // Without BMR: skip during burst (oGCD slots needed for damage)
+        if (!BmrActive && InBurstWindow)
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // Dark Missionary: 10% magic mitigation for party
@@ -478,10 +514,6 @@ public sealed class SezuraiDRK : DarkKnightRotation
 
         // Reprisal: 10% damage reduction on enemies
         if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
-            return true;
-
-        // Oblation on self as extra padding
-        if (OblationPvE.CanUse(out act, skipStatusProvideCheck: false, targetOverride: TargetType.Self))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
