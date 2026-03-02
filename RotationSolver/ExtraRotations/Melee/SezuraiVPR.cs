@@ -45,6 +45,9 @@ public sealed class SezuraiVPR : ViperRotation
     [RotationConfig(CombatType.PvE, Name = "Action Ahead Override (0 = use global setting)")]
     public float ActionAheadOverride { get; set; } = 0f;
 
+    [RotationConfig(CombatType.PvE, Name = "Use BMR timeline for proactive Feint, downtime planning, and burst hold")]
+    public bool UseBmr { get; set; } = true;
+
     #endregion
 
     #region Burst State
@@ -103,6 +106,64 @@ public sealed class SezuraiVPR : ViperRotation
     private bool ShouldDumpCoilsPreBurst => SerpentsIrePvE.EnoughLevel
         && IsPreBurst && !InActiveBurst
         && RattlingCoilStacks > 1;
+
+    #endregion
+
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR is active AND the user has enabled our BMR config toggle.
+    /// All BMR checks go through this so there's a single kill-switch.
+    /// </summary>
+    private bool BmrUsable => UseBmr && BmrActive;
+
+    /// <summary>
+    /// BMR: downtime is imminent and close enough to worry about (~20s).
+    /// Used for resource dump decisions. Falls back to false when BMR inactive.
+    /// </summary>
+    private bool BmrDowntimeSoon => BmrUsable && BmrDowntimeIn is > 0 and <= 20f;
+
+    /// <summary>
+    /// BMR: downtime is very close (~10s). Dump remaining Rattling Coils.
+    /// </summary>
+    private bool BmrDowntimeImminent => BmrUsable && BmrDowntimeIn is > 0 and <= 10f;
+
+    /// <summary>
+    /// BMR: downtime too close for Reawaken (~12s). Combo takes ~10s.
+    /// </summary>
+    private bool BmrBlockReawaken => BmrUsable && BmrDowntimeIn is > 0 and <= 12f;
+
+    /// <summary>
+    /// BMR: downtime too close to start a new dual-wield combo (~5s).
+    /// Prefer finishing current combo or dumping ranged GCDs instead.
+    /// </summary>
+    private bool BmrBlockNewCombo => BmrUsable && BmrDowntimeIn is > 0 and <= 5f;
+
+    /// <summary>
+    /// BMR: vulnerability window coming within 30s — hold Serpent's Ire.
+    /// Per Balance intermediate: align burst with party buff / vuln windows.
+    /// </summary>
+    private bool BmrHoldIreForVuln => BmrUsable
+        && BmrVulnerableIn is > 0 and <= 30f
+        && SerpentsIrePvE.Cooldown.HasOneCharge;
+
+    /// <summary>
+    /// BMR: Ire won't be useful before downtime (too late to burst).
+    /// Don't waste Ire if downtime < 15s and no time to use the gauge.
+    /// </summary>
+    private bool BmrBlockIreBeforeDowntime => BmrUsable
+        && BmrDowntimeIn is > 0 and <= 15f
+        && !InActiveBurst;
+
+    /// <summary>
+    /// BMR: raidwide damage incoming soon (~3s). Use self-healing proactively.
+    /// </summary>
+    private bool BmrRaidwideSoon => BmrUsable && BmrRaidwideIn is > 0 and <= 3f;
+
+    /// <summary>
+    /// BMR: raidwide damage incoming within Feint's application window (~5s).
+    /// </summary>
+    private bool BmrFeintWindow => BmrUsable && BmrRaidwideIn is > 0 and <= 5f;
 
     #endregion
 
@@ -244,14 +305,35 @@ public sealed class SezuraiVPR : ViperRotation
         ImGui.Text($"WeaponRemain: {WeaponRemain:F2}s | WeaponTotal: {WeaponTotal:F2}s");
         ImGui.Text($"CanLateWeave: {CanLateWeave} | EnoughWeaveTime: {EnoughWeaveTime}");
         ImGui.Text($"IreCD: {(SerpentsIrePvE.Cooldown.IsCoolingDown ? $"{SerpentsIrePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"--- BMR Decisions ---");
+        ImGui.Text($"BmrUsable: {BmrUsable} | UseBmr: {UseBmr}");
+        ImGui.Text($"BlockReawaken: {BmrBlockReawaken} | BlockNewCombo: {BmrBlockNewCombo}");
+        ImGui.Text($"DowntimeSoon: {BmrDowntimeSoon} | DowntimeImminent: {BmrDowntimeImminent}");
+        ImGui.Text($"HoldIreForVuln: {BmrHoldIreForVuln} | BlockIreBeforeDowntime: {BmrBlockIreBeforeDowntime}");
+        ImGui.Text($"FeintWindow: {BmrFeintWindow} | RaidwideSoon: {BmrRaidwideSoon}");
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -367,6 +449,13 @@ public sealed class SezuraiVPR : ViperRotation
     [RotationDesc]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-proactive: pre-heal before raidwide hits so we survive the damage
+        if (BmrRaidwideSoon && NoAbilityReady && BloodbathPvE.CanUse(out act))
+            return true;
+        if (BmrRaidwideSoon && NoAbilityReady && SecondWindPvE.CanUse(out act))
+            return true;
+
+        // Standard self-healing (framework-triggered or non-BMR)
         if (NoAbilityReady && SecondWindPvE.CanUse(out act))
             return true;
         if (NoAbilityReady && BloodbathPvE.CanUse(out act))
@@ -374,17 +463,30 @@ public sealed class SezuraiVPR : ViperRotation
         return base.HealSingleAbility(nextGCD, out act);
     }
 
+    [RotationDesc(ActionID.BloodbathPvE)]
+    protected sealed override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        // BMR-aware: Bloodbath before raidwide for self-sustain (heals on damage dealt)
+        if (BmrRaidwideSoon && NoAbilityReady && BloodbathPvE.CanUse(out act))
+            return true;
+
+        // Non-BMR fallback: Bloodbath when framework triggers personal defense
+        if (!BmrUsable && NoAbilityReady && BloodbathPvE.CanUse(out act))
+            return true;
+
+        return base.DefenseSingleAbility(nextGCD, out act);
+    }
+
     [RotationDesc(ActionID.FeintPvE)]
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: Feint proactively when raidwide imminent (still skip mid-combo)
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
-
-        if (rwSoon && NoAbilityReady && FeintPvE.CanUse(out act))
+        // BMR-aware: Feint proactively when raidwide imminent
+        // Skip during active burst to avoid clipping damage oGCDs
+        if (BmrFeintWindow && !InActiveBurst && NoAbilityReady && FeintPvE.CanUse(out act))
             return true;
 
-        // Non-BMR: Feint when framework triggers defense
-        if (!BmrActive && NoAbilityReady && FeintPvE.CanUse(out act))
+        // Non-BMR fallback: Feint when framework triggers defense
+        if (!BmrUsable && NoAbilityReady && FeintPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -412,8 +514,22 @@ public sealed class SezuraiVPR : ViperRotation
 
     protected override bool AttackAbility(IAction nextGCD, out IAction? act)
     {
+        // === BMR: Dump burst before downtime ===
+        // If downtime < 20s and Ire is available, fire it now to spend resources before boss leaves
+        // But don't fire if vuln window is coming (hold for better timing)
+        if (BmrDowntimeSoon && !BmrHoldIreForVuln && CanBurst && HasHunterAndSwift)
+        {
+            if (SerpentsIrePvE.CanUse(out act))
+                return true;
+        }
+
+        // === BMR: Hold Ire for vulnerability window ===
+        // Don't use Ire if a vuln window is coming within 30s — save burst for it
+        // Also don't use if downtime is < 15s and we can't meaningfully use the burst
+        bool bmrBlockIre = BmrHoldIreForVuln || BmrBlockIreBeforeDowntime;
+
         // Serpent's Ire: only use when burst is enabled and both buffs are active
-        if (CanBurst && HasHunterAndSwift)
+        if (!bmrBlockIre && CanBurst && HasHunterAndSwift)
         {
             if (!SerpentsLineageTrait.EnoughLevel)
             {
@@ -467,8 +583,7 @@ public sealed class SezuraiVPR : ViperRotation
         // Reawaken does NOT break dual wield combos, so we only need buff timers to be safe.
         // Allow entry when: no combo active OR enough combo time remaining for safety.
         // BMR-aware: Don't start Reawaken if downtime < 12s (combo takes ~10s to complete)
-        bool bmrBlockReawaken = BmrActive && BmrDowntimeIn is > 0 and <= 12f;
-        if (!bmrBlockReawaken && (IsNoActionCombo() || LiveComboTime > GCDTime(2)) && SwiftTime > SwiftTimer && HuntersTime > HuntersTimer)
+        if (!BmrBlockReawaken && (IsNoActionCombo() || LiveComboTime > GCDTime(2)) && SwiftTime > SwiftTimer && HuntersTime > HuntersTimer)
         {
             // Overcap protection at 100 gauge -> always use regardless of burst state
             if (SerpentOffering == 100 && ReawakenPvE.CanUse(out act, skipComboCheck: true))
@@ -524,6 +639,14 @@ public sealed class SezuraiVPR : ViperRotation
             // Pre-burst coil dump: spend excess coils before Ire grants another
             // Balance basic: "spend them before using Serpent's Ire as it will grant another"
             if (ShouldDumpCoilsPreBurst && !HasReadyToReawaken && NoAbilityReady)
+            {
+                if (UncoiledFuryPvE.CanUse(out act, usedUp: true))
+                    return true;
+            }
+
+            // BMR: dump all coils before downtime — they're wasted during untargetable
+            // Balance intermediate: "Prevent gauge/Rattling Coil overcapping during untargetable phases"
+            if (BmrDowntimeImminent && RattlingCoilStacks > 0 && !HasReadyToReawaken && NoAbilityReady)
             {
                 if (UncoiledFuryPvE.CanUse(out act, usedUp: true))
                     return true;
@@ -921,7 +1044,10 @@ public sealed class SezuraiVPR : ViperRotation
         }
 
         // 12. ST Base Combo
-        if (!JaggedMawPvE.EnoughLevel || IsNoActionCombo() || IsLastComboAction(ActionID.FlankstingStrikePvE, ActionID.FlanksbaneFangPvE, ActionID.HindstingStrikePvE, ActionID.HindsbaneFangPvE, ActionID.JaggedMawPvE, ActionID.BloodiedMawPvE))
+        // BMR: don't start a fresh combo if downtime < 5s — use ranged GCDs / Uncoiled Fury instead
+        // But always allow if we're mid-combo (need to finish it)
+        if ((!BmrBlockNewCombo || !IsNoActionCombo())
+            && (!JaggedMawPvE.EnoughLevel || IsNoActionCombo() || IsLastComboAction(ActionID.FlankstingStrikePvE, ActionID.FlanksbaneFangPvE, ActionID.HindstingStrikePvE, ActionID.HindsbaneFangPvE, ActionID.JaggedMawPvE, ActionID.BloodiedMawPvE)))
         {
             // Opener: start with Swiftskins path (ReavingFangs -> SwiftskinsSting)
             if (InOpener && CombatElapsedLessGCD(1) && !IsSwift)

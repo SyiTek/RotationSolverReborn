@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Ranged;
 
 [Rotation("SezuraiMCH", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned MCH with double Hypercharge burst, proper FMF timing, and reliable Queen deployment.")]
+    Description = "Balance-aligned MCH with double Hypercharge burst, proper FMF timing, reliable Queen deployment, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Ranged/SezuraiMCH.cs")]
 [ExtraRotation]
 public sealed class SezuraiMCH : MachinistRotation
@@ -23,6 +23,12 @@ public sealed class SezuraiMCH : MachinistRotation
 
     [RotationConfig(CombatType.PvE, Name = "Restrict Tactician to multiple hostile targets only")]
     public bool MultiTact { get; set; } = false;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Hold Wildfire for vulnerability window (within 30s)")]
+    public bool BmrHoldWildfireForVuln { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Dump Heat/Battery before downtime")]
+    public bool BmrDumpBeforeDowntime { get; set; } = true;
 
     #endregion
 
@@ -51,6 +57,36 @@ public sealed class SezuraiMCH : MachinistRotation
 
     #endregion
 
+    #region BMR Helpers
+
+    /// <summary>
+    /// True when BMR reports downtime within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrDowntimeWithin(float seconds)
+        => BmrActive && BmrDowntimeIn is > 0 and < float.MaxValue && BmrDowntimeIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a vulnerability window within the specified seconds.
+    /// Always false when BMR is inactive (safe fallback).
+    /// </summary>
+    private bool BmrVulnWithin(float seconds)
+        => BmrActive && BmrVulnerableIn is > 0 and < float.MaxValue && BmrVulnerableIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a raidwide within the specified seconds.
+    /// </summary>
+    private bool BmrRaidwideWithin(float seconds)
+        => BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn <= seconds;
+
+    /// <summary>
+    /// True when BMR reports a tankbuster within the specified seconds.
+    /// </summary>
+    private bool BmrTankbusterWithin(float seconds)
+        => BmrActive && BmrTankbusterIn is > 0 and < float.MaxValue && BmrTankbusterIn <= seconds;
+
+    #endregion
+
     #region Weave Helpers
 
     private static float LateWeaveWindow => WeaponTotal * 0.45f;
@@ -70,13 +106,13 @@ public sealed class SezuraiMCH : MachinistRotation
 
     #region Countdown & Opener
     // === MCH OPENER (7.4 Balance) ===
-    // Pre-pull: Reassemble(-5s) → Pot(-2s) → Air Anchor precast(-0.6s)
-    // GCD1: Air Anchor (Reassembled, highest potency tool) → Gauss Round (weave) → Ricochet (weave)
-    // GCD2: Drill → Barrel Stabilizer (weave)
-    // GCD3: Chain Saw → GCD4: Excavator (follow-up)
-    // GCD5: Full Metal Field → Wildfire (late weave)
-    // → Hypercharge → 5x Blazing Shot → Double Check + Checkmate weaves
-    // → Automaton Queen deployment after HC
+    // Pre-pull: Reassemble(-5s) -> Pot(-2s) -> Air Anchor precast(-0.6s)
+    // GCD1: Air Anchor (Reassembled, highest potency tool) -> Gauss Round (weave) -> Ricochet (weave)
+    // GCD2: Drill -> Barrel Stabilizer (weave)
+    // GCD3: Chain Saw -> GCD4: Excavator (follow-up)
+    // GCD5: Full Metal Field -> Wildfire (late weave)
+    // -> Hypercharge -> 5x Blazing Shot -> Double Check + Checkmate weaves
+    // -> Automaton Queen deployment after HC
     //
     // === EVEN BURST (120s) ===
     // Wildfire + Full Metal Field + Hypercharge (WF+FMF+HC burst)
@@ -89,7 +125,7 @@ public sealed class SezuraiMCH : MachinistRotation
     // Queen at 50+ Battery to avoid overcap
     //
     // === FILLER / SUSTAIN ===
-    // Combo: Heated Split Shot → Heated Slug Shot → Heated Clean Shot (Battery gen)
+    // Combo: Heated Split Shot -> Heated Slug Shot -> Heated Clean Shot (Battery gen)
     // Tool priority: Air Anchor > Drill > Chain Saw (use on CD, don't drift)
     // Reassemble: always pair with Air Anchor or Drill for crit+DH guarantee
     // Heat: spend at 50+ on Hypercharge, but pool for Wildfire windows
@@ -167,6 +203,18 @@ public sealed class SezuraiMCH : MachinistRotation
                 if (HyperchargePvE.CanUse(out act, skipTTKCheck: true))
                     return true;
             }
+
+            // === BMR: Dump Heat before downtime ===
+            // If downtime is imminent (<=15s) and we're not in Wildfire, spend Heat aggressively
+            // to avoid losing gauge value during the untargetable phase.
+            // Skip if we're already in pre-burst window (Wildfire coming soon and downtime is far).
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(15f)
+                && !HasWildfire && !IsOverheated && (Heat >= 50 || HasHypercharged)
+                && !IsPreBurst)
+            {
+                if (HyperchargePvE.CanUse(out act, skipTTKCheck: true))
+                    return true;
+            }
         }
 
         return base.EmergencyAbility(nextGCD, out act);
@@ -180,7 +228,9 @@ public sealed class SezuraiMCH : MachinistRotation
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
         // BMR-aware: Tactician + Dismantle when raidwide imminent (override burst-skip)
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // Tactician: 15s party 10% damage reduction, 90s CD
+        // Dismantle: 10s boss 10% damage down, 120s CD
+        bool rwSoon = BmrRaidwideWithin(5f);
 
         if (rwSoon)
         {
@@ -191,7 +241,7 @@ public sealed class SezuraiMCH : MachinistRotation
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
-        // Non-BMR: skip during burst
+        // Non-BMR fallback: skip during burst to avoid clipping
         if (IsOverheated || HasWildfire || HasFullMetalMachinist)
             return base.DefenseAreaAbility(nextGCD, out act);
 
@@ -205,6 +255,30 @@ public sealed class SezuraiMCH : MachinistRotation
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
+    }
+
+    [RotationDesc(ActionID.DismantlePvE)]
+    protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        // BMR-aware: Dismantle for tankbusters (reduces boss damage output by 10% for 10s)
+        // Only use on TBs when BMR is active to avoid wasting the 120s CD
+        // on raidwides that Tactician could cover instead.
+        bool tbSoon = BmrTankbusterWithin(5f);
+
+        if (tbSoon)
+        {
+            if (DismantlePvE.CanUse(out act))
+                return true;
+        }
+
+        // Non-BMR fallback: let framework handle (Dismantle on whatever triggers defense)
+        if (!BmrActive)
+        {
+            if (DismantlePvE.CanUse(out act))
+                return true;
+        }
+
+        return base.DefenseSingleAbility(nextGCD, out act);
     }
 
     #endregion
@@ -222,6 +296,7 @@ public sealed class SezuraiMCH : MachinistRotation
         // === REASSEMBLE ===
         // On any tool GCD. NEVER on FMF (auto crit/DH) or Blazing Shot.
         // All tools have identical potency so priority is: whatever lands in raid buffs.
+        // BMR: Don't waste Reassemble if downtime is imminent and no tool will land
         if (!HasReassembled && ReassemblePvE.Cooldown.CurrentCharges > 0)
         {
             bool isToolNext = nextGCD.IsTheSameTo(true, ChainSawPvE, ExcavatorPvE)
@@ -238,14 +313,27 @@ public sealed class SezuraiMCH : MachinistRotation
 
         // === BARREL STABILIZER (120s, grants Hypercharged + FMM) ===
         // Always on CD. Base ActionCheck: InCombat && !HasFullMetalMachinist.
-        if (BarrelStabilizerPvE.CanUse(out act))
-            return true;
+        // BMR: Don't use if downtime is very soon (< 5s) and we'd waste the buff
+        {
+            bool bmrBlockBarrel = BmrDumpBeforeDowntime && BmrDowntimeWithin(5f);
+            if (!bmrBlockBarrel && BarrelStabilizerPvE.CanUse(out act))
+                return true;
+        }
 
         // === WILDFIRE ===
         // BMR-aware: Don't start Wildfire if downtime < 10s (WF needs 10s to detonate for full damage)
+        // BMR-aware: Hold for vulnerability window if within 30s (BmrHoldWildfireForVuln config)
         {
-            bool bmrBlockWildfire = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
-            if (CanBurst && !bmrBlockWildfire && TryUseWildfire(nextGCD, out act))
+            bool bmrBlockWildfire = BmrDowntimeWithin(10f);
+
+            // Hold Wildfire for upcoming vulnerability window — but only if WF is ready
+            // and the vuln window is within 30s (don't hold forever)
+            bool bmrHoldForVuln = BmrHoldWildfireForVuln
+                && BmrVulnWithin(30f)
+                && BmrVulnerableIn > 3f  // Don't hold if vuln is already happening (< 3s)
+                && WildfirePvE.Cooldown.HasOneCharge;
+
+            if (CanBurst && !bmrBlockWildfire && !bmrHoldForVuln && TryUseWildfire(nextGCD, out act))
                 return true;
         }
 
@@ -272,8 +360,16 @@ public sealed class SezuraiMCH : MachinistRotation
             // Hold HC for 15s before Wildfire (need Heat >= 50 for burst), but spend at 100 to prevent overcap
             bool holdForBurst = IsPreBurst && Heat < 100;
 
+            // BMR: Override hold if downtime is imminent — dump Heat rather than lose it
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(15f) && Heat >= 50)
+                holdForBurst = false;
+
             // Don't enter HC if combo would expire during the 7.5s window
             bool comboSafe = LiveComboTime <= 0f || LiveComboTime > 9f;
+
+            // BMR: Relax combo safety if downtime is very imminent (combo resets on downtime anyway)
+            if (BmrDumpBeforeDowntime && BmrDowntimeWithin(8f))
+                comboSafe = true;
 
             // Don't HC in AoE without Auto Crossbow
             bool aoeBlock = !AutoCrossbowPvE.EnoughLevel && SpreadShotPvE.CanUse(out _);
@@ -284,6 +380,10 @@ public sealed class SezuraiMCH : MachinistRotation
 
         // === DOUBLE CHECK / CHECKMATE charge spending ===
         bool spendCharges = InBurstWindow || IsOverheated;
+
+        // BMR: Spend charges more aggressively before downtime
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(10f))
+            spendCharges = true;
 
         // Don't weave charges right before FMF (need oGCD slot for WF)
         if (!HasFullMetalMachinist || !nextGCD.IsTheSameTo(false, FullMetalFieldPvE))
@@ -334,7 +434,10 @@ public sealed class SezuraiMCH : MachinistRotation
             return base.GeneralGCD(out act);
 
         // === COMBO PROTECTION: finish combo before it expires ===
-        if (!IsOverheated)
+        // BMR: Skip combo protection if downtime is very imminent (< 3s) — combo resets anyway
+        bool comboProtect = !BmrDowntimeWithin(3f);
+
+        if (!IsOverheated && comboProtect)
         {
             if (IsLastComboAction(true, SlugShotPvE)
                 && LiveComboTime > 0f && LiveComboTime <= GCDTime(2))
@@ -353,6 +456,27 @@ public sealed class SezuraiMCH : MachinistRotation
                 if (!HeatedSlugShotPvE.EnoughLevel && SlugShotPvE.CanUse(out act))
                     return true;
             }
+        }
+
+        // === BMR: Prioritize big hits before downtime ===
+        // When downtime is imminent (< 8s), use tools (high potency) over filler combo.
+        // This ensures we get maximum value from remaining GCDs before boss goes untargetable.
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(8f) && !IsOverheated)
+        {
+            // Tools are highest potency single GCDs — fire them before downtime
+            if (HotShotMasteryTrait.EnoughLevel && AirAnchorPvE.CanUse(out act))
+                return true;
+            if (!HotShotMasteryTrait.EnoughLevel && HotShotPvE.CanUse(out act))
+                return true;
+            if (DrillPvE.CanUse(out act, usedUp: true))
+                return true;
+            if (ChainSawPvE.CanUse(out act))
+                return true;
+            if (ExcavatorPvE.CanUse(out act))
+                return true;
+            // FMF is auto crit/DH ~900 potency — use it even without ideal alignment before downtime
+            if (HasFullMetalMachinist && FullMetalFieldPvE.CanUse(out act))
+                return true;
         }
 
         // === BIOBLASTER (AoE Drill, shares charges with Drill) ===
@@ -442,7 +566,8 @@ public sealed class SezuraiMCH : MachinistRotation
     /// <summary>
     /// 8-second tool rule: returns true (with HC action) if no tool comes off CD within 8 seconds.
     /// A full Hypercharge window (5x Blazing Shot at 1.5s each) takes 7.5s. If a tool comes
-    /// off cooldown during HC, it drifts — the #1 DPS loss for MCH.
+    /// off cooldown during HC, it drifts -- the #1 DPS loss for MCH.
+    /// BMR override: if downtime < 8s, skip the tool check (tools won't matter during downtime).
     /// </summary>
     private bool ToolChargeSoon(out IAction? act)
     {
@@ -450,7 +575,11 @@ public sealed class SezuraiMCH : MachinistRotation
 
         bool isAoE = SpreadShotPvE.CanUse(out _);
 
-        if (!isAoE)
+        // BMR: If downtime is within the HC window, tools won't come off CD in time to matter.
+        // Just dump the Heat — we'd lose it otherwise.
+        bool bmrBypassToolCheck = BmrDumpBeforeDowntime && BmrDowntimeWithin(REST_TIME);
+
+        if (!isAoE && !bmrBypassToolCheck)
         {
             if ((AirAnchorPvE.EnoughLevel && AirAnchorPvE.Cooldown.WillHaveOneCharge(REST_TIME))
                 || (!AirAnchorPvE.EnoughLevel && HotShotPvE.EnoughLevel
@@ -471,6 +600,7 @@ public sealed class SezuraiMCH : MachinistRotation
     /// Wildfire timing. Level 100+: late-weave WF when next GCD is FMF.
     /// This creates the burst sequence: WF (oGCD) -> FMF (GCD) -> HC -> 5x Blazing -> HC -> 5x Blazing.
     /// Pre-100: late-weave WF when HC is ready and tools are clear.
+    /// BMR: Hold Wildfire for upcoming vulnerability window (within 30s) if configured.
     /// </summary>
     private bool TryUseWildfire(IAction nextGCD, out IAction? act)
     {
@@ -516,12 +646,20 @@ public sealed class SezuraiMCH : MachinistRotation
     /// Queen deployment based on battery thresholds and burst alignment.
     /// Queen mirrors raid buffs in real time, so align with party buffs when possible.
     /// Balance guide: opener at 60, even-minutes at 100, odd-minutes at 50-90.
+    /// BMR: Deploy before downtime to avoid losing Battery gauge value.
     /// </summary>
     private bool TryUseQueen(out IAction? act, IAction nextGCD)
     {
         act = null;
         if (!InCombat || IsRobotActive)
             return false;
+
+        // === BMR: Deploy Queen before downtime (Battery dump) ===
+        // Queen takes ~15s to fully resolve (auto-attacks + Pile Bunker/Crowned Collider finisher).
+        // Deploy at 50+ Battery when downtime is within 10s to get value before boss is untargetable.
+        // The Queen will continue attacking until its timer expires even during some transitions.
+        if (BmrDumpBeforeDowntime && BmrDowntimeWithin(10f) && Battery >= 50)
+            return SummonQueen(out act);
 
         // Opener: deploy at 60 after Excavator
         if (Battery >= 50 && CombatTime < 20 && IsLastGCD(false, ExcavatorPvE))
@@ -604,12 +742,27 @@ public sealed class SezuraiMCH : MachinistRotation
         ImGui.Text($"LiveCombo: {(LiveComboTime > 0 ? $"{LiveComboTime:F1}s" : "None")}");
         ImGui.Text("--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 

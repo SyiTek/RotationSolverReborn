@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
 [Rotation("SezuraiNIN", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned NIN with 60s burst around Kunai's Bane, mudra optimization, and Kazematoi management.")]
+    Description = "Balance-aligned NIN with 60s burst around Kunai's Bane, mudra optimization, Kazematoi management, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiNIN.cs")]
 [ExtraRotation]
 public sealed class SezuraiNIN : NinjaRotation
@@ -23,6 +23,12 @@ public sealed class SezuraiNIN : NinjaRotation
 
     [RotationConfig(CombatType.PvE, Name = "Auto remove Hidden status when combat starts")]
     public bool AutoUnhide { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Hold burst for vulnerability windows (within 30s)")]
+    public bool BmrHoldBurstForVuln { get; set; } = true;
+
+    [RotationConfig(CombatType.PvE, Name = "BMR: Dump resources before downtime")]
+    public bool BmrDumpBeforeDowntime { get; set; } = true;
 
     #endregion
 
@@ -72,6 +78,59 @@ public sealed class SezuraiNIN : NinjaRotation
     private bool InDokumoriWindow => DokumoriPvE.EnoughLevel
         && DokumoriPvE.Cooldown.IsCoolingDown
         && !DokumoriPvE.Cooldown.ElapsedAfter(21);
+
+    #endregion
+
+    #region BMR Helpers
+
+    /// <summary>
+    /// BMR signals downtime within 20s — we should dump burst cooldowns now.
+    /// Falls back to false when BMR is not active.
+    /// </summary>
+    private bool BmrDowntimeSoon => BmrDumpBeforeDowntime && BmrActive && BmrDowntimeIn is > 0 and <= 20f;
+
+    /// <summary>
+    /// BMR signals downtime within 10s — dump remaining resources immediately.
+    /// </summary>
+    private bool BmrDowntimeImminent => BmrDumpBeforeDowntime && BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+
+    /// <summary>
+    /// BMR signals a vulnerability window within 30s — hold Kunai's Bane for it.
+    /// Only applies if burst is not already active and the option is enabled.
+    /// </summary>
+    private bool BmrShouldHoldBurstForVuln => BmrHoldBurstForVuln && BmrActive
+        && BmrVulnerableIn is > 0 and <= 30f
+        && !InActiveBurst;
+
+    /// <summary>
+    /// BMR signals downtime within 15s and Kunai's Bane CD is 60s,
+    /// so using it now would waste it (boss leaves before window ends
+    /// and it won't be back for the return). Don't pop burst.
+    /// </summary>
+    private bool BmrShouldSkipBurst => BmrDumpBeforeDowntime && BmrActive
+        && BmrDowntimeIn is > 0 and <= 15f
+        && !InActiveBurst
+        && KunaisBanePvE.Cooldown.HasOneCharge;
+
+    /// <summary>
+    /// True when BMR says downtime is within 5s — don't start TCJ (takes ~5s to execute).
+    /// </summary>
+    private bool BmrBlockTCJ => BmrActive && BmrDowntimeIn is > 0 and <= 5f;
+
+    /// <summary>
+    /// True when BMR says downtime is within 3s — don't start new ninjutsu (takes ~3s).
+    /// </summary>
+    private bool BmrBlockNinjutsu => BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+
+    /// <summary>
+    /// Raidwide is coming within 5s — for defensive timing.
+    /// </summary>
+    private bool BmrRaidwideSoon => BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+
+    /// <summary>
+    /// Raidwide is coming within 3s — tighter timing for Shade Shift.
+    /// </summary>
+    private bool BmrRaidwideImminent => BmrActive && BmrRaidwideIn is > 0 and <= 3f;
 
     #endregion
 
@@ -166,6 +225,11 @@ public sealed class SezuraiNIN : NinjaRotation
     /// </summary>
     private void ChoiceNinjutsu()
     {
+        // BMR: Don't start new ninjutsu if downtime is imminent (< 3s) — waste of mudra charge.
+        // Exception: Kassatsu ninjutsu should still be used (it's free and high-damage).
+        if (BmrBlockNinjutsu && !HasKassatsu)
+            return;
+
         // If Kassatsu is active, prioritize empowered ninjutsu
         if (HasKassatsu)
         {
@@ -200,7 +264,10 @@ public sealed class SezuraiNIN : NinjaRotation
         }
 
         // Normal mudra usage (no Kassatsu)
+        // BMR: If downtime is soon, use mudra charges aggressively to avoid overcapping during downtime.
+        bool bmrDumpMudra = BmrDowntimeSoon && !BmrBlockNinjutsu;
         bool shouldUseMudra = TenPvE.CanUse(out _, usedUp: ShadowWalkerNeeded || InTrickAttack
+            || bmrDumpMudra
             || TenPvE.Cooldown.WillHaveXChargesGCD(2, 2, 0));
 
         if (!shouldUseMudra || _ninActionAim != null)
@@ -549,14 +616,34 @@ public sealed class SezuraiNIN : NinjaRotation
         ImGui.Text($"CanLateWeave: {CanLateWeave} | EnoughWeaveTime: {EnoughWeaveTime}");
         ImGui.Text($"KunaiCD: {(KunaisBanePvE.Cooldown.IsCoolingDown ? $"{KunaisBanePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"DokumoriCD: {(DokumoriPvE.Cooldown.IsCoolingDown ? $"{DokumoriPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
-        ImGui.Text("--- BMR Timeline ---");
+        ImGui.Text("--- BMR Decisions ---");
+        ImGui.Text($"BmrDowntimeSoon: {BmrDowntimeSoon} | BmrDowntimeImminent: {BmrDowntimeImminent}");
+        ImGui.Text($"BmrHoldBurstForVuln: {BmrShouldHoldBurstForVuln} | BmrSkipBurst: {BmrShouldSkipBurst}");
+        ImGui.Text($"BmrBlockTCJ: {BmrBlockTCJ} | BmrBlockNinjutsu: {BmrBlockNinjutsu}");
+        ImGui.Text($"BmrRaidwideSoon: {BmrRaidwideSoon} | BmrRaidwideImminent: {BmrRaidwideImminent}");
+        ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -625,32 +712,47 @@ public sealed class SezuraiNIN : NinjaRotation
         }
 
         // 7. Dokumori (120s CD, every other burst, apply debuff + Higi)
-        if (!CombatElapsedLess(5) && CanBurst)
+        // BMR: Skip Dokumori if we're holding burst for vuln, or if downtime will waste the window.
+        // BMR: Force Dokumori if downtime is soon and we should dump (window will still get some value).
         {
-            if (!DokumoriPvE.EnoughLevel)
+            bool bmrBlockDokumori = BmrShouldHoldBurstForVuln || BmrShouldSkipBurst;
+            bool bmrForceDokumori = BmrDowntimeSoon && !BmrShouldSkipBurst;
+
+            if (!CombatElapsedLess(5) && (CanBurst || bmrForceDokumori) && !bmrBlockDokumori)
             {
-                if (MugPvE.CanUse(out act))
-                    return true;
-            }
-            else
-            {
-                if (DokumoriPvE.CanUse(out act))
-                    return true;
+                if (!DokumoriPvE.EnoughLevel)
+                {
+                    if (MugPvE.CanUse(out act))
+                        return true;
+                }
+                else
+                {
+                    if (DokumoriPvE.CanUse(out act))
+                        return true;
+                }
             }
         }
 
         // 8. Kunai's Bane / Trick Attack (main burst window opener)
-        if (!CombatElapsedLess(6) && CanBurst)
+        // BMR: Hold if vuln window is coming soon (use burst there for more value).
+        // BMR: Skip if downtime will cut the burst window short and it won't be worth it.
+        // BMR: Force if downtime is imminent and we should dump before boss leaves.
         {
-            if (!KunaisBanePvE.EnoughLevel)
+            bool bmrBlockBurst = BmrShouldHoldBurstForVuln || BmrShouldSkipBurst;
+            bool bmrForceBurst = BmrDowntimeSoon && !BmrShouldSkipBurst;
+
+            if (!CombatElapsedLess(6) && (CanBurst || bmrForceBurst) && !bmrBlockBurst)
             {
-                if (TrickAttackPvE.CanUse(out act, skipStatusProvideCheck: IsShadowWalking))
-                    return true;
-            }
-            else
-            {
-                if (KunaisBanePvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: IsShadowWalking))
-                    return true;
+                if (!KunaisBanePvE.EnoughLevel)
+                {
+                    if (TrickAttackPvE.CanUse(out act, skipStatusProvideCheck: IsShadowWalking))
+                        return true;
+                }
+                else
+                {
+                    if (KunaisBanePvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: IsShadowWalking))
+                        return true;
+                }
             }
         }
 
@@ -692,10 +794,9 @@ public sealed class SezuraiNIN : NinjaRotation
             return base.AttackAbility(nextGCD, out act);
 
         // 1. Ten Chi Jin (use in burst, when not Shadow Walking to avoid consuming it)
-        // BMR-aware: Don't start TCJ if downtime < 5s (TCJ takes ~5s to execute)
+        // BMR: Don't start TCJ if downtime < 5s (TCJ takes ~5s to execute and you can't move during it).
         {
-            bool bmrBlockTCJ = BmrActive && BmrDowntimeIn is > 0 and <= 5f;
-            if (!bmrBlockTCJ && InTrickAttack && !IsShadowWalking
+            if (!BmrBlockTCJ && InTrickAttack && !IsShadowWalking
                 && !TenPvE.Cooldown.ElapsedAfter(30)
                 && TenChiJinPvE.CanUse(out act))
             {
@@ -704,24 +805,35 @@ public sealed class SezuraiNIN : NinjaRotation
         }
 
         // 2. Bunshin (spend 50 Ninki, grants Phantom Kamaitachi)
-        if (!CombatElapsedLess(5) && BunshinPvE.CanUse(out act))
-            return true;
+        // BMR: Force Bunshin before downtime to avoid wasting Ninki and ensure PK is ready post-downtime.
+        {
+            bool bmrForceBunshin = BmrDowntimeSoon && Ninki >= 50;
+            if ((!CombatElapsedLess(5) || bmrForceBunshin) && BunshinPvE.CanUse(out act))
+                return true;
+        }
 
         // 3. Dream Within A Dream (use during burst)
-        if (InTrickAttack)
+        // BMR: Also force DWAD before downtime to avoid wasting the charge.
         {
-            if (DreamWithinADreamPvE.CanUse(out act))
-                return true;
+            bool bmrForceDWAD = BmrDowntimeImminent;
+            if (InTrickAttack || bmrForceDWAD)
+            {
+                if (DreamWithinADreamPvE.CanUse(out act))
+                    return true;
 
-            if (!DreamWithinADreamPvE.Info.EnoughLevelAndQuest() && AssassinatePvE.CanUse(out act))
-                return true;
+                if (!DreamWithinADreamPvE.Info.EnoughLevelAndQuest() && AssassinatePvE.CanUse(out act))
+                    return true;
+            }
         }
 
         // 4. Ninki spenders
         // Priority: Zesho Meppo (Higi-enhanced) > Deathfrog Medium (AoE enhanced) > Bhavacakra > Hellfrog Medium
         // Spend during burst or when about to overcap, but save 50 for Bunshin if needed
-        bool shouldSpendNinki = (!InMug || InTrickAttack)
-            && (!BunshinPvE.Cooldown.WillHaveOneCharge(10) || HasPhantomKamaitachi || Ninki >= 85);
+        // BMR: Dump all Ninki before downtime regardless of burst state.
+        bool bmrDumpNinki = BmrDowntimeSoon && Ninki >= 50;
+        bool shouldSpendNinki = bmrDumpNinki
+            || ((!InMug || InTrickAttack)
+                && (!BunshinPvE.Cooldown.WillHaveOneCharge(10) || HasPhantomKamaitachi || Ninki >= 85));
 
         if (shouldSpendNinki || Ninki >= 85)
         {
@@ -751,6 +863,11 @@ public sealed class SezuraiNIN : NinjaRotation
                 return true;
         }
 
+        // 5b. Kassatsu dump before downtime: if downtime imminent and Kassatsu available, pop it
+        // so the next ninjutsu will be empowered (Hyosho/Goka) before boss leaves.
+        if (BmrDowntimeImminent && NoNinjutsu && KassatsuPvE.CanUse(out act))
+            return true;
+
         // 6. Movement
         if (MergedStatus.HasFlag(AutoStatus.MoveForward) && MoveForwardAbility(nextGCD, out act))
             return true;
@@ -768,10 +885,19 @@ public sealed class SezuraiNIN : NinjaRotation
     [RotationDesc(ActionID.ShadeShiftPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: Shade Shift before raidwide for self-shield
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // BMR-aware: Shade Shift as self-shield before raidwide.
+        // Tight timing (3s) — Shade Shift is instant and the shield lasts 20s,
+        // but we want to avoid wasting it too early when BMR data is available.
+        if (BmrRaidwideImminent && ShadeShiftPvE.CanUse(out act))
+            return true;
 
-        if ((rwSoon || !BmrActive) && ShadeShiftPvE.CanUse(out act))
+        // BMR-aware: Bloodbath before incoming damage for self-sustain.
+        // Broader window (5s) since Bloodbath heals over time as we hit.
+        if (BmrRaidwideSoon && !IsExecutingMudra && BloodbathPvE.CanUse(out act))
+            return true;
+
+        // Fallback when BMR is not active — use Shade Shift whenever framework requests defense.
+        if (!BmrActive && ShadeShiftPvE.CanUse(out act))
             return true;
 
         return base.DefenseSingleAbility(nextGCD, out act);
@@ -817,7 +943,8 @@ public sealed class SezuraiNIN : NinjaRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
-        // 1. Phantom Kamaitachi: use during burst for alignment, or if buff is about to expire
+        // 1. Phantom Kamaitachi: use during burst for alignment, or if buff is about to expire.
+        // BMR: Also use before downtime so the proc is not wasted.
         if (!IsExecutingMudra && NoNinjutsu && !HasRaijuReady
             && !HasTenChiJin
             && PhantomKamaitachiPvE.CanUse(out act))
@@ -826,6 +953,7 @@ public sealed class SezuraiNIN : NinjaRotation
         }
 
         // 2. Raiju: spend stacks (does not break mudra, but skip during mudra execution)
+        // BMR: Dump Raiju stacks before downtime to avoid losing the proc.
         if (!IsExecutingMudra)
         {
             if (!UseForkedRaiju && FleetingRaijuPvE.CanUse(out act))
@@ -837,7 +965,7 @@ public sealed class SezuraiNIN : NinjaRotation
                 return true;
         }
 
-        // 3. Ten Chi Jin execution (must complete the sequence)
+        // 3. Ten Chi Jin execution (must complete the sequence — never interrupt mid-TCJ)
         if (DoTenChiJin(out act))
             return true;
 
@@ -846,6 +974,8 @@ public sealed class SezuraiNIN : NinjaRotation
             return true;
 
         // 5. Ninjutsu execution (mudra state machine)
+        // BMR: If we already started a mudra sequence, always finish it.
+        // BMR: If downtime is within 3s and we haven't started, ChoiceNinjutsu already blocked it.
         if (_ninActionAim != null)
         {
             if (DoGokaMekkyaku(out act)) return true;

@@ -331,12 +331,27 @@ public sealed class SezuraiMNK : MonkRotation
         // BMR Timeline section (outside table for simplicity)
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -462,6 +477,23 @@ public sealed class SezuraiMNK : MonkRotation
     #region oGCD Logic
     protected override bool EmergencyAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: If downtime is imminent (< 20s), dump burst CDs NOW so they're on cooldown
+        // and come back faster for post-downtime. Brotherhood + RoF dumped before downtime
+        // means they'll be closer to ready when the boss returns.
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 20f && EnoughWeaveTime)
+        {
+            // Only dump Brotherhood if it WON'T be back for post-downtime anyway
+            // Brotherhood is 120s CD — if downtime is short, it's better to dump it
+            if (BmrDowntimeIn is > 5f and <= 20f && BrotherhoodPvE.Cooldown.HasOneCharge
+                && CanBurst && BrotherhoodPvE.CanUse(out act))
+                return true;
+
+            // Dump RoF before downtime so it starts ticking down during downtime
+            if (BmrDowntimeIn is > 5f and <= 15f && RiddleOfFirePvE.Cooldown.HasOneCharge
+                && RiddleOfFirePvE.CanUse(out act))
+                return true;
+        }
+
         return TryUseBuffs(out act)
                || TryUsePerfectBalance(out act)
                || base.EmergencyAbility(nextGCD, out act);
@@ -479,7 +511,9 @@ public sealed class SezuraiMNK : MonkRotation
         act = null;
         if (!EnoughWeaveTime) return false;
 
-        // BMR-aware: Feint proactively when raidwide imminent
+        // BMR-aware: Feint proactively when raidwide imminent (10% phys/5% magic mit on boss)
+        // Per Balance: spread mits across raidwides, don't dump everything on one hit
+        // Feint goes out 1-5s before raidwide so the debuff covers the damage snapshot
         bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
 
         if ((rwSoon || !BmrActive) && FeintPvE.CanUse(out act))
@@ -494,14 +528,27 @@ public sealed class SezuraiMNK : MonkRotation
         act = null;
         if (!EnoughWeaveTime) return false;
 
-        // Earth's Reply (follow-up to Riddle of Earth)
+        // Earth's Reply (follow-up to Riddle of Earth — 500 potency AoE heal)
+        // Per Balance: use Earth's Reply after taking raidwide damage for party healing
         if (EarthsReplyPvE.CanUse(out act))
             return true;
 
         // BMR-aware: Mantra proactively before raidwide (10% heal potency buff for healers)
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // Use at ~8s before raidwide so healers benefit from the buff for post-hit healing
+        // Don't stack with Feint on same raidwide — Mantra covers a DIFFERENT raidwide if possible
+        // When Feint just went out (< 10s ago), prefer holding Mantra for the next raidwide
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+        bool feintJustUsed = BmrActive && FeintPvE.Cooldown.IsCoolingDown
+                             && FeintPvE.Cooldown.RecastTimeElapsedRaw < 10f;
 
-        if ((rwSoon || !BmrActive) && MantraPvE.CanUse(out act))
+        // With BMR: use Mantra when raidwide is coming but Feint wasn't just used on this same raidwide
+        // Without BMR: use whenever framework says to heal
+        if (BmrActive && rwSoon && !feintJustUsed && MantraPvE.CanUse(out act))
+            return true;
+        if (BmrActive && rwSoon && feintJustUsed && BmrRaidwideIn <= 3f && MantraPvE.CanUse(out act))
+            return true; // If raidwide is very close and we already feinted, Mantra is still better than nothing
+
+        if (!BmrActive && MantraPvE.CanUse(out act))
             return true;
 
         return base.HealAreaAbility(nextGCD, out act);
@@ -513,17 +560,52 @@ public sealed class SezuraiMNK : MonkRotation
         act = null;
         if (!EnoughWeaveTime) return false;
 
-        // BMR-aware: Riddle of Earth before raidwide for self-mit
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // BMR-aware: Riddle of Earth before raidwide or tankbuster for self 20% mit + Earth's Rumination
+        // Per Balance: RoE grants 20% mit for 15s and enables Earth's Reply (500 potency AoE cure)
+        // Use 1-3s before damage to cover the snapshot window
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 3f;
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool dmgSoon = BmrActive && BmrDamageIn is > 0 and <= 3f;
 
-        if ((rwSoon || !BmrActive) && RiddleOfEarthPvE.CanUse(out act, usedUp: true))
+        if ((rwSoon || tbSoon || dmgSoon || !BmrActive) && RiddleOfEarthPvE.CanUse(out act, usedUp: true))
             return true;
 
         return base.DefenseSingleAbility(nextGCD, out act);
     }
 
+    [RotationDesc(ActionID.SecondWindPvE, ActionID.BloodbathPvE)]
+    protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        act = null;
+        if (!EnoughWeaveTime) return false;
+
+        // BMR-aware: Second Wind / Bloodbath for self-sustain before incoming damage
+        // Bloodbath before raidwide: upcoming GCD hits will heal us through the damage
+        // Second Wind: flat 500 potency self-heal, use when HP is low or damage imminent
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 3f;
+        bool dmgSoon = BmrActive && BmrDamageIn is > 0 and <= 3f;
+
+        // Bloodbath first (GCD-based sustain is better when we're hitting things)
+        if ((rwSoon || dmgSoon) && BloodbathPvE.CanUse(out act))
+            return true;
+
+        if (SecondWindPvE.CanUse(out act))
+            return true;
+        if (BloodbathPvE.CanUse(out act))
+            return true;
+
+        return base.HealSingleAbility(nextGCD, out act);
+    }
+
     protected override bool AttackAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: dump Forbidden Chakra before downtime (don't waste 5 stacks going into untargetable)
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 5f && Chakra >= 5 && EnoughWeaveTime)
+        {
+            if (EnlightenmentPvE.CanUse(out act)) return true;
+            if (TheForbiddenChakraPvE.CanUse(out act)) return true;
+        }
+
         return TryUseRiddleOfWind(out act)
                || TryUseForbiddenChakra(out act)
                || base.AttackAbility(nextGCD, out act);
@@ -534,6 +616,21 @@ public sealed class SezuraiMNK : MonkRotation
     protected override bool GeneralGCD(out IAction? act)
     {
         RotationUpdater();
+
+        // BMR-aware: If downtime is imminent, prioritize finishing blitz and spending resources
+        // Per Balance advanced guide: "Downtime Blitz" — complete PB sequence, hold blitz for post-downtime
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 3f)
+        {
+            // If we have a blitz ready, fire it NOW before boss goes away
+            if (HasBlitzReady && TryUseMasterfulBlitz(out act)) return true;
+
+            // Use Fire's/Wind's Reply as instant GCDs rather than starting new combos
+            if (TryUseFiresReply(out act)) return true;
+            if (TryUseWindsReply(out act)) return true;
+
+            // Six-Sided Star is a 5s GCD — perfect for covering short downtime gaps
+            if (SixsidedStarPvE.CanUse(out act)) return true;
+        }
 
         // After blitz/Fire's Reply, prefer Opo (gets Formless Fist) but DON'T hard-gate
         // If TryUseOpoOpo fails for any reason, fall through to other options to avoid stalling
@@ -895,6 +992,11 @@ public sealed class SezuraiMNK : MonkRotation
         act = null;
         if (HasPerfectBalance) return false;
 
+        // BMR-aware: Don't start Perfect Balance if downtime < 8s (need time for 3 GCDs + Blitz)
+        // Per Balance advanced guide: PB window is 20s, but the 3 GCDs + blitz take ~8s minimum
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 8f)
+            return false;
+
         // Opener: use PB when both buffs are ready
         if (CombatElapsedLessGCD(1))
         {
@@ -942,6 +1044,17 @@ public sealed class SezuraiMNK : MonkRotation
         act = null;
         if (!CanBurst || !CanEarlyWeave || !RiddleOfFirePvE.Cooldown.WillHaveOneCharge(0.5f)) return false;
 
+        // BMR-aware: Don't pop Brotherhood if downtime is imminent and it won't be useful
+        // Brotherhood is 120s CD — if downtime < 15s, the buff window is wasted
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 15f)
+            return false;
+
+        // BMR-aware: Hold burst for vulnerability window if one is coming within 30s
+        // Only hold if Brotherhood isn't about to overcap (i.e., it hasn't been sitting ready too long)
+        if (BmrActive && BmrVulnerableIn is > 0 and <= 30f
+            && BrotherhoodPvE.Cooldown.RecastTimeElapsedRaw < 5f)
+            return false;
+
         var timeRequirement = ChosenVariation switch
         {
             OpenerVariation.DragonKick5 => PerfectBalanceStacks(1) && CombatElapsedLessGCD(10),
@@ -964,14 +1077,22 @@ public sealed class SezuraiMNK : MonkRotation
         act = null;
         if (!RiddleOfFirePvE.IsEnabled || CanEarlyWeave || !CanLateWeave) return false;
 
+        // BMR-aware: Don't pop RoF if downtime is very imminent (buff would be wasted)
+        // RoF is 60s CD so holding briefly for post-downtime is acceptable
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 10f)
+            return false;
+
+        // BMR-aware: Hold RoF briefly for vulnerability window if one is coming soon
+        if (BmrActive && BmrVulnerableIn is > 0 and <= 15f
+            && RiddleOfFirePvE.Cooldown.RecastTimeElapsedRaw < 3f)
+            return false;
+
         if (RiddleOfFirePvE.CanUse(out act))
         {
             if (IsLastAbility(ActionID.BrotherhoodPvE) || HasBrotherhood)
             {
                 return true;
             }
-
-
 
             if (LunarOddWindow)
             {
@@ -1036,6 +1157,13 @@ public sealed class SezuraiMNK : MonkRotation
 
         // AoE Check
         if (EnlightenmentPvE.CanUse(out act)) return true;
+
+        // BMR-aware: Dump chakra before downtime (don't waste 5 stacks going into untargetable)
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 10f && Chakra >= 5)
+        {
+            return TheForbiddenChakraPvE.CanUse(out act)
+                   || (!TheForbiddenChakraPvE.EnoughLevel && SteelPeakPvE.CanUse(out act));
+        }
 
         // During Brotherhood, always spend at 5 - party generates more chakra and overcap wastes 80 potency each
         if (HasBrotherhood && Chakra >= 5)

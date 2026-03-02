@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Ranged;
 
 [Rotation("SezuraiDNC", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned DNC with Technical Step burst, Esprit management, and proc optimization.")]
+    Description = "Balance-aligned DNC with BMR timeline integration, Technical Step burst, Esprit management, and proc optimization.")]
 [SourceCode(Path = "main/ExtraRotations/Ranged/SezuraiDNC.cs")]
 [ExtraRotation]
 public sealed class SezuraiDNC : DancerRotation
@@ -28,6 +28,9 @@ public sealed class SezuraiDNC : DancerRotation
     [Range(3, 4, ConfigUnitType.None, 1)]
     [RotationConfig(CombatType.PvE, Name = "Feather stacks to pool before spending (3 or 4)")]
     public int FeatherThreshold { get; set; } = 3;
+
+    [RotationConfig(CombatType.PvE, Name = "Use BMR downtime/vuln-aware burst optimization")]
+    public bool UseBmrBurstOptimization { get; set; } = true;
 
     #endregion
 
@@ -75,6 +78,42 @@ public sealed class SezuraiDNC : DancerRotation
 
     #endregion
 
+    #region BMR Helpers
+
+    /// <summary>
+    /// BMR is active and usable for timeline decisions.
+    /// </summary>
+    private bool BmrUsable => BmrActive && UseBmrBurstOptimization;
+
+    /// <summary>
+    /// Downtime is imminent within N seconds (boss going untargetable).
+    /// Returns false if BMR is not active.
+    /// </summary>
+    private bool DowntimeWithin(float seconds) =>
+        BmrUsable && BmrDowntimeIn is > 0 and < float.MaxValue && BmrDowntimeIn <= seconds;
+
+    /// <summary>
+    /// Vulnerability window is coming within N seconds.
+    /// Returns false if BMR is not active.
+    /// </summary>
+    private bool VulnerableWithin(float seconds) =>
+        BmrUsable && BmrVulnerableIn is > 0 and < float.MaxValue && BmrVulnerableIn <= seconds;
+
+    /// <summary>
+    /// Raidwide damage is imminent within N seconds.
+    /// Returns false if BMR is not active.
+    /// </summary>
+    private bool RaidwideWithin(float seconds) =>
+        BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn <= seconds;
+
+    /// <summary>
+    /// Generic damage (any type) is imminent within N seconds.
+    /// </summary>
+    private bool DamageWithin(float seconds) =>
+        BmrActive && BmrDamageIn is > 0 and < float.MaxValue && BmrDamageIn <= seconds;
+
+    #endregion
+
     #region UpdateInfo
 
     protected override void UpdateInfo()
@@ -118,14 +157,30 @@ public sealed class SezuraiDNC : DancerRotation
         ImGui.Text($"StdStep: {(StandardStepPvE.Cooldown.IsCoolingDown ? $"{StandardStepPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Devilment: {(DevilmentPvE.Cooldown.IsCoolingDown ? $"{DevilmentPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Flourish: {(FlourishPvE.Cooldown.IsCoolingDown ? $"{FlourishPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"ShieldSamba: {(ShieldSambaPvE.Cooldown.IsCoolingDown ? $"{ShieldSambaPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text("--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -133,18 +188,18 @@ public sealed class SezuraiDNC : DancerRotation
 
     #region Countdown & Opener
     // === DNC OPENER (7.4 Balance) ===
-    // Pre-pull: Closed Position → Standard Step(-15.5s) → dance steps → Pot(-1.5s) → Standard Finish(-0.5s)
-    // GCD1: Technical Step → dance steps → Technical Finish
-    // → Devilment (weave) → Tillana → Flourish (weave)
-    // → Dance of the Dawn → Fan Dance IV (weave)
-    // → Last Dance → Fan Dance III (weave) → Starfall Dance
-    // → Finishing Move → Saber Dance (Esprit dump) → proc GCDs under buffs
+    // Pre-pull: Closed Position -> Standard Step(-15.5s) -> dance steps -> Pot(-1.5s) -> Standard Finish(-0.5s)
+    // GCD1: Technical Step -> dance steps -> Technical Finish
+    // -> Devilment (weave) -> Tillana -> Flourish (weave)
+    // -> Dance of the Dawn -> Fan Dance IV (weave)
+    // -> Last Dance -> Fan Dance III (weave) -> Starfall Dance
+    // -> Finishing Move -> Saber Dance (Esprit dump) -> proc GCDs under buffs
     //
     // === BURST WINDOWS (120s cycle) ===
     // Technical Finish (5% party buff) + Devilment (personal crit/DH)
-    // Tillana → DotD → Last Dance → Starfall → Finishing Move → Saber spam
-    // Flourish → Fan Dance IV + Fan Dance III + feather dump under full buffs
-    // All major CDs are 120s — every burst window is identical
+    // Tillana -> DotD -> Last Dance -> Starfall -> Finishing Move -> Saber spam
+    // Flourish -> Fan Dance IV + Fan Dance III + feather dump under full buffs
+    // All major CDs are 120s -- every burst window is identical
     //
     // === FILLER / SUSTAIN ===
     // Standard Step: refresh on CD (60s), provides Standard Finish buff
@@ -152,7 +207,7 @@ public sealed class SezuraiDNC : DancerRotation
     // Esprit gauge: Saber Dance at 50+ Esprit, pool for burst if close
     // Proc priority: use Fountainfall/Reverse Cascade procs ASAP (don't lose them)
     // Fan Dance III: use on proc from Fan Dance I/II (don't hold)
-    // Combo: Cascade → Fountain (build feathers + Esprit)
+    // Combo: Cascade -> Fountain (build feathers + Esprit)
 
     protected override IAction? CountDownAction(float remainTime)
     {
@@ -247,7 +302,11 @@ public sealed class SezuraiDNC : DancerRotation
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
         // BMR-aware: Shield Samba when raidwide imminent (override burst-skip)
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        // Shield Samba: 15% party mit for 15s, 90s CD.
+        // Does NOT stack with Tactician/Troubadour — but StatusProvide handles that
+        // in the base class (it won't use if RangePhysicalDefense is already active).
+        // Time it 1-5s before raidwide so the mit covers the damage snapshot.
+        bool rwSoon = RaidwideWithin(5f);
 
         if (rwSoon)
         {
@@ -273,25 +332,47 @@ public sealed class SezuraiDNC : DancerRotation
         if (IsDancing)
             return base.HealAreaAbility(nextGCD, out act);
 
-        // BMR-aware: Curing Waltz after raidwide for party recovery
-        // Also use proactively if raidwide imminent and party HP is low
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 3f;
+        // === BMR-aware Curing Waltz ===
+        // Curing Waltz: AoE heal originating on self + dance partner (heals twice if stacked).
+        // Use just before or just after raidwide for party recovery.
+        // 1-3s before raidwide: proactive heal to top people before damage.
+        bool rwSoon = RaidwideWithin(3f);
 
         if (rwSoon && CuringWaltzPvE.CanUse(out act))
             return true;
 
-        // Improvisation: use during forced downtime for party heal over time
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+        // === BMR-aware Improvisation ===
+        // Improvisation: party HoT + Rising Rhythm stacks during forced downtime.
+        // Per Balance: "will be canceled upon execution of any other action"
+        // so only use during actual downtime (boss untargetable, nothing to hit).
+        // Use when downtime is very imminent (0-3s) so we channel during the untargetable phase.
+        bool downtimeSoon = DowntimeWithin(3f);
         if (downtimeSoon && ImprovisationPvE.CanUse(out act))
             return true;
 
-        // Non-BMR fallback
+        // Non-BMR fallback: use when framework triggers heal
         if (!BmrActive && CuringWaltzPvE.CanUse(out act))
             return true;
         if (!BmrActive && ImprovisationPvE.CanUse(out act))
             return true;
 
         return base.HealAreaAbility(nextGCD, out act);
+    }
+
+    [RotationDesc(ActionID.SecondWindPvE)]
+    protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
+    {
+        // BMR-proactive: Second Wind before incoming damage for self-sustain
+        bool dmgSoon = RaidwideWithin(3f) || DamageWithin(3f);
+
+        if (dmgSoon && SecondWindPvE.CanUse(out act))
+            return true;
+
+        // Non-BMR fallback
+        if (SecondWindPvE.CanUse(out act))
+            return true;
+
+        return base.HealSingleAbility(nextGCD, out act);
     }
 
     [RotationDesc(ActionID.EnAvantPvE)]
@@ -313,6 +394,39 @@ public sealed class SezuraiDNC : DancerRotation
         // Never weave while dancing
         if (IsDancing)
             return base.AttackAbility(nextGCD, out act);
+
+        // === BMR: DUMP RESOURCES BEFORE DOWNTIME ===
+        // If boss is about to go untargetable, spend everything we have.
+        // Priority: Fan Dance procs > Feathers > (Esprit handled in GCD via Saber Dance)
+        if (DowntimeWithin(10f) && InCombat)
+        {
+            // Spend all Fan Dance procs ASAP
+            if (HasFourfoldFanDance && FanDanceIvPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+            if (HasThreefoldFanDance && FanDanceIiiPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+
+            // Dump all feathers before downtime
+            if (Feathers > 0)
+            {
+                if (FanDanceIiPvE.CanUse(out act))
+                    return true;
+                if (FanDancePvE.CanUse(out act))
+                    return true;
+            }
+        }
+
+        // === BMR: EARLY BURST BEFORE DOWNTIME ===
+        // If downtime is within 20s and Technical Step + Devilment are both ready,
+        // force burst now to get full value before boss leaves.
+        // (Devilment is handled in EmergencyAbility after Technical Finish)
+        // This is handled via GeneralGCD Technical Step logic — here we just ensure
+        // Flourish fires during the shortened burst window.
+        if (DowntimeWithin(20f) && InBurstWindow && !HasThreefoldFanDance)
+        {
+            if (FlourishPvE.CanUse(out act))
+                return true;
+        }
 
         // === FLOURISH (60s) ===
         // Grants: Flourishing Symmetry, Flourishing Flow, Threefold Fan Dance,
@@ -338,7 +452,7 @@ public sealed class SezuraiDNC : DancerRotation
         }
 
         // === FAN DANCE IV (oGCD, from Flourish) ===
-        // Fourfold Fan Dance proc - high potency, use ASAP
+        // Fourfold Fan Dance proc - high potency (460p in 7.4), use ASAP
         if (HasFourfoldFanDance && FanDanceIvPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
@@ -370,6 +484,10 @@ public sealed class SezuraiDNC : DancerRotation
 
             // At max feathers: always spend regardless
             if (Feathers >= 4)
+                shouldSpendFeathers = true;
+
+            // BMR: dump feathers before downtime (broader check at 15s)
+            if (DowntimeWithin(15f) && Feathers > 0)
                 shouldSpendFeathers = true;
 
             if (shouldSpendFeathers && Feathers > 0)
@@ -425,12 +543,58 @@ public sealed class SezuraiDNC : DancerRotation
             return false;
         }
 
+        // === BMR: DUMP ESPRIT BEFORE DOWNTIME ===
+        // If boss is about to become untargetable, dump Esprit on Saber Dance
+        // before we lose the chance. Do this even outside burst.
+        // Dance of the Dawn takes priority over Saber Dance if available.
+        if (DowntimeWithin(10f) && InCombat)
+        {
+            if (HasDanceOfTheDawn && Esprit >= 50
+                && DanceOfTheDawnPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+
+            if (Esprit >= 50 && !HasDanceOfTheDawn
+                && SaberDancePvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+
+            // Also dump Last Dance, Starfall, and Finishing Move before downtime
+            if (HasLastDance && LastDancePvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+            if (HasFlourishingStarfall && StarfallDancePvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+            if (HasFinishingMove && FinishingMovePvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+            if (HasTillana && TillanaPvE.CanUse(out act, skipAoeCheck: true))
+                return true;
+        }
+
         // === TECHNICAL STEP (120s, main raid buff + DPS burst) ===
         // Must have Standard Finish active first (base ActionCheck enforces this).
         // Technical Step starts 4-step dance -> Technical Finish (raid-wide 5% damage for 20s).
+        //
+        // BMR: Don't start Technical Step if downtime is < 6s (step sequence takes ~4s + finish).
+        // BMR: If vulnerability window is within 30s, hold Technical for it (more damage during vuln).
+        // BMR: If downtime is within 20s and Tech is ready, use it NOW for shortened burst before downtime.
         if (CanBurst && InCombat && TechnicalStepPvE.EnoughLevel)
         {
-            if (HoldTechForTargets && !AreDanceTargetsInRange)
+            // BMR: Block Technical Step if downtime is too soon for the dance sequence
+            if (DowntimeWithin(6f))
+            {
+                // Don't start — not enough time to complete the 4-step dance
+            }
+            // BMR: Hold Technical for upcoming vulnerability window (boss takes extra damage)
+            else if (VulnerableWithin(30f) && !VulnerableWithin(6f)
+                && !TechnicalStepPvE.Cooldown.IsCoolingDown)
+            {
+                // Hold — vuln window is coming soon, save burst for it
+            }
+            // BMR: Force early burst if downtime is within 20s (get value before boss leaves)
+            else if (DowntimeWithin(20f) && !TechnicalStepPvE.Cooldown.IsCoolingDown)
+            {
+                if (TechnicalStepPvE.CanUse(out act, skipAoeCheck: true))
+                    return true;
+            }
+            else if (HoldTechForTargets && !AreDanceTargetsInRange)
             {
                 // Hold Tech if no targets in range (user config)
             }
@@ -524,10 +688,18 @@ public sealed class SezuraiDNC : DancerRotation
         // Refreshes Standard Finish buff (5% partner damage + Esprit generation).
         // Don't start Standard Step if Technical Step is about to come off CD (within 5s).
         // After Flourish: Finishing Move replaces Standard Step (handled above).
+        //
+        // BMR: Don't start Standard Step if downtime is < 4s (step sequence takes ~2.5s + finish).
+        // Per Balance: "prep dances during downtime for ~2 GCD gain" — but that's about
+        // starting the dance BEFORE the boss comes back, which is handled by the countdown logic.
         if (!HasFinishingMove && !HasLastDance)
         {
-            if (TryUseStandardStep(out act))
-                return true;
+            // BMR: block Standard Step if downtime is too imminent
+            if (!DowntimeWithin(4f))
+            {
+                if (TryUseStandardStep(out act))
+                    return true;
+            }
         }
 
         // Finishing Move outside burst (non-urgent, but should still use)

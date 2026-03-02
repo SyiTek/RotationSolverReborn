@@ -1,7 +1,7 @@
 namespace RotationSolver.ExtraRotations.Tank;
 
 [Rotation("SezuraiWAR", CombatType.PvE, GameVersion = "7.41",
-    Description = "Balance-aligned WAR with Inner Release burst, Infuriate management, and Surging Tempest uptime.")]
+    Description = "BMR-smart Balance-aligned WAR with timeline-aware mitigation, downtime-aware burst, and Inner Release management.")]
 [SourceCode(Path = "main/ExtraRotations/Tank/SezuraiWAR.cs")]
 [ExtraRotation]
 public sealed class SezuraiWAR : WarriorRotation
@@ -101,9 +101,11 @@ public sealed class SezuraiWAR : WarriorRotation
 
     public override void DisplayRotationStatus()
     {
+        ImGui.Text($"--- Burst ---");
         ImGui.Text($"CanBurst: {CanBurst}");
         ImGui.Text($"InBurstWindow: {InBurstWindow}");
         ImGui.Text($"HasIRStacks: {HasIRStacks} ({InnerReleaseStacks})");
+        ImGui.Text($"IR CD: {(InnerReleasePvE.Cooldown.IsCoolingDown ? $"{InnerReleasePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"HasSurgingTempest: {HasSurgingTempest}");
         ImGui.Text($"SurgingTempest <6 GCDs: {SurgingTempestWillEnd(6)}");
         ImGui.Text($"HasNascentChaos: {HasNascentChaos}");
@@ -111,18 +113,44 @@ public sealed class SezuraiWAR : WarriorRotation
         ImGui.Text($"PrimalWrathReady: {PrimalWrathPvEReady}");
         ImGui.Text($"PrimalRuinationReady: {PrimalRuinationPvEReady}");
         ImGui.Text($"InnerChaosPvEReady: {InnerChaosPvEeady}");
+        ImGui.Text($"--- Gauge ---");
         ImGui.Text($"BeastGauge: {BeastGauge}");
+        ImGui.Text($"OnslaughtCharges: {OnslaughtPvE.Cooldown.CurrentCharges}/{OnslaughtMax}");
+        ImGui.Text($"InfuriateCharges: {InfuriatePvE.Cooldown.CurrentCharges}/2");
+        ImGui.Text($"--- Status ---");
         ImGui.Text($"IsMedicated: {IsMedicated}");
         ImGui.Text($"InCombat: {InCombat}");
+        ImGui.Text($"HP: {Player?.GetHealthRatio():P0}");
+        ImGui.Text($"--- Defensive CDs ---");
+        ImGui.Text($"Bloodwhetting: {(BloodwhettingPvE.Cooldown.IsCoolingDown ? $"{BloodwhettingPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"ShakeItOff: {(ShakeItOffPvE.Cooldown.IsCoolingDown ? $"{ShakeItOffPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Vengeance: {(VengeancePvE.Cooldown.IsCoolingDown ? $"{VengeancePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Rampart: {(RampartPvE.Cooldown.IsCoolingDown ? $"{RampartPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Reprisal: {(ReprisalPvE.Cooldown.IsCoolingDown ? $"{ReprisalPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
+        ImGui.Text($"Holmgang: {(HolmgangPvE.Cooldown.IsCoolingDown ? $"{HolmgangPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"--- BMR Timeline ---");
         ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
         if (BmrActive)
         {
+            ImGui.Text($"-- Final Merged Values --");
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
             ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"-- IPC Func Binding --");
+            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"-- Raw Timeline (StateMachine) --");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"-- Raw Hints (PredictedDamage) --");
+            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"-- State Machine Walk --");
+            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -200,38 +228,64 @@ public sealed class SezuraiWAR : WarriorRotation
         act = null;
         if (!AutoMitigation) return false;
 
-        // Don't stack mit during Holmgang when low
+        // Don't stack mit during Holmgang when low — invuln handles it
         if (StatusHelper.PlayerHasStatus(true, StatusID.Holmgang_409) && Player?.GetHealthRatio() < 0.3f)
             return false;
 
-        // BMR-aware: when TB is imminent, use Bloodwhetting + ONE longer CD
-        // Balance: "Bloodwhetting is your go-to for every tankbuster"
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+        // === BMR-AWARE TANKBUSTER MITIGATION ===
+        // Balance: Bloodwhetting first (short CD, always available), then layer ONE heavier CD.
+        // Mitigation is multiplicative — spreading across TBs is more efficient than dumping all on one.
+        // Don't fire mits if TB is >8s away.
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 5f;
 
-        // Bloodwhetting / Raw Intuition: short CD, strong self-heal — always first for TB
+        // With BMR active and no TB coming soon, don't waste single-target mits
+        if (BmrActive && !tbSoon)
+        {
+            // Still allow Bloodwhetting for self-healing if HP is low (handled by HealSingleAbility)
+            return base.DefenseSingleAbility(nextGCD, out act);
+        }
+
+        // --- TB is imminent (BMR path) or non-BMR reactive path ---
+
+        // Bloodwhetting / Raw Intuition: short CD, strong self-heal + shield — always first for TB
+        // Balance: "Bloodwhetting is your go-to for every tankbuster"
         if (BloodwhettingPvE.CanUse(out act))
             return true;
         if (!BloodwhettingPvE.Info.EnoughLevelAndQuest() && RawIntuitionPvE.CanUse(out act))
             return true;
 
-        // Don't layer more mit if Bloodwhetting is already active
+        // Don't layer more mit if Bloodwhetting is already covering us
         if (!StatusHelper.PlayerWillStatusEndGCD(0, 0, true, StatusID.Bloodwhetting, StatusID.RawIntuition))
             return false;
 
-        // BMR TB path: layer ONE heavier mit for big TBs, then stop
+        // BMR TB path: layer exactly ONE heavier mit, then stop — save others for the next TB
         if (tbSoon)
         {
+            // Reprisal: 10% enemy damage reduction, 60s CD — good for shared TBs too
             if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
                 return true;
+
+            // Damnation/Vengeance: heavy personal mit for big TBs (40%/30%)
+            if (DamnationPvE.EnoughLevel && DamnationPvE.CanUse(out act))
+                return true;
+            if (!DamnationPvE.EnoughLevel && VengeancePvE.CanUse(out act))
+                return true;
+
+            // Rampart as fallback if heavier CDs are on CD
+            if (RampartPvE.CanUse(out act))
+                return true;
+
             // Only one long CD per TB — don't dump everything
             return base.DefenseSingleAbility(nextGCD, out act);
         }
 
-        // Non-BMR / reactive path: stagger long CDs as before
+        // === NON-BMR REACTIVE PATH ===
+        // Framework triggered DefenseSingle — stagger CDs in priority order
+
         if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
-        // Damnation (upgraded Vengeance) -> Vengeance: 30% damage reduction
+        // Damnation (upgraded Vengeance at 92) -> Vengeance: 30-40% damage reduction
         if ((!RampartPvE.Cooldown.IsCoolingDown || RampartPvE.Cooldown.ElapsedAfter(60))
             && !StatusHelper.PlayerHasStatus(true, StatusID.ArmsLength))
         {
@@ -258,16 +312,37 @@ public sealed class SezuraiWAR : WarriorRotation
             return false;
         }
 
-        // BMR-aware: time Shake It Off to land before raidwide
-        // Balance: "Shake It Off provides a barrier + regen to the party"
-        // Use when raidwide is imminent; without BMR use whenever framework triggers
+        // === BMR-AWARE RAIDWIDE MITIGATION ===
+        // Balance: spread mits across raidwides, don't dump everything on one hit.
+        // Mitigation is multiplicative (two 10% = 19%, not 20%), so spreading is more efficient.
+        // Use 1-2 mits per raidwide max. Don't fire if raidwide is >8s away.
+        //
+        // Shake It Off: 15% MaxHP shield + 300p HoT. Bonus 2% per buff consumed (Thrill, Damnation, BW).
+        // Reprisal: 10% enemy damage reduction — use on SEPARATE raidwides from Shake.
         bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
 
+        // With BMR active and no raidwide coming soon, don't waste party mits
+        if (BmrActive && !rwSoon)
+            return base.DefenseAreaAbility(nextGCD, out act);
+
+        // Shake It Off: primary raidwide tool — shield + HoT for the whole party
+        // Balance: "grants 15% of Party Member's MaxHP as a Shield"
+        // BMR: fire 1-5s before raidwide so the shield covers the damage snapshot
         if (rwSoon && ShakeItOffPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
+        // Reprisal: use when Shake is on CD for this raidwide, or save for NEXT raidwide
+        // Don't stack Reprisal + Shake on the same raidwide — spread them
+        if (rwSoon && !StatusHelper.PlayerHasStatus(true, StatusID.ShakeItOff)
+            && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+            return true;
+
+        // === NON-BMR FALLBACK ===
         // Without BMR: use whenever the framework says DefenseArea is needed
         if (!BmrActive && ShakeItOffPvE.CanUse(out act, skipAoeCheck: true))
+            return true;
+
+        if (!BmrActive && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -337,14 +412,33 @@ public sealed class SezuraiWAR : WarriorRotation
 
     protected override bool EmergencyAbility(IAction nextGCD, out IAction? act)
     {
-        // Holmgang: invulnerability when about to die
-        if (HolmgangPvE.CanUse(out act) && Player?.GetHealthRatio() <= Service.Config.HealthForDyingTanks)
-            return true;
+        // === HOLMGANG ===
+        // Balance: "Warrior's invuln. Prevents most attacks from lowering HP below 1 for 10s."
+        // BMR-aware: only Holmgang if TB is actually imminent AND HP is critical.
+        // Without BMR: use the framework's health threshold as before.
+        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool hpCritical = Player?.GetHealthRatio() <= Service.Config.HealthForDyingTanks;
 
-        // Medicine: use during Inner Release burst windows
-        // Balance: pot should cover the full IR window including Primal Rend + Ruination
-        if (BurstMed && InBurstWindow && InCombat && UseBurstMedicine(out act))
-            return true;
+        if (HolmgangPvE.CanUse(out act))
+        {
+            // BMR path: only invuln if TB is about to hit and we're low
+            if (BmrActive && tbImminent && hpCritical)
+                return true;
+
+            // Non-BMR path: use framework HP threshold
+            if (!BmrActive && hpCritical)
+                return true;
+        }
+
+        // === MEDICINE ===
+        // Balance: pot should cover the full IR window including Primal Rend + Ruination.
+        // BMR-aware: don't pot if downtime is imminent (waste of pot duration).
+        if (BurstMed && InBurstWindow && InCombat)
+        {
+            bool downtimeWastesPot = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+            if (!downtimeWastesPot && UseBurstMedicine(out act))
+                return true;
+        }
 
         return base.EmergencyAbility(nextGCD, out act);
     }
@@ -364,14 +458,42 @@ public sealed class SezuraiWAR : WarriorRotation
             return false;
         }
 
+        // === BMR DOWNTIME/VULNERABILITY AWARENESS ===
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
+        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+        bool vulnWindowSoon = BmrActive && BmrVulnerableIn is > 0 and <= 30f;
+
+        // === BMR: DUMP BURST BEFORE DOWNTIME ===
+        // If downtime is very close (<=8s) and IR is available, pop it NOW and burn stacks.
+        // Need ~8s to dump all 3 Fell Cleave stacks + Primal Rend + Primal Wrath.
+        if (downtimeVeryClose && InCombat && HasHostilesInRange
+            && (!SurgingTempestWillEnd(2) || !StormsEyePvE.EnoughLevel))
+        {
+            if (InnerReleasePvE.CanUse(out act))
+                return true;
+            if (!InnerReleasePvE.Info.EnoughLevelAndQuest() && BerserkPvE.CanUse(out act))
+                return true;
+        }
+
         // === INNER RELEASE (60s CD) ===
         // The core burst cooldown. Grants 3 free Fell Cleave/Decimate stacks,
         // Primal Rend Ready, and extends Surging Tempest by 10s.
         // Balance: "Use Inner Release on cooldown" - ensure Surging Tempest
         // has enough duration so we don't waste IR GCDs refreshing it.
+        //
+        // BMR: Don't start IR if downtime is <10s (needs ~8s to dump all stacks).
+        // BMR: If vulnerability window is within 30s and IR is available, consider holding.
         if (CanBurst && InCombat && HasHostilesInRange)
         {
-            if (!SurgingTempestWillEnd(2) || !StormsEyePvE.EnoughLevel)
+            // BMR: skip IR if downtime too close (unless we already handled it above)
+            bool downtimeTooClose = BmrActive && BmrDowntimeIn is > 0 and < 10f && !downtimeVeryClose;
+
+            // BMR: hold for vulnerability window if it's soon and IR won't come off CD again
+            bool holdForVuln = vulnWindowSoon && BmrVulnerableIn > 5f
+                && !InnerReleasePvE.Cooldown.WillHaveOneChargeGCD(4);
+
+            if (!downtimeTooClose && !holdForVuln
+                && (!SurgingTempestWillEnd(2) || !StormsEyePvE.EnoughLevel))
             {
                 if (InnerReleasePvE.CanUse(out act))
                     return true;
@@ -390,8 +512,12 @@ public sealed class SezuraiWAR : WarriorRotation
         // - Use 1 charge AFTER IR stacks are spent for a second Inner Chaos.
         // - Never overcap at 2 charges. Don't use at >50 gauge (would overcap gauge).
         //
+        // BMR: dump Infuriate charges before downtime to avoid wasting them
         // During burst (IR active or InnerStrength up): use aggressively
         // Outside burst: use at 3+ GCDs to spare to avoid charge overcap
+        if (downtimeSoon && BeastGauge <= 50 && InfuriatePvE.CanUse(out act, usedUp: true))
+            return true;
+
         if (InBurstWindow && (InnerReleaseStacks == 0 || InnerReleaseStacks == 3))
         {
             if (InfuriatePvE.CanUse(out act, usedUp: true))
@@ -441,6 +567,12 @@ public sealed class SezuraiWAR : WarriorRotation
             && OnslaughtPvE.CanUse(out act, usedUp: true))
             return true;
 
+        // BMR: dump Onslaught charges before downtime
+        if (downtimeSoon && !IsMoving && !IsLastAction(false, OnslaughtPvE)
+            && HasSurgingTempest
+            && OnslaughtPvE.CanUse(out act, usedUp: true))
+            return true;
+
         // Outside burst: use 1 charge to prevent overcap at max charges
         if (!InBurstWindow && !IsMoving
             && !IsLastAction(false, OnslaughtPvE)
@@ -485,6 +617,10 @@ public sealed class SezuraiWAR : WarriorRotation
         // spending gauge on powerful GCDs. If it's about to fall off, let the
         // combo section below handle refreshing it first.
         bool hasSurgingTempestSafety = !SurgingTempestWillEnd(3) || !StormsEyePvE.EnoughLevel;
+
+        // === BMR DOWNTIME AWARENESS ===
+        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
 
         // =====================================================================
         // PRIORITY 1: Primal Ruination (follow-up to Primal Rend)
@@ -537,6 +673,24 @@ public sealed class SezuraiWAR : WarriorRotation
             return true;
 
         // =====================================================================
+        // BMR: DUMP GAUGE BEFORE DOWNTIME
+        // If downtime is approaching (<=8s), spend all Beast Gauge on Fell Cleave
+        // / Decimate to avoid wasting resources during the untargetable phase.
+        // Skip the Surging Tempest safety — it won't matter during downtime.
+        // =====================================================================
+        if (downtimeSoon && BeastGauge >= 50)
+        {
+            if (DecimatePvE.CanUse(out act, skipStatusProvideCheck: true))
+                return true;
+            if (!DecimatePvE.Info.EnoughLevelAndQuest() && SteelCyclonePvE.CanUse(out act))
+                return true;
+            if (FellCleavePvE.CanUse(out act, skipStatusProvideCheck: true))
+                return true;
+            if (!FellCleavePvE.Info.EnoughLevelAndQuest() && InnerBeastPvE.CanUse(out act))
+                return true;
+        }
+
+        // =====================================================================
         // PRIORITY 5: Fell Cleave / Decimate outside IR (gauge spender)
         // Balance: "Pressing Fell Cleave at 60 or greater gauge can help
         // with avoiding overcapping." Spend gauge during party buffs when
@@ -555,6 +709,27 @@ public sealed class SezuraiWAR : WarriorRotation
                 return true;
             if (!FellCleavePvE.Info.EnoughLevelAndQuest() && InnerBeastPvE.CanUse(out act))
                 return true;
+        }
+
+        // =====================================================================
+        // BMR: DON'T START NEW COMBOS BEFORE DOWNTIME
+        // If downtime is <=3s away, don't start a new combo — it'll drop during
+        // the untargetable phase and waste the combo progress. Use Tomahawk or
+        // finish current combo instead.
+        // =====================================================================
+        if (downtimeVeryClose)
+        {
+            // Still allow finishing an in-progress combo (CanUse checks combo state)
+            if (StormsPathPvE.CanUse(out act))
+                return true;
+            if (StormsEyePvE.CanUse(out act))
+                return true;
+            if (MaimPvE.CanUse(out act))
+                return true;
+            // Don't start Heavy Swing — Tomahawk instead for a clean hit
+            if (TomahawkPvE.CanUse(out act))
+                return true;
+            return base.GeneralGCD(out act);
         }
 
         // =====================================================================
