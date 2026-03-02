@@ -45,6 +45,12 @@ internal static class BossModTimeline_IPCSubscriber
     [EzIPC("Hints.NextDamageType", true)]
     internal static readonly Func<int>? NextDamageType;
 
+    [EzIPC("Hints.NextRaidwideDamageIn", true)]
+    internal static readonly Func<float>? NextRaidwideDamageIn;
+
+    [EzIPC("Hints.NextTankbusterDamageIn", true)]
+    internal static readonly Func<float>? NextTankbusterDamageIn;
+
     [EzIPC("Hints.SpecialModeIn", true)]
     internal static readonly Func<float>? SpecialModeIn;
 

@@ -39,15 +39,26 @@ internal static class BossModUpdater
             }
 
             DataCenter.BmrActiveModuleName = BossModTimeline_IPCSubscriber.ActiveModuleName?.Invoke();
-            DataCenter.BmrNextRaidwideIn = BossModTimeline_IPCSubscriber.NextRaidwideIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrNextTankbusterIn = BossModTimeline_IPCSubscriber.NextTankbusterIn?.Invoke() ?? float.MaxValue;
+
+            // Poll Timeline endpoints (state machine flags — may be empty for many fights)
+            var timelineRaidwide = BossModTimeline_IPCSubscriber.NextRaidwideIn?.Invoke() ?? float.MaxValue;
+            var timelineTankbuster = BossModTimeline_IPCSubscriber.NextTankbusterIn?.Invoke() ?? float.MaxValue;
             DataCenter.BmrNextKnockbackIn = BossModTimeline_IPCSubscriber.NextKnockbackIn?.Invoke() ?? float.MaxValue;
             DataCenter.BmrNextDowntimeIn = BossModTimeline_IPCSubscriber.NextDowntimeIn?.Invoke() ?? float.MaxValue;
             DataCenter.BmrNextDowntimeEndIn = BossModTimeline_IPCSubscriber.NextDowntimeEndIn?.Invoke() ?? float.MaxValue;
             DataCenter.BmrNextVulnerableIn = BossModTimeline_IPCSubscriber.NextVulnerableIn?.Invoke() ?? float.MaxValue;
             DataCenter.BmrNextVulnerableEndIn = BossModTimeline_IPCSubscriber.NextVulnerableEndIn?.Invoke() ?? float.MaxValue;
+
+            // Poll Hints endpoints (component-level damage predictions — works even without state machine flags)
             DataCenter.BmrNextDamageIn = BossModTimeline_IPCSubscriber.NextDamageIn?.Invoke() ?? float.MaxValue;
             DataCenter.BmrNextDamageType = BossModTimeline_IPCSubscriber.NextDamageType?.Invoke() ?? 0;
+            var hintsRaidwide = BossModTimeline_IPCSubscriber.NextRaidwideDamageIn?.Invoke() ?? float.MaxValue;
+            var hintsTankbuster = BossModTimeline_IPCSubscriber.NextTankbusterDamageIn?.Invoke() ?? float.MaxValue;
+
+            // Merge: use the nearest source (Timeline state flags OR Hints damage predictions)
+            DataCenter.BmrNextRaidwideIn = Math.Min(timelineRaidwide, hintsRaidwide);
+            DataCenter.BmrNextTankbusterIn = Math.Min(timelineTankbuster, hintsTankbuster);
+
             DataCenter.BmrSpecialModeIn = BossModTimeline_IPCSubscriber.SpecialModeIn?.Invoke() ?? float.MaxValue;
             DataCenter.BmrSpecialModeType = BossModTimeline_IPCSubscriber.SpecialModeType?.Invoke() ?? 0;
         }
