@@ -323,6 +323,16 @@ public sealed class SezuraiAST : AstrologianRotation
         if (MicroPrio && HasMacrocosmos)
             return base.HealSingleAbility(nextGCD, out act);
 
+        // BMR-aware: if a tankbuster is coming SOON, hold single-target heals.
+        // Let DefenseSingleAbility handle MIT (Exaltation, Bole, CI shields),
+        // then fire heals AFTER the TB hits when the tank actually needs them.
+        // Essential Dignity scales inversely with HP — it heals MORE on a low-HP tank post-TB.
+        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 1f and <= 8f;
+        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+
+        if (tbComingSoon || rwComingSoon)
+            return base.HealSingleAbility(nextGCD, out act);
+
         // Essential Dignity: tiered by charge count.
         // Scales inversely with target HP — max 900p at <=30%. Never cap charges.
         if (EssentialDignityPvE.Cooldown.CurrentCharges == 3
@@ -642,6 +652,16 @@ public sealed class SezuraiAST : AstrologianRotation
         if (MicroPrio && HasMacrocosmos)
             return base.HealSingleGCD(out act);
 
+        // BMR-aware: hold GCD heals when TB or RW is coming soon.
+        // GCD heals before damage = wasted GCD on full HP target.
+        // DefenseSingleAbility/DefenseAreaAbility handle MIT.
+        // After damage hits, framework re-triggers and heals fire then.
+        // This applies to ALL heal modes (Balanced, DPSFocus, Healbot).
+        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 1f and <= 8f;
+        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+        if (tbComingSoon || rwComingSoon)
+            return base.HealSingleGCD(out act);
+
         // Defer to Essential Dignity oGCD if configured
         var shouldUseEssentialDignity =
             (EssentialPrio2 == EssentialPrioStrategy.AnyCharges && EssentialDignityPvE.EnoughLevel
@@ -672,6 +692,14 @@ public sealed class SezuraiAST : AstrologianRotation
             return base.HealAreaGCD(out act);
 
         if (MicroPrio && HasMacrocosmos)
+            return base.HealAreaGCD(out act);
+
+        // BMR-aware: hold AoE GCD heals when raidwide is coming soon.
+        // Helios/Aspected Helios before raidwide = GCD wasted on full HP party.
+        // MIT handles pre-damage, these GCD heals fire AFTER damage when HP drops.
+        // This applies to ALL heal modes (Balanced, DPSFocus, Healbot).
+        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+        if (rwComingSoon)
             return base.HealAreaGCD(out act);
 
         if (HeliosConjunctionPvE.EnoughLevel && HeliosConjunctionPvE.CanUse(out act))
