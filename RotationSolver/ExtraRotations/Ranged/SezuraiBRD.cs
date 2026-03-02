@@ -297,7 +297,7 @@ public sealed class SezuraiBRD : BardRotation
 
         // Self-healing: Second Wind when low HP, especially before incoming damage
         bool damageSoon = BmrDamageWithin(5f) || BmrRaidwideWithin(5f);
-        if (damageSoon && Player.GetHealthRatio() < 0.6f && SecondWindPvE.CanUse(out act))
+        if (damageSoon && Player?.GetHealthRatio() < 0.6f && SecondWindPvE.CanUse(out act))
             return true;
 
         if (SecondWindPvE.CanUse(out act))

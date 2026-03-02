@@ -282,6 +282,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
             return base.DefenseSingleAbility(nextGCD, out act);
 
         // Don't stack mit during Superbolide -- invuln handles it
+        act = null;
         if (StatusHelper.PlayerHasStatus(true, StatusID.Superbolide) && Player?.GetHealthRatio() < 0.3f)
             return false;
 
