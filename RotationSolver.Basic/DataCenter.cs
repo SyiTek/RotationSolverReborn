@@ -1974,6 +1974,18 @@ internal static class DataCenter
 	public static float BmrSpecialModeIn { get; set; } = float.MaxValue;
 	public static int BmrSpecialModeType { get; set; }
 
+	// Debug diagnostics — raw IPC values before merging
+	public static float BmrDebugTimelineRaidwide { get; set; } = float.MaxValue;
+	public static float BmrDebugTimelineTankbuster { get; set; } = float.MaxValue;
+	public static float BmrDebugHintsRaidwide { get; set; } = float.MaxValue;
+	public static float BmrDebugHintsTankbuster { get; set; } = float.MaxValue;
+	public static float BmrDebugGenericDamageIn { get; set; } = float.MaxValue;
+	public static int BmrDebugGenericDamageType { get; set; }
+	public static bool BmrDebugTimelineRwFunc { get; set; }
+	public static bool BmrDebugTimelineTbFunc { get; set; }
+	public static bool BmrDebugHintsRwFunc { get; set; }
+	public static bool BmrDebugHintsTbFunc { get; set; }
+
 	public static void ResetBmrData()
 	{
 		BmrHasActiveModule = false;
@@ -1989,6 +2001,16 @@ internal static class DataCenter
 		BmrNextDamageType = 0;
 		BmrSpecialModeIn = float.MaxValue;
 		BmrSpecialModeType = 0;
+		BmrDebugTimelineRaidwide = float.MaxValue;
+		BmrDebugTimelineTankbuster = float.MaxValue;
+		BmrDebugHintsRaidwide = float.MaxValue;
+		BmrDebugHintsTankbuster = float.MaxValue;
+		BmrDebugGenericDamageIn = float.MaxValue;
+		BmrDebugGenericDamageType = 0;
+		BmrDebugTimelineRwFunc = false;
+		BmrDebugTimelineTbFunc = false;
+		BmrDebugHintsRwFunc = false;
+		BmrDebugHintsTbFunc = false;
 	}
 	#endregion
 }
