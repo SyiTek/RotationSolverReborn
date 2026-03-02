@@ -225,9 +225,10 @@ public sealed class SezuraiAST : AstrologianRotation
         if (StellarNow && HasGiantDominance && StellarDetonationPvE.CanUse(out act))
             return true;
 
-        // BMR-aware: pop Macrocosmos right after raidwide damage hits (when compilation is richest)
-        // If raidwide just happened (timer went negative or very small), detonate for max heal
-        if (BmrActive && HasMacrocosmos && BmrRaidwideIn is <= 0.5f
+        // BMR-aware: detonate Macrocosmos right after raidwide damage hits
+        // Per Balance: "Incredibly powerful but effectiveness depends entirely on timing"
+        // The stored healing is richest immediately after the big hit lands
+        if (BmrActive && HasMacrocosmos && BmrRaidwideIn <= 0.5f
             && MicrocosmosPvE.CanUse(out act))
             return true;
 
@@ -243,16 +244,34 @@ public sealed class SezuraiAST : AstrologianRotation
 
     #region Defense
 
-    [RotationDesc(ActionID.ExaltationPvE, ActionID.TheArrowPvE, ActionID.TheSpirePvE, ActionID.TheBolePvE, ActionID.TheEwerPvE)]
+    [RotationDesc(ActionID.ExaltationPvE, ActionID.CelestialIntersectionPvE, ActionID.TheArrowPvE, ActionID.TheSpirePvE, ActionID.TheBolePvE, ActionID.TheEwerPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: if tankbuster is coming, prioritize strongest mit first
+        // BMR-aware: if tankbuster is coming, prioritize mit tools for it
+        // Per Balance/Icy Veins: Exaltation is THE tankbuster tool (10% mit + 500p delayed heal)
+        // Layer with Bole (10% mit card) + Celestial Intersection (400p shield) for big TBs
         bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
 
-        // Exaltation first when TB imminent: 10% mit + 500p delayed heal is strongest single-target
-        if (tbSoon && ExaltationPvE.CanUse(out act))
-            return true;
+        if (tbSoon)
+        {
+            // Exaltation: primary TB mit — 10% + delayed heal, use on most impactful hits
+            if (ExaltationPvE.CanUse(out act))
+                return true;
 
+            // Bole: 10% damage reduction card — stack with Exaltation for heavy TBs
+            if (InCombat && TheBolePvE.CanUse(out act))
+                return true;
+
+            // Celestial Intersection: 400p shield — layer on top for max effective HP
+            if (CelestialIntersectionPvE.CanUse(out act, usedUp: true))
+                return true;
+
+            // Spire: 400p barrier — additional shield layer
+            if (InCombat && TheSpirePvE.CanUse(out act))
+                return true;
+        }
+
+        // Without BMR or no imminent TB: use cards to avoid overcapping draws, then Exaltation
         if (InCombat && TheSpirePvE.CanUse(out act))
             return true;
 
@@ -265,37 +284,33 @@ public sealed class SezuraiAST : AstrologianRotation
         return base.DefenseSingleAbility(nextGCD, out act);
     }
 
-    [RotationDesc(ActionID.CollectiveUnconsciousPvE, ActionID.SunSignPvE, ActionID.NeutralSectPvE)]
+    [RotationDesc(ActionID.CollectiveUnconsciousPvE, ActionID.SunSignPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
-        // BMR-aware: time mitigation to land before raidwide damage
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+        // Per Balance/Icy Veins: spread mits across raidwides, don't dump everything on one hit.
+        // Mitigation is multiplicative (two 10% = 19%, not 20%), so spreading is more efficient.
+        // This method should use at most 1-2 oGCD mits per raidwide.
+        //
+        // Neutral Sect is NOT here — it's managed in GeneralAbility for Sun Sign timing.
+        // Per guides: "delay Sun Sign so Neutral Sect shields cover one mechanic, Sun Sign another"
+        //
+        // Earthly Star placement is NOT here — it's in AttackAbility (primarily a damage tool).
+        // Star DETONATION for healing is in HealAreaAbility and AttackAbility (burst).
+
         bool rwImminent = BmrActive && BmrRaidwideIn is > 0 and <= 3f;
 
-        // Sun Sign: 10% party mitigation for 15s — always use when available
+        // Sun Sign: 10% party mit for 15s — use when available (it's free, Suntouched from Neutral Sect)
         if (SunSignPvE.CanUse(out act))
             return true;
 
-        // Neutral Sect: use proactively for Sun Sign access.
-        // BMR: activate early before raidwide so we can Sun Sign before damage hits
-        if (!StatusHelper.PlayerHasStatus(true, StatusID.Suntouched)
-            && NeutralSectPvE.CanUse(out act))
-            return true;
-
-        // Collective Unconscious: tap for 10% mitigation (30y) + regen (8y).
-        // BMR: save for imminent raidwides — the 10s buff means we want it just before hit
+        // Collective Unconscious: tap for 10% mit (30y) + regen (8y), 60s CD.
+        // This is our bread-and-butter raidwide mit — available for most raidwides.
+        // BMR: save for imminent hits (<=3s) so the 5-10s mit window covers the damage snapshot.
+        // Without BMR: use whenever the framework says to defend.
         if (rwImminent && CollectiveUnconsciousPvE.CanUse(out act))
             return true;
 
-        // Without BMR data or raidwide not imminent, use CU normally
-        if (!rwSoon && CollectiveUnconsciousPvE.CanUse(out act))
-            return true;
-
-        // Earthly Star: place proactively if raidwide coming — provides both damage and healing
-        if (rwSoon && !HasGiantDominance && !HasEarthlyDominance && EarthlyStarPvE.CanUse(out act))
-            return true;
-
-        if (EarthlyStarPvE.CanUse(out act))
+        if (!BmrActive && CollectiveUnconsciousPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -328,8 +343,11 @@ public sealed class SezuraiAST : AstrologianRotation
             && EssentialDignityPvE.Target.Target.GetHealthRatio() < EssentialDignityLast)
             return true;
 
-        // Celestial Intersection: 200p heal + 400p shield — keep one charge rolling
-        if (CelestialIntersectionPvE.CanUse(out act, usedUp: true))
+        // Celestial Intersection: 200p heal + 400p shield (2 charges, 30s recharge)
+        // Per Balance: "Use one charge regularly to avoid capping, hold one for emergencies"
+        // BMR-aware: if TB is imminent, spend both charges for max shield
+        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 4f;
+        if (CelestialIntersectionPvE.CanUse(out act, usedUp: tbImminent || CelestialIntersectionPvE.Cooldown.CurrentCharges == 2))
             return true;
 
         // Exaltation: 10% mitigation (8s) + 500p delayed heal — great for tankbusters
@@ -373,16 +391,12 @@ public sealed class SezuraiAST : AstrologianRotation
         if (StellarDetonationPvE.CanUse(out act))
             return true;
 
-        // Horoscope: detonate for free healing
-        // BMR-aware: also activate if raidwide is coming and party HP will need topping
+        // Horoscope: detonate for free 200p AoE heal (400p if upgraded with Helios)
+        // Per Balance: "Use un-upgraded for the free 200p heal. Do NOT cast Helios just to upgrade."
         if (PartyMembersAverHP < HoroscopeHeal && HoroscopePvE_16558.CanUse(out act))
             return true;
 
         if (PartyMembersAverHP < HoroscopeHeal && HoroscopePvE.CanUse(out act))
-            return true;
-
-        // BMR: pre-cast Horoscope before raidwide so it can be detonated after damage
-        if (BmrActive && BmrRaidwideIn is > 1f and <= 5f && HoroscopePvE.CanUse(out act))
             return true;
 
         // Lady of Crowns: free 400p AoE heal — never waste it
@@ -398,10 +412,23 @@ public sealed class SezuraiAST : AstrologianRotation
 
     protected override bool GeneralAbility(IAction nextGCD, out IAction? act)
     {
-        // Sun Sign: 10% party mitigation for 15s. Use whenever Suntouched is available.
-        // Don't hold too long — the mitigation value is always worth it in savage.
+        // === Neutral Sect + Sun Sign management ===
+        // Per Balance: "Delay Sun Sign activation so that you can use the Neutral Sect shields
+        // to mitigate one thing and Sun Sign to mitigate something else."
+        // Suntouched lasts 30s after Neutral Sect — plenty of time to split across mechanics.
+        //
+        // Strategy: Activate Neutral Sect when convenient (for GCD shield or Sun Sign access).
+        // Sun Sign fires here or in DefenseAreaAbility when raidwide is imminent.
         if (StatusHelper.PlayerHasStatus(true, StatusID.Suntouched)
             && SunSignPvE.CanUse(out act, skipAoeCheck: true, skipTTKCheck: true))
+        {
+            return true;
+        }
+
+        // Activate Neutral Sect proactively for Sun Sign access (120s CD)
+        // Only when we don't already have Suntouched and we're in combat
+        if (InCombat && !StatusHelper.PlayerHasStatus(true, StatusID.Suntouched)
+            && NeutralSectPvE.CanUse(out act))
         {
             return true;
         }
@@ -492,14 +519,16 @@ public sealed class SezuraiAST : AstrologianRotation
             if (HasDivination && HasGiantDominance && StellarDetonationPvE.CanUse(out act))
                 return true;
 
-            // --- BMR-aware: detonate Giant Dominance Star before raidwide for healing ---
-            // If raidwide is imminent and star is matured, pop it for the 720p AoE heal
-            if (BmrActive && BmrRaidwideIn is > 0 and <= 3f
+            // --- BMR-aware: detonate Giant Dominance Star right before raidwide ---
+            // Per Balance: "Earthly Star will be the cornerstone of your healing"
+            // Detonate charged star just before raidwide hits for 720p party heal + 310p damage
+            if (BmrActive && BmrRaidwideIn is > 0 and <= 2f
                 && HasGiantDominance && StellarDetonationPvE.CanUse(out act))
                 return true;
 
             // --- BMR-aware Earthly Star placement ---
-            // Place star 10-15s before raidwide so it matures (10s) to Giant Dominance before hit
+            // Per Balance: "Place it 10 seconds before the raidwide so you can detonate after damage"
+            // Place star so it matures to Giant Dominance (10s) right before raidwide hits
             if (BmrActive && BmrRaidwideIn is > 10f and <= 20f
                 && !HasGiantDominance && !HasEarthlyDominance
                 && EarthlyStarPvE.CanUse(out act))
@@ -551,39 +580,49 @@ public sealed class SezuraiAST : AstrologianRotation
     protected override bool DefenseSingleGCD(out IAction? act)
     {
         // Neutral Sect + Aspected Benefic = massive shield on tank
+        // Per Balance: only GCD heal when you have Neutral Sect up (makes it worth the GCD cost)
+        // The shield component from Neutral Sect is what makes this worth a GCD.
         if ((NeutralSectPvE.CanUse(out _) || HasNeutralSect || IsLastAbility(false, NeutralSectPvE))
             && AspectedBeneficPvE.CanUse(out act, skipStatusProvideCheck: true))
         {
             return true;
         }
 
+        // Without Neutral Sect: do NOT GCD heal just for a HoT — that's a DPS loss.
+        // oGCD tools (Exaltation, Celestial Intersection, Essential Dignity) handle TBs.
         return base.DefenseSingleGCD(out act);
     }
 
     [RotationDesc(ActionID.MacrocosmosPvE)]
     protected override bool DefenseAreaGCD(out IAction? act)
     {
+        // Per Balance: "oGCD abilities are more efficient than GCD spells because you do not
+        // have to stop casting damage spells." Only GCD heal/shield when Neutral Sect is up
+        // (making the GCD worth the DPS loss) or when Macrocosmos timing is right.
+
         // Neutral Sect + Helios Conjunction = AoE heal + shield + regen
+        // Only worth a GCD because the shield makes it significantly stronger
         if ((NeutralSectPvE.CanUse(out _) || HasNeutralSect || IsLastAbility(false, NeutralSectPvE))
             && HeliosConjunctionPvE.CanUse(out act, skipStatusProvideCheck: true))
         {
             return true;
         }
 
-        // Macrocosmos: BMR-aware — cast 5-8s before raidwide so it compiles damage then heals
-        // The heal fires when detonated (or after 15s), based on damage taken while active
-        bool bmrMacroWindow = BmrActive && BmrRaidwideIn is > 2f and <= 8f;
-
-        if (bmrMacroWindow && MacrocosmosPvE.CanUse(out act))
+        // Macrocosmos (180s CD): "Incredibly powerful but effectiveness depends entirely on timing"
+        // Per Balance: best for 1-HP mechanics, back-to-back raidwides, DRK Living Dead.
+        // BMR-aware: cast 5-8s before raidwide so buff is active when damage hits.
+        // Without BMR: fall back to original multi-hit restriction logic.
+        if (BmrActive && BmrRaidwideIn is > 2f and <= 8f && MacrocosmosPvE.CanUse(out act))
             return true;
 
-        // Fallback: original logic for when BMR isn't active
-        if ((MultiHitRestrict && IsCastingMultiHit) || !MultiHitRestrict)
+        if (!BmrActive && ((MultiHitRestrict && IsCastingMultiHit) || !MultiHitRestrict))
         {
             if (MacrocosmosPvE.CanUse(out act))
                 return true;
         }
 
+        // Do NOT bare-cast Helios Conjunction without Neutral Sect — the regen is not worth
+        // losing a Fall Malefic GCD. Use oGCDs (CU, Celestial Opposition, Star) instead.
         return base.DefenseAreaGCD(out act);
     }
 
