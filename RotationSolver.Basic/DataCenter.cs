@@ -1985,6 +1985,7 @@ internal static class DataCenter
 	public static bool BmrDebugTimelineTbFunc { get; set; }
 	public static bool BmrDebugHintsRwFunc { get; set; }
 	public static bool BmrDebugHintsTbFunc { get; set; }
+	public static string? BmrDebugTimelineWalk { get; set; }
 
 	public static void ResetBmrData()
 	{
@@ -2011,6 +2012,7 @@ internal static class DataCenter
 		BmrDebugTimelineTbFunc = false;
 		BmrDebugHintsRwFunc = false;
 		BmrDebugHintsTbFunc = false;
+		BmrDebugTimelineWalk = null;
 	}
 	#endregion
 }

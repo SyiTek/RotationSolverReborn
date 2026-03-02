@@ -85,6 +85,7 @@ internal static class BossModUpdater
 
             DataCenter.BmrSpecialModeIn = BossModTimeline_IPCSubscriber.SpecialModeIn?.Invoke() ?? float.MaxValue;
             DataCenter.BmrSpecialModeType = BossModTimeline_IPCSubscriber.SpecialModeType?.Invoke() ?? 0;
+            DataCenter.BmrDebugTimelineWalk = BossModTimeline_IPCSubscriber.DebugTimelineWalk?.Invoke();
         }
         catch
         {
