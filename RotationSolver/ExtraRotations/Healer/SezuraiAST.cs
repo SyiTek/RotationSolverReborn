@@ -225,6 +225,12 @@ public sealed class SezuraiAST : AstrologianRotation
         if (StellarNow && HasGiantDominance && StellarDetonationPvE.CanUse(out act))
             return true;
 
+        // BMR-aware: pop Macrocosmos right after raidwide damage hits (when compilation is richest)
+        // If raidwide just happened (timer went negative or very small), detonate for max heal
+        if (BmrActive && HasMacrocosmos && BmrRaidwideIn is <= 0.5f
+            && MicrocosmosPvE.CanUse(out act))
+            return true;
+
         return base.EmergencyAbility(nextGCD, out act);
 
         static bool CanCastSynastry(IBaseAction actionCheck, IBaseAction synastry, float synastryHp, IAction next)
@@ -240,6 +246,13 @@ public sealed class SezuraiAST : AstrologianRotation
     [RotationDesc(ActionID.ExaltationPvE, ActionID.TheArrowPvE, ActionID.TheSpirePvE, ActionID.TheBolePvE, ActionID.TheEwerPvE)]
     protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: if tankbuster is coming, prioritize strongest mit first
+        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+
+        // Exaltation first when TB imminent: 10% mit + 500p delayed heal is strongest single-target
+        if (tbSoon && ExaltationPvE.CanUse(out act))
+            return true;
+
         if (InCombat && TheSpirePvE.CanUse(out act))
             return true;
 
@@ -255,19 +268,31 @@ public sealed class SezuraiAST : AstrologianRotation
     [RotationDesc(ActionID.CollectiveUnconsciousPvE, ActionID.SunSignPvE, ActionID.NeutralSectPvE)]
     protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
+        // BMR-aware: time mitigation to land before raidwide damage
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+        bool rwImminent = BmrActive && BmrRaidwideIn is > 0 and <= 3f;
+
         // Sun Sign: 10% party mitigation for 15s — always use when available
         if (SunSignPvE.CanUse(out act))
             return true;
 
-        // Neutral Sect: use proactively for Sun Sign access even without GCD heals planned.
-        // The 10% party mitigation from Sun Sign is too valuable to skip in savage.
+        // Neutral Sect: use proactively for Sun Sign access.
+        // BMR: activate early before raidwide so we can Sun Sign before damage hits
         if (!StatusHelper.PlayerHasStatus(true, StatusID.Suntouched)
             && NeutralSectPvE.CanUse(out act))
             return true;
 
         // Collective Unconscious: tap for 10% mitigation (30y) + regen (8y).
-        // In 7.4, a single tap grants 10s of mitigation — do NOT channel during uptime.
-        if (CollectiveUnconsciousPvE.CanUse(out act))
+        // BMR: save for imminent raidwides — the 10s buff means we want it just before hit
+        if (rwImminent && CollectiveUnconsciousPvE.CanUse(out act))
+            return true;
+
+        // Without BMR data or raidwide not imminent, use CU normally
+        if (!rwSoon && CollectiveUnconsciousPvE.CanUse(out act))
+            return true;
+
+        // Earthly Star: place proactively if raidwide coming — provides both damage and healing
+        if (rwSoon && !HasGiantDominance && !HasEarthlyDominance && EarthlyStarPvE.CanUse(out act))
             return true;
 
         if (EarthlyStarPvE.CanUse(out act))
@@ -349,10 +374,15 @@ public sealed class SezuraiAST : AstrologianRotation
             return true;
 
         // Horoscope: detonate for free healing
+        // BMR-aware: also activate if raidwide is coming and party HP will need topping
         if (PartyMembersAverHP < HoroscopeHeal && HoroscopePvE_16558.CanUse(out act))
             return true;
 
         if (PartyMembersAverHP < HoroscopeHeal && HoroscopePvE.CanUse(out act))
+            return true;
+
+        // BMR: pre-cast Horoscope before raidwide so it can be detonated after damage
+        if (BmrActive && BmrRaidwideIn is > 1f and <= 5f && HoroscopePvE.CanUse(out act))
             return true;
 
         // Lady of Crowns: free 400p AoE heal — never waste it
@@ -462,6 +492,21 @@ public sealed class SezuraiAST : AstrologianRotation
             if (HasDivination && HasGiantDominance && StellarDetonationPvE.CanUse(out act))
                 return true;
 
+            // --- BMR-aware: detonate Giant Dominance Star before raidwide for healing ---
+            // If raidwide is imminent and star is matured, pop it for the 720p AoE heal
+            if (BmrActive && BmrRaidwideIn is > 0 and <= 3f
+                && HasGiantDominance && StellarDetonationPvE.CanUse(out act))
+                return true;
+
+            // --- BMR-aware Earthly Star placement ---
+            // Place star 10-15s before raidwide so it matures (10s) to Giant Dominance before hit
+            if (BmrActive && BmrRaidwideIn is > 10f and <= 20f
+                && !HasGiantDominance && !HasEarthlyDominance
+                && EarthlyStarPvE.CanUse(out act))
+            {
+                return true;
+            }
+
             // --- Burst-aligned Earthly Star placement ---
             // Place Star 10-20s before Divination so it matures to Giant Dominance during burst
             if (!HasGiantDominance && !HasEarthlyDominance
@@ -525,7 +570,14 @@ public sealed class SezuraiAST : AstrologianRotation
             return true;
         }
 
-        // Macrocosmos: cast before multi-hit or heavy raidwide damage
+        // Macrocosmos: BMR-aware — cast 5-8s before raidwide so it compiles damage then heals
+        // The heal fires when detonated (or after 15s), based on damage taken while active
+        bool bmrMacroWindow = BmrActive && BmrRaidwideIn is > 2f and <= 8f;
+
+        if (bmrMacroWindow && MacrocosmosPvE.CanUse(out act))
+            return true;
+
+        // Fallback: original logic for when BMR isn't active
         if ((MultiHitRestrict && IsCastingMultiHit) || !MultiHitRestrict)
         {
             if (MacrocosmosPvE.CanUse(out act))
@@ -725,6 +777,15 @@ public sealed class SezuraiAST : AstrologianRotation
         ImGui.Text($"CanHealSingleSpell: {CanHealSingleSpell}");
         ImGui.Text($"CanHealAreaSpell: {CanHealAreaSpell}");
         ImGui.Text($"PartyHP: {PartyMembersAverHP:P0}");
+        ImGui.Text($"--- BMR Timeline ---");
+        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        if (BmrActive)
+        {
+            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"NextDamage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s (type {BmrDamageType})" : "None")}");
+        }
     }
 
     #endregion
