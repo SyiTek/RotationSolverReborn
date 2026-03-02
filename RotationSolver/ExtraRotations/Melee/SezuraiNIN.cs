@@ -556,6 +556,7 @@ public sealed class SezuraiNIN : NinjaRotation
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
         }
     }
 
@@ -691,11 +692,15 @@ public sealed class SezuraiNIN : NinjaRotation
             return base.AttackAbility(nextGCD, out act);
 
         // 1. Ten Chi Jin (use in burst, when not Shadow Walking to avoid consuming it)
-        if (InTrickAttack && !IsShadowWalking
-            && !TenPvE.Cooldown.ElapsedAfter(30)
-            && TenChiJinPvE.CanUse(out act))
+        // BMR-aware: Don't start TCJ if downtime < 5s (TCJ takes ~5s to execute)
         {
-            return true;
+            bool bmrBlockTCJ = BmrActive && BmrDowntimeIn is > 0 and <= 5f;
+            if (!bmrBlockTCJ && InTrickAttack && !IsShadowWalking
+                && !TenPvE.Cooldown.ElapsedAfter(30)
+                && TenChiJinPvE.CanUse(out act))
+            {
+                return true;
+            }
         }
 
         // 2. Bunshin (spend 50 Ninki, grants Phantom Kamaitachi)

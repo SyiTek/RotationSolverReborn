@@ -186,8 +186,17 @@ public sealed class SezuraiBRD : BardRotation
     [RotationDesc(ActionID.NaturesMinnePvE)]
     protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
     {
-        if (NaturesMinnePvE.CanUse(out act))
+        // BMR-aware: Nature's Minne before raidwide to boost healer heals
+        // 15s duration, 20% heal potency buff on target — time it so healers benefit
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
+
+        if (rwSoon && NaturesMinnePvE.CanUse(out act))
             return true;
+
+        // Non-BMR: use when framework triggers heal
+        if (!BmrActive && NaturesMinnePvE.CanUse(out act))
+            return true;
+
         if (SecondWindPvE.CanUse(out act))
             return true;
 
@@ -665,6 +674,7 @@ public sealed class SezuraiBRD : BardRotation
     /// - Refresh when DoTs have less than ~3s remaining
     /// - Snapshot during burst (refresh early under raid buffs for stronger DoT ticks)
     /// - Never let DoTs fall off
+    /// - BMR-aware: Don't refresh DoTs if downtime < 5s (DoTs would be wasted on untargetable boss)
     /// </summary>
     private bool TryUseIronJaws(out IAction? act)
     {
@@ -675,6 +685,10 @@ public sealed class SezuraiBRD : BardRotation
 
         // Must have both DoTs active on target to refresh
         if (!TargetHasDoTs)
+            return false;
+
+        // BMR-aware: Don't refresh if downtime imminent (DoTs wasted on untargetable boss)
+        if (BmrActive && BmrDowntimeIn is > 0 and <= 5f)
             return false;
 
         // Snapshot during burst: refresh with ~4-7s remaining while buffed
@@ -745,6 +759,7 @@ public sealed class SezuraiBRD : BardRotation
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
         }
     }
 

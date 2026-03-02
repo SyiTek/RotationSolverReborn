@@ -122,6 +122,7 @@ public sealed class SezuraiPCT : PictomancerRotation
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
         }
     }
 
@@ -270,12 +271,18 @@ public sealed class SezuraiPCT : PictomancerRotation
 
         if (allowDefense)
         {
-            // Tempera Coat/Grassa: party shield — don't stack with Addle on same raidwide
+            // Spread mits across raidwides — use ONE per raidwide, not all at once
+            // Priority: Tempera Coat/Grassa (party shield) first, then Addle on separate raidwide
             if (TemperaCoatPvE.CanUse(out act))
                 return true;
             if (TemperaGrassaPvE.CanUse(out act))
                 return true;
-            if (AddlePvE.CanUse(out act))
+            // Only Addle if Tempera is on CD (spreading across different raidwides)
+            if (!TemperaCoatPvE.Cooldown.IsCoolingDown || TemperaCoatPvE.Cooldown.RecastTimeRemain > 10f)
+            {
+                // Tempera is available or coming back soon — save Addle for next raidwide
+            }
+            else if (AddlePvE.CanUse(out act))
                 return true;
         }
 

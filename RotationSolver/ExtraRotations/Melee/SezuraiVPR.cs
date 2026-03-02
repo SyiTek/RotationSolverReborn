@@ -251,6 +251,7 @@ public sealed class SezuraiVPR : ViperRotation
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
         }
     }
 
@@ -465,7 +466,9 @@ public sealed class SezuraiVPR : ViperRotation
         // Balance intermediate: "Press Ire, execute one dual wield combo GCD, then chain two Reawakens."
         // Reawaken does NOT break dual wield combos, so we only need buff timers to be safe.
         // Allow entry when: no combo active OR enough combo time remaining for safety.
-        if ((IsNoActionCombo() || LiveComboTime > GCDTime(2)) && SwiftTime > SwiftTimer && HuntersTime > HuntersTimer)
+        // BMR-aware: Don't start Reawaken if downtime < 12s (combo takes ~10s to complete)
+        bool bmrBlockReawaken = BmrActive && BmrDowntimeIn is > 0 and <= 12f;
+        if (!bmrBlockReawaken && (IsNoActionCombo() || LiveComboTime > GCDTime(2)) && SwiftTime > SwiftTimer && HuntersTime > HuntersTimer)
         {
             // Overcap protection at 100 gauge -> always use regardless of burst state
             if (SerpentOffering == 100 && ReawakenPvE.CanUse(out act, skipComboCheck: true))

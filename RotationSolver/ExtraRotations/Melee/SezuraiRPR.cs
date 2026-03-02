@@ -201,6 +201,7 @@ public sealed class SezuraiRPR : ReaperRotation
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
         }
     }
 
@@ -328,7 +329,9 @@ public sealed class SezuraiRPR : ReaperRotation
         // Priority 2: During Arcane Circle burst or when AC is coming up soon
         // The base class ActionCheck for Enshroud uses Soul >= 50, but Enshroud costs Shroud gauge.
         // We must check Shroud >= 50 ourselves before calling CanUse.
-        if (!HasExecutioner && Shroud >= 50)
+        // BMR-aware: Don't enter Enshroud if downtime < 12s (5 GCDs + Communio takes ~12s)
+        bool bmrBlockEnshroud = BmrActive && BmrDowntimeIn is > 0 and <= 12f;
+        if (!bmrBlockEnshroud && !HasExecutioner && Shroud >= 50)
         {
             // During active burst window (Arcane Circle active or just used)
             if (HasArcaneCircle && EnshroudPvE.CanUse(out act))

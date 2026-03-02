@@ -157,6 +157,7 @@ public sealed class SezuraiBLM : BlackMageRotation
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
         }
     }
 
@@ -297,11 +298,15 @@ public sealed class SezuraiBLM : BlackMageRotation
         // Never let this drift. Use on CD or when Burst is enabled.
         // Balance: "Ley Lines is a 120-second cooldown that should be used as close
         // to on cooldown as possible."
-        if (InCombat && HasHostilesInRange)
+        // BMR-aware: Don't place Ley Lines if downtime < 15s (30s duration, waste half)
         {
-            bool useLeyLines = LeyLinesOnCooldown || CanBurst;
-            if (useLeyLines && LeyLinesPvE.CanUse(out act))
-                return true;
+            bool bmrBlockLeyLines = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
+            if (InCombat && HasHostilesInRange && !bmrBlockLeyLines)
+            {
+                bool useLeyLines = LeyLinesOnCooldown || CanBurst;
+                if (useLeyLines && LeyLinesPvE.CanUse(out act))
+                    return true;
+            }
         }
 
         // === RETRACE: Return to Ley Lines ===

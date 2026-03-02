@@ -242,8 +242,12 @@ public sealed class SezuraiMCH : MachinistRotation
             return true;
 
         // === WILDFIRE ===
-        if (CanBurst && TryUseWildfire(nextGCD, out act))
-            return true;
+        // BMR-aware: Don't start Wildfire if downtime < 10s (WF needs 10s to detonate for full damage)
+        {
+            bool bmrBlockWildfire = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+            if (CanBurst && !bmrBlockWildfire && TryUseWildfire(nextGCD, out act))
+                return true;
+        }
 
         // === Start Gauss Round / Ricochet rolling (get CDs ticking) ===
         if (!GaussRoundPvE.Cooldown.IsCoolingDown)
@@ -605,6 +609,7 @@ public sealed class SezuraiMCH : MachinistRotation
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
         }
     }
 

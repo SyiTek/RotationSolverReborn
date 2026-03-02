@@ -125,6 +125,7 @@ public sealed class SezuraiDNC : DancerRotation
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
         }
     }
 
@@ -272,10 +273,22 @@ public sealed class SezuraiDNC : DancerRotation
         if (IsDancing)
             return base.HealAreaAbility(nextGCD, out act);
 
-        if (CuringWaltzPvE.CanUse(out act))
+        // BMR-aware: Curing Waltz after raidwide for party recovery
+        // Also use proactively if raidwide imminent and party HP is low
+        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 3f;
+
+        if (rwSoon && CuringWaltzPvE.CanUse(out act))
             return true;
 
-        if (ImprovisationPvE.CanUse(out act))
+        // Improvisation: use during forced downtime for party heal over time
+        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+        if (downtimeSoon && ImprovisationPvE.CanUse(out act))
+            return true;
+
+        // Non-BMR fallback
+        if (!BmrActive && CuringWaltzPvE.CanUse(out act))
+            return true;
+        if (!BmrActive && ImprovisationPvE.CanUse(out act))
             return true;
 
         return base.HealAreaAbility(nextGCD, out act);

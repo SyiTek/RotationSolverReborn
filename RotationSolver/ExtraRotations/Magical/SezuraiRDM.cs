@@ -181,6 +181,7 @@ public sealed class SezuraiRDM : RedMageRotation
             ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
             ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
             ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
         }
     }
 
@@ -630,7 +631,9 @@ public sealed class SezuraiRDM : RedMageRotation
         // =====================================================================
         // PRIORITY 3: START MELEE COMBO (50/50+ mana, not in finisher chain)
         // =====================================================================
-        if (HasEnoughManaForCombo && !InFinisherChain)
+        // BMR-aware: Don't start melee combo if downtime < 8s (combo takes ~6-7 GCDs)
+        bool bmrBlockMelee = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+        if (HasEnoughManaForCombo && !InFinisherChain && !bmrBlockMelee)
         {
             // Burst start: when Manafication is active or swordplay stacks are running
             bool burstStartOK =
