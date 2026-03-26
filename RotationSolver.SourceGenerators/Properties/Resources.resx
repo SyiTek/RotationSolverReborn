@@ -7926,7 +7926,7 @@ Higanbana_1319 = 1319,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/1320"&gt;&lt;strong&gt;Meikyo Shisui&lt;/strong&gt;&lt;/see&gt; ↑ (SAM)
-/// &lt;para&gt;Nullifying status afflictions that can be removed by Purify as well as knockback and draw-in effects.&lt;/para&gt;
+/// &lt;para&gt;HP recovery via healing actions is increased. Status afflictions that can be removed by Purify as well as knockback and draw-in effects are nullified.&lt;/para&gt;
 /// &lt;/summary&gt;
 MeikyoShisui_1320 = 1320,
 
@@ -18168,7 +18168,7 @@ CureIiiReady = 3083,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/3085"&gt;&lt;strong&gt;Miracle of Nature&lt;/strong&gt;&lt;/see&gt; ↓ (WHM)
-/// &lt;para&gt;Transfiguration magicks have changed your form. Unable to execute actions.&lt;/para&gt;
+/// &lt;para&gt;Transfiguration magicks have changed your form. Unable to execute actions and damage taken is increased.&lt;/para&gt;
 /// &lt;/summary&gt;
 MiracleOfNature = 3085,
 
@@ -25677,7 +25677,7 @@ UnnamedStatus_4411 = 4411,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/4412"&gt;&lt;strong&gt;Enhanced Egg Acuity&lt;/strong&gt;&lt;/see&gt; ↑ (All Classes)
-/// &lt;para&gt;Highly sensitive to the plentiful glimmer of Archon eggs.&lt;/para&gt;
+/// &lt;para&gt;Probability of gleaning Archon eggs is increased.&lt;/para&gt;
 /// &lt;/summary&gt;
 EnhancedEggAcuity = 4412,
 
@@ -25749,7 +25749,7 @@ LeftwardOmen_4423 = 4423,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/4424"&gt;&lt;strong&gt;Eggstreme Egg Acuity&lt;/strong&gt;&lt;/see&gt; ↑ (All Classes)
-/// &lt;para&gt;Highly sensitive to the plentiful glimmer of gold Archon eggs.&lt;/para&gt;
+/// &lt;para&gt;Probability of gleaning Archon eggs is increased and all eggs gleaned will be gold.&lt;/para&gt;
 /// &lt;/summary&gt;
 EggstremeEggAcuity = 4424,
 
@@ -26780,19 +26780,22 @@ EnergyLoad = 4613,
 UnnamedStatus_4614 = 4614,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4615"&gt;&lt;strong&gt;Curse of Solitude&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Covered in accursed fire powder resulting in an explosion when this effect expires.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4615 = 4615,
+CurseOfSolitude = 4615,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4616"&gt;&lt;strong&gt;Curse of Companionship&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Covered in accursed fire powder resulting in an intense explosion when this effect expires.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4616 = 4616,
+CurseOfCompanionship = 4616,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4617"&gt;&lt;strong&gt;Curse of Immolation&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Beset by rising heat resulting in fire damage when this effect expires. Contact with ice-aspected attacks will remove this effect.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4617 = 4617,
+CurseOfImmolation = 4617,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/4618"&gt;&lt;strong&gt;Standing Firm&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
@@ -26842,9 +26845,16 @@ BreakerOfWind = 4625,
 UnnamedStatus_4626 = 4626,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4627"&gt;&lt;strong&gt;Fury&lt;/strong&gt;&lt;/see&gt; ↑ (All Classes)
+/// &lt;para&gt;Empowered by righteous fury.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4627 = 4627,
+Fury_4627 = 4627,
+
+/// &lt;summary&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4628"&gt;&lt;strong&gt;In the Weeds&lt;/strong&gt;&lt;/see&gt; ↑ (All Classes)
+/// &lt;para&gt;Ready to slay leafkin with a bespoke garden scythe.&lt;/para&gt;
+/// &lt;/summary&gt;
+InTheWeeds = 4628,
 
 /// &lt;summary&gt;
 /// &lt;para&gt;&lt;/para&gt;
@@ -27332,19 +27342,22 @@ MorbidMeal = 4722,
 SaplingsCrown = 4723,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4724"&gt;&lt;strong&gt;Near Shore Shackles&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Chained to an ally. Drawing too near to this partner will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4724 = 4724,
+NearShoreShackles = 4724,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4725"&gt;&lt;strong&gt;Far Shore Shackles&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Chained to an ally. Drawing too far from this partner will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4725 = 4725,
+FarShoreShackles = 4725,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4726"&gt;&lt;strong&gt;Tidalspout Target&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Designated target of Tidalspout which will activate when this effect expires.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4726 = 4726,
+TidalspoutTarget = 4726,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/4727"&gt;&lt;strong&gt;Satisfied&lt;/strong&gt;&lt;/see&gt; ↑ (All Classes)
@@ -27611,79 +27624,94 @@ Rsv47711100S74Cfc3B0E74Cfc3B0 = 4771,
 FateOfTheWurm = 4772,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4773"&gt;&lt;strong&gt;Malefic E&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4773 = 4773,
+MaleficE = 4773,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4774"&gt;&lt;strong&gt;Malefic W&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4774 = 4774,
+MaleficW = 4774,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4775"&gt;&lt;strong&gt;Malefic E-W&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4775 = 4775,
+MaleficEw = 4775,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4776"&gt;&lt;strong&gt;Malefic S&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4776 = 4776,
+MaleficS = 4776,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4777"&gt;&lt;strong&gt;Malefic S-E&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4777 = 4777,
+MaleficSe = 4777,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4778"&gt;&lt;strong&gt;Malefic S-W&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4778 = 4778,
+MaleficSw = 4778,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4779"&gt;&lt;strong&gt;Malefic S-E-W&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4779 = 4779,
+MaleficSew = 4779,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4780"&gt;&lt;strong&gt;Malefic N&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4780 = 4780,
+MaleficN = 4780,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4781"&gt;&lt;strong&gt;Malefic N-E&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4781 = 4781,
+MaleficNe = 4781,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4782"&gt;&lt;strong&gt;Malefic N-W&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4782 = 4782,
+MaleficNw = 4782,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4783"&gt;&lt;strong&gt;Malefic N-E-W&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4783 = 4783,
+MaleficNew = 4783,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4784"&gt;&lt;strong&gt;Malefic N-S&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4784 = 4784,
+MaleficNs = 4784,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4785"&gt;&lt;strong&gt;Malefic N-S-E&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4785 = 4785,
+MaleficNse = 4785,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4786"&gt;&lt;strong&gt;Malefic N-S-W&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4786 = 4786,
+MaleficNsw = 4786,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4787"&gt;&lt;strong&gt;Malefic N-S-E-W&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4787 = 4787,
+MaleficNsew = 4787,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/4788"&gt;&lt;strong&gt;Magic Shell&lt;/strong&gt;&lt;/see&gt; ↑ (All Classes)
@@ -27869,24 +27897,28 @@ UnnamedStatus_4819 = 4819,
 UnnamedStatus_4820 = 4820,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4821"&gt;&lt;strong&gt;Positive Charge&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Exhibiting a positive magnetic charge.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4821 = 4821,
+PositiveCharge_4821 = 4821,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4822"&gt;&lt;strong&gt;Negative Charge&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Exhibiting a negative magnetic charge.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4822 = 4822,
+NegativeCharge_4822 = 4822,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4823"&gt;&lt;strong&gt;Positive Charge&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Exhibiting a positive magnetic charge.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4823 = 4823,
+PositiveCharge_4823 = 4823,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4824"&gt;&lt;strong&gt;Negative Charge&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Exhibiting a negative magnetic charge.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4824 = 4824,
+NegativeCharge_4824 = 4824,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/4825"&gt;&lt;strong&gt;_rsv_4825_-1_1_0_0_S74CFC3B0_E74CFC3B0&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
@@ -27952,14 +27984,16 @@ UnnamedStatus_4835 = 4835,
 ButterflyMotif = 4836,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4837"&gt;&lt;strong&gt;Magnetic Levitation&lt;/strong&gt;&lt;/see&gt; ↑ (All Classes)
+/// &lt;para&gt;Suspended in midair by magnetic forces.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4837 = 4837,
+MagneticLevitation_4837 = 4837,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4838"&gt;&lt;strong&gt;Magnetic Pull&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Movement speed is decreased due to magnetic forces.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4838 = 4838,
+MagneticPull = 4838,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/4839"&gt;&lt;strong&gt;Stellar Steady Hand&lt;/strong&gt;&lt;/see&gt; ↑ (Disciple of the Hand)
@@ -27990,16 +28024,6 @@ AlexandrianSwiftdodge = 4842,
 /// &lt;para&gt;Movement speed is increased.&lt;/para&gt;
 /// &lt;/summary&gt;
 AlexandrianSwiftstep = 4843,
-
-/// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
-/// &lt;/summary&gt;
-UnnamedStatus_4844 = 4844,
-
-/// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
-/// &lt;/summary&gt;
-UnnamedStatus_4845 = 4845,
 
 /// &lt;summary&gt;
 /// &lt;para&gt;&lt;/para&gt;
@@ -28605,19 +28629,22 @@ UnnamedStatus_4964 = 4964,
 SnowFort = 4965,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4966"&gt;&lt;strong&gt;Malefic E&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4966 = 4966,
+MaleficE_4966 = 4966,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4967"&gt;&lt;strong&gt;Malefic W&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Being hit by certain attacks from an ill-favored cardinal direction will result in increased damage taken.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4967 = 4967,
+MaleficW_4967 = 4967,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4968"&gt;&lt;strong&gt;Hydrobullet Target&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Designated target of Hydrobullet which will activate when this effect expires.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4968 = 4968,
+HydrobulletTarget_4968 = 4968,
 
 /// &lt;summary&gt;
 /// &lt;para&gt;&lt;/para&gt;
@@ -28641,9 +28668,10 @@ UnnamedStatus_4971 = 4971,
 BrotherlyLove_4972 = 4972,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/4973"&gt;&lt;strong&gt;In Event&lt;/strong&gt;&lt;/see&gt; ↑ (All Classes)
+/// &lt;para&gt;Participating in an in-game event.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_4973 = 4973,
+InEvent_4973 = 4973,
 
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#status/4974"&gt;&lt;strong&gt;Firesnaking&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
@@ -29019,9 +29047,10 @@ FireResistanceDownIi_5045 = 5045,
 DarkResistanceDownIi_5046 = 5046,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/5047"&gt;&lt;strong&gt;Bubble Gaol&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Ensnared by aetherial seafoam and unable to move.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_5047 = 5047,
+BubbleGaol_5047 = 5047,
 
 /// &lt;summary&gt;
 /// &lt;para&gt;&lt;/para&gt;
@@ -29546,9 +29575,10 @@ UnnamedStatus_5150 = 5150,
 UnnamedStatus_5151 = 5151,
 
 /// &lt;summary&gt;
-/// &lt;para&gt;&lt;/para&gt;
+/// &lt;see href="https://garlandtools.org/db/#status/5152"&gt;&lt;strong&gt;Load-bearing&lt;/strong&gt;&lt;/see&gt; ↓ (All Classes)
+/// &lt;para&gt;Carrying a weighty burden and growing wearier with each passing second.&lt;/para&gt;
 /// &lt;/summary&gt;
-UnnamedStatus_5152 = 5152,
+Loadbearing_5152 = 5152,
 
 /// &lt;summary&gt;
 /// &lt;para&gt;&lt;/para&gt;
@@ -35205,7 +35235,7 @@ VoidReapingPvE = 24395,
 CrossReapingPvE = 24396,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/24397"&gt;&lt;strong&gt;Grim Reaping&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (RPR) [24397] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 200 to all enemies in a cone before you. Can only be executed while under the effect of Enshrouded. Lemure Shroud Cost: 1 This action does not share a recast timer with any other actions. Upon execution the recast timer for this action will be applied to all other weaponskills and magic actions. ※This action cannot be assigned to a hotbar. ※Guillotine changes to Grim Reaping when requirements for execution are met.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 220 to all enemies in a cone before you. Can only be executed while under the effect of Enshrouded. Lemure Shroud Cost: 1 This action does not share a recast timer with any other actions. Upon execution the recast timer for this action will be applied to all other weaponskills and magic actions. ※This action cannot be assigned to a hotbar. ※Guillotine changes to Grim Reaping when requirements for execution are met.&lt;/para&gt;
 /// &lt;/summary&gt;
 GrimReapingPvE = 24397,
 /// &lt;summary&gt;
@@ -36345,7 +36375,7 @@ AfflatusMiseryPvP = 29226,
 AquaveilPvP = 29227,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29228"&gt;&lt;strong&gt;Miracle of Nature&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (WHM) [29228] [Ability]
-/// &lt;para&gt;Forcibly transforms target into a diminutive creature preventing them from using actions other than Purify. Duration: 2s Additional Effect: Reduces MP by 1,000 Has no effect on players under an effect that nullifies status afflictions that can be removed by Purify Relentless Rush Honing Dance players riding machina or non-player combatants.&lt;/para&gt;
+/// &lt;para&gt;Forcibly transforms target into a diminutive creature preventing them from using actions other than Purify. Duration: 2s Additional Effect: Increases target's damage taken by 20% Has no effect on players under an effect that nullifies status afflictions that can be removed by Purify Relentless Rush Honing Dance players riding machina or non-player combatants.&lt;/para&gt;
 /// &lt;/summary&gt;
 MiracleOfNaturePvP = 29228,
 /// &lt;summary&gt;
@@ -36395,12 +36425,12 @@ SeraphicVeilPvP = 29240,
 FallMaleficPvP = 29242,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29243"&gt;&lt;strong&gt;Aspected Benefic&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (AST) [29243] [Spell]
-/// &lt;para&gt;Restores target's HP. Cure Potency: 6,000 Potency increases up to 9,000 as the target's HP decreases reaching its maximum value when the target has 50% HP or less. Additional Effect: Grants Diurnal Benefic to target Diurnal Benefic Effect: Gradually restores HP Cure Potency: 3,000 Duration: 6s When cast via Double Cast grants Nocturnal Benefic. Nocturnal Benefic Effect: Creates a barrier around target that absorbs damage equivalent to a heal of 4,000 potency Duration: 12s Maximum Charges: 2 This action does not share a recast timer with any other actions.&lt;/para&gt;
+/// &lt;para&gt;Restores target's HP. Cure Potency: 6,000 Potency increases up to 9,000 as the target's HP decreases reaching its maximum value when the target has 50% HP or less. Additional Effect: Grants Diurnal Benefic to target Diurnal Benefic Effect: Gradually restores HP Cure Potency: 3,000 Duration: 6s When cast via Double Cast grants Nocturnal Benefic. Nocturnal Benefic Effect: Creates a barrier around target that absorbs damage equivalent to a heal of 6,000 potency Duration: 12s Maximum Charges: 2 This action does not share a recast timer with any other actions.&lt;/para&gt;
 /// &lt;/summary&gt;
 AspectedBeneficPvP = 29243,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29244"&gt;&lt;strong&gt;Gravity II&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (AST) [29244] [Spell]
-/// &lt;para&gt;Deals unaspected damage with a potency of 7,500 to target and all enemies nearby it. Additional Effect: Afflicts first target with Heavy +75% Duration: 3s When cast via Double Cast Binds first target. Duration: 3s This action does not share a recast timer with any other actions.&lt;/para&gt;
+/// &lt;para&gt;Deals unaspected damage with a potency of 8,000 to target and all enemies nearby it. Additional Effect: Afflicts first target with Heavy +75% Duration: 3s When cast via Double Cast Binds first target. Duration: 3s This action does not share a recast timer with any other actions.&lt;/para&gt;
 /// &lt;/summary&gt;
 GravityIiPvP = 29244,
 /// &lt;summary&gt;
@@ -36415,12 +36445,12 @@ DoubleCastPvP = 29245,
 FallMaleficPvP_29246 = 29246,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29247"&gt;&lt;strong&gt;Aspected Benefic&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (AST) [29247] [Ability]
-/// &lt;para&gt;Restores target's HP. Cure Potency: 6,000 Potency increases up to 9,000 as the target's HP decreases reaching its maximum value when the target has 50% HP or less. Additional Effect: Grants Diurnal Benefic to target Diurnal Benefic Effect: Gradually restores HP Cure Potency: 3,000 Duration: 6s When cast via Double Cast grants Nocturnal Benefic. Nocturnal Benefic Effect: Creates a barrier around target that absorbs damage equivalent to a heal of 4,000 potency Duration: 12s Maximum Charges: 2 This action does not share a recast timer with any other actions.&lt;/para&gt;
+/// &lt;para&gt;Restores target's HP. Cure Potency: 6,000 Potency increases up to 9,000 as the target's HP decreases reaching its maximum value when the target has 50% HP or less. Additional Effect: Grants Diurnal Benefic to target Diurnal Benefic Effect: Gradually restores HP Cure Potency: 3,000 Duration: 6s When cast via Double Cast grants Nocturnal Benefic. Nocturnal Benefic Effect: Creates a barrier around target that absorbs damage equivalent to a heal of 6,000 potency Duration: 12s Maximum Charges: 2 This action does not share a recast timer with any other actions.&lt;/para&gt;
 /// &lt;/summary&gt;
 AspectedBeneficPvP_29247 = 29247,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29248"&gt;&lt;strong&gt;Gravity II&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (AST) [29248] [Ability]
-/// &lt;para&gt;Deals unaspected damage with a potency of 7,500 to target and all enemies nearby it. Additional Effect: Afflicts first target with Heavy +75% Duration: 3s When cast via Double Cast Binds first target. Duration: 3s This action does not share a recast timer with any other actions.&lt;/para&gt;
+/// &lt;para&gt;Deals unaspected damage with a potency of 8,000 to target and all enemies nearby it. Additional Effect: Afflicts first target with Heavy +75% Duration: 3s When cast via Double Cast Binds first target. Duration: 3s This action does not share a recast timer with any other actions.&lt;/para&gt;
 /// &lt;/summary&gt;
 GravityIiPvP_29248 = 29248,
 /// &lt;summary&gt;
@@ -36525,7 +36555,7 @@ BlastChargePvP = 29402,
 ScattergunPvP = 29404,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29405"&gt;&lt;strong&gt;Drill&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MCH) [29405] [Weaponskill]
-/// &lt;para&gt;Delivers a ranged attack with a potency of 9,000. Potency is increased to 18,000 while under the effect of Analysis. Ignores the effects of Guard when dealing damage. Additional Effect: Grants Bioblaster Primed Maximum Charges: 2 Can only be executed while under the effect of Drill Primed. This weaponskill does not share a recast timer with any other actions. ※Action changes to Bioblaster while under the effect of Bioblaster Primed.&lt;/para&gt;
+/// &lt;para&gt;Delivers a ranged attack with a potency of 10,000. Potency is increased to 20,000 while under the effect of Analysis. Ignores the effects of Guard when dealing damage. Additional Effect: Grants Bioblaster Primed Maximum Charges: 2 Can only be executed while under the effect of Drill Primed. This weaponskill does not share a recast timer with any other actions. ※Action changes to Bioblaster while under the effect of Bioblaster Primed.&lt;/para&gt;
 /// &lt;/summary&gt;
 DrillPvP = 29405,
 /// &lt;summary&gt;
@@ -36625,12 +36655,12 @@ HoningOvationPvP_29426 = 29426,
 HoningOvationPvP_29427 = 29427,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29428"&gt;&lt;strong&gt;Fan Dance&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (DNC) [29428] [Ability]
-/// &lt;para&gt;Delivers an attack with a potency of 6,000 to all enemies in a cone before you. Additional Effect: Reduces damage taken by self and party member designated as your Dance Partner by 20% Duration: 5s&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 6,000 to all enemies in a cone before you. Additional Effect: Reduces damage taken by self and party member designated as your Dance Partner by 20% Duration: 6s&lt;/para&gt;
 /// &lt;/summary&gt;
 FanDancePvP = 29428,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29429"&gt;&lt;strong&gt;Curing Waltz&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (DNC) [29429] [Ability]
-/// &lt;para&gt;Restores own HP and the HP of all nearby party members. Cure Potency: 8,000 Additional Effect: Party member designated as your Dance Partner will also heal self and nearby party members This action's effects extend through obstructions.&lt;/para&gt;
+/// &lt;para&gt;Restores own HP and the HP of all nearby party members. Cure Potency: 12,000 Additional Effect: Party member designated as your Dance Partner will also heal self and nearby party members This action's effects extend through obstructions.&lt;/para&gt;
 /// &lt;/summary&gt;
 CuringWaltzPvP = 29429,
 /// &lt;summary&gt;
@@ -36650,17 +36680,17 @@ ClosedPositionPvP = 29431,
 HoningOvationPvP_29470 = 29470,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29475"&gt;&lt;strong&gt;Dragon Kick&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [29475] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 5,500. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 6,000. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 DragonKickPvP = 29475,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29476"&gt;&lt;strong&gt;Twin Snakes&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [29476] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 6,000. Combo Action: Dragon Kick ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 6,500. Combo Action: Dragon Kick ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 TwinSnakesPvP = 29476,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29477"&gt;&lt;strong&gt;Demolish&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [29477] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 6,500. Combo Action: Twin Snakes ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 7,000. Combo Action: Twin Snakes ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 DemolishPvP = 29477,
 /// &lt;summary&gt;
@@ -36670,7 +36700,7 @@ DemolishPvP = 29477,
 PhantomRushPvP = 29478,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29481"&gt;&lt;strong&gt;Rising Phoenix&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [29481] [Ability]
-/// &lt;para&gt;Delivers an attack with a potency of 4,000 to all nearby enemies. Additional Effect: Grants Fire Resonance Fire Resonance Effect: Increases damage dealt by next weaponskill by 50% Duration: 10s Additional Effect: Grants Fire's Rumination Duration: 10s Maximum Charges: 2 ※Flint's Reply changes to Fire's Reply while under the effect of Fire's Rumination.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 4,000 to all nearby enemies. Additional Effect: Grants Fire Resonance Fire Resonance Effect: Increases damage dealt by next weaponskill by 50% Duration: 10s Maximum Charges: 2&lt;/para&gt;
 /// &lt;/summary&gt;
 RisingPhoenixPvP = 29481,
 /// &lt;summary&gt;
@@ -36710,7 +36740,7 @@ WheelingThrustPvP = 29488,
 HeavensThrustPvP = 29489,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29490"&gt;&lt;strong&gt;Chaotic Spring&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (DRG) [29490] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 8,000. Ignores the effects of Guard when dealing damage. Additional Effect: Absorbs 150% of damage dealt as HP This weaponskill does not share a recast timer with any other actions.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 9,000. Ignores the effects of Guard when dealing damage. Additional Effect: Absorbs 150% of damage dealt as HP This weaponskill does not share a recast timer with any other actions.&lt;/para&gt;
 /// &lt;/summary&gt;
 ChaoticSpringPvP = 29490,
 /// &lt;summary&gt;
@@ -36795,12 +36825,12 @@ MeisuiPvP = 29508,
 ForkedRaijuPvP = 29510,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29511"&gt;&lt;strong&gt;Bunshin&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (NIN) [29511] [Ability]
-/// &lt;para&gt;Grants 5 stacks of Bunshin each stack allowing your shadow to attack enemies each time you execute a weaponskill. Bunshin Potency: 4,000 Potency is halved when executing Fuma Shuriken Zesho Meppo Forked Raiju or Fleeting Raiju. Duration: 20s Additional Effect: Grants Shade Shift creating a shadow that absorbs damage equivalent to a heal of 8,000 potency Duration: 10s ※Action changes to Huton while under the effect of Three Mudra.&lt;/para&gt;
+/// &lt;para&gt;Grants 5 stacks of Bunshin each stack allowing your shadow to attack enemies each time you execute a weaponskill. Bunshin Potency: 4,000 Potency is halved when executing Fuma Shuriken or Zesho Meppo. Duration: 20s Additional Effect: Grants Shade Shift creating a shadow that absorbs damage equivalent to a heal of 8,000 potency Duration: 10s ※Action changes to Huton while under the effect of Three Mudra.&lt;/para&gt;
 /// &lt;/summary&gt;
 BunshinPvP = 29511,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29512"&gt;&lt;strong&gt;Huton&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (NIN) [29512] [Spell]
-/// &lt;para&gt;Grants Huton creating a barrier that absorbs damage equivalent to a heal of 16,000 potency. While barrier is active reduces weaponskill recast time by 20% and increases movement speed by 25%. Duration: 10s Movement speed returns to normal when barrier is completely absorbed. Can only be executed while under the effect of Three Mudra. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Grants Huton creating a barrier that absorbs damage equivalent to a heal of 16,000 potency. While barrier is active reduces weaponskill recast time by 20% and increases movement speed by 50%. Duration: 10s Movement speed returns to normal when barrier is completely absorbed. Can only be executed while under the effect of Three Mudra. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 HutonPvP = 29512,
 /// &lt;summary&gt;
@@ -36870,7 +36900,7 @@ HissatsuChitenPvP = 29533,
 MineuchiPvP = 29535,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29536"&gt;&lt;strong&gt;Meikyo Shisui&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (SAM) [29536] [Ability]
-/// &lt;para&gt;Grants Meikyo Shisui. Meikyo Shisui Effect: Nullifies status afflictions that can be removed by Purify as well as knockback and draw-in effects Duration: 2s Additional Effect: Grants Tendo Setsugekka Ready Duration: 10s ※Action changes to Tendo Setsugekka upon execution.&lt;/para&gt;
+/// &lt;para&gt;Grants Meikyo Shisui. Meikyo Shisui Effect: Nullifies status afflictions that can be removed by Purify as well as knockback and draw-in effects while increasing HP recovered via healing actions by 20% Duration: 3s Additional Effect: Grants Tendo Setsugekka Ready Duration: 10s ※Action changes to Tendo Setsugekka upon execution.&lt;/para&gt;
 /// &lt;/summary&gt;
 MeikyoShisuiPvP = 29536,
 /// &lt;summary&gt;
@@ -36890,12 +36920,12 @@ WaxingSlicePvP = 29539,
 InfernalSlicePvP = 29540,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29543"&gt;&lt;strong&gt;Void Reaping&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (RPR) [29543] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 10,000. Can only be executed while under the effect of Enshrouded. This weaponskill does not share a recast timer with any other actions. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 12,000. Additional Effect: Absorbs 50% of damage dealt as HP Can only be executed while under the effect of Enshrouded. This weaponskill does not share a recast timer with any other actions. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 VoidReapingPvP = 29543,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29544"&gt;&lt;strong&gt;Cross Reaping&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (RPR) [29544] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 10,000. Combo Action: Void Reaping Can only be executed while under the effect of Enshrouded. This weaponskill does not share a recast timer with any other actions. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 12,000. Combo Action: Void Reaping Additional Effect: Absorbs 50% of damage dealt as HP Can only be executed while under the effect of Enshrouded. This weaponskill does not share a recast timer with any other actions. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 CrossReapingPvP = 29544,
 /// &lt;summary&gt;
@@ -36955,17 +36985,17 @@ HollowNozuchiPvP = 29559,
 IsleReturnPvE = 29573,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29649"&gt;&lt;strong&gt;Fire&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [29649] [Spell]
-/// &lt;para&gt;Deals fire damage with a potency of 6,000. Additional Effect: Grants Astral Fire Duration: 15s Effect cannot be stacked with Umbral Ice. Additional Effect: Grants Paradox Duration: 15s ※Action changes to Fire III upon execution.&lt;/para&gt;
+/// &lt;para&gt;Deals fire damage with a potency of 6,750. Additional Effect: Grants Astral Fire Duration: 15s Effect cannot be stacked with Umbral Ice. Additional Effect: Grants Paradox Duration: 15s ※Action changes to Fire III upon execution.&lt;/para&gt;
 /// &lt;/summary&gt;
 FirePvP = 29649,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29650"&gt;&lt;strong&gt;Fire IV&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [29650] [Spell]
-/// &lt;para&gt;Deals fire damage with a potency of 10,000. Additional Effect: Grants Astral Fire III Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Astral Fire II. ※Action changes to High Fire II upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Deals fire damage with a potency of 11,250. Additional Effect: Grants Astral Fire III Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Astral Fire II. ※Action changes to High Fire II upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 FireIvPvP = 29650,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/29651"&gt;&lt;strong&gt;Flare&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [29651] [Spell]
-/// &lt;para&gt;Deals fire damage with a potency of 12,000 to target and all enemies nearby it. Additional Effect: Grants Astral Fire III Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Soul Resonance. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Deals fire damage with a potency of 13,500 to target and all enemies nearby it. Additional Effect: Grants Astral Fire III Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Soul Resonance. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 FlarePvP = 29651,
 /// &lt;summary&gt;
@@ -37135,7 +37165,7 @@ ChaoticCyclonePvP = 29736,
 ShadowbringerPvP_29738 = 29738,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/30896"&gt;&lt;strong&gt;Fire III&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [30896] [Spell]
-/// &lt;para&gt;Deals fire damage with a potency of 8,000. Additional Effect: Grants Astral Fire II Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Astral Fire. ※Action changes to Fire IV upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Deals fire damage with a potency of 9,000. Additional Effect: Grants Astral Fire II Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Astral Fire. ※Action changes to Fire IV upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 FireIiiPvP = 30896,
 /// &lt;summary&gt;
@@ -38110,7 +38140,7 @@ TendoKaeshiGokenPvE = 36967,
 TendoKaeshiSetsugekkaPvE = 36968,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/36969"&gt;&lt;strong&gt;Sacrificium&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (RPR) [36969] [Ability]
-/// &lt;para&gt;Deals unaspected damage to target and all enemies nearby it with a potency of 600 for the first enemy and 20% less for all remaining enemies. Can only be executed while under the effect of Enshrouded and Oblatio. ※This action cannot be assigned to a hotbar. ※Gluttony changes to Sacrificium when requirements for execution are met.&lt;/para&gt;
+/// &lt;para&gt;Deals unaspected damage to target and all enemies nearby it with a potency of 700 for the first enemy and 20% less for all remaining enemies. Can only be executed while under the effect of Enshrouded and Oblatio. ※This action cannot be assigned to a hotbar. ※Gluttony changes to Sacrificium when requirements for execution are met.&lt;/para&gt;
 /// &lt;/summary&gt;
 SacrificiumPvE = 36969,
 /// &lt;summary&gt;
@@ -38835,27 +38865,22 @@ FatedBrandPvP = 41442,
 HeartOfCorundumPvP = 41443,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41444"&gt;&lt;strong&gt;Leaping Opo&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41444] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 7,000. Combo Action: Demolish ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 8,000. Combo Action: Demolish ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 LeapingOpoPvP = 41444,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41445"&gt;&lt;strong&gt;Rising Raptor&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41445] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 7,500. Combo Action: Leaping Opo ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 8,500. Combo Action: Leaping Opo ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 RisingRaptorPvP = 41445,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41446"&gt;&lt;strong&gt;Pouncing Coeurl&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41446] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 8,000. Combo Action: Rising Raptor ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 9,000. Combo Action: Rising Raptor ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 PouncingCoeurlPvP = 41446,
 /// &lt;summary&gt;
-/// &lt;see href="https://garlandtools.org/db/#action/41447"&gt;&lt;strong&gt;Flint's Reply&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41447] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 6,000. Maximum Charges: 2&lt;/para&gt;
-/// &lt;/summary&gt;
-FlintsReplyPvP = 41447,
-/// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41448"&gt;&lt;strong&gt;Fire's Reply&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41448] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 8,000 to target and all enemies nearby it. Can only be executed while under the effect of Fire's Rumination. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 8,000 to target and all enemies nearby it. Maximum Charges: 2&lt;/para&gt;
 /// &lt;/summary&gt;
 FiresReplyPvP = 41448,
 /// &lt;summary&gt;
@@ -38870,7 +38895,7 @@ DrakesbanePvP = 41449,
 StarcrossPvP = 41450,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41451"&gt;&lt;strong&gt;Dokumori&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (NIN) [41451] [Ability]
-/// &lt;para&gt;Delivers an attack with a potency of 2,000 to all enemies in a cone before you. Additional Effect: Increases target's damage taken by 10% Duration: 8s Additional Effect: Grants Zesho Meppo Ready Duration: 10s ※Action changes to Goka Mekkyaku while under the effect of Three Mudra. ※Aeolian Edge Combo changes to Zesho Meppo while under the effect of Zesho Meppo Ready.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 2,000 to all enemies in a cone before you. Additional Effect: Increases target's damage taken by 10% Duration: 6s Additional Effect: Grants Zesho Meppo Ready Duration: 10s ※Action changes to Goka Mekkyaku while under the effect of Three Mudra. ※Aeolian Edge Combo changes to Zesho Meppo while under the effect of Zesho Meppo Ready.&lt;/para&gt;
 /// &lt;/summary&gt;
 DokumoriPvP = 41451,
 /// &lt;summary&gt;
@@ -38880,12 +38905,12 @@ DokumoriPvP = 41451,
 ZeshoMeppoPvP = 41452,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41454"&gt;&lt;strong&gt;Tendo Setsugekka&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (SAM) [41454] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 10,000. Can only be executed while under the effect of Tendo Setsugekka Ready. ※This action cannot be assigned to a hotbar. ※Action changes to Tendo Kaeshi Setsugekka upon execution.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 10,000. Additional Effect: Restores own HP Cure Potency: 10,000 Can only be executed while under the effect of Tendo Setsugekka Ready. ※This action cannot be assigned to a hotbar. ※Action changes to Tendo Kaeshi Setsugekka upon execution.&lt;/para&gt;
 /// &lt;/summary&gt;
 TendoSetsugekkaPvP = 41454,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41455"&gt;&lt;strong&gt;Tendo Kaeshi Setsugekka&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (SAM) [41455] [Weaponskill]
-/// &lt;para&gt;Delivers an attack with a potency of 10,000. Combo Action: Tendo Setsugekka ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Delivers an attack with a potency of 10,000. Combo Action: Tendo Setsugekka Additional Effect: Restores own HP Cure Potency: 10,000 ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 TendoKaeshiSetsugekkaPvP = 41455,
 /// &lt;summary&gt;
@@ -38945,7 +38970,7 @@ DetonatorPvP = 41470,
 DanceOfTheDawnPvP = 41472,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41473"&gt;&lt;strong&gt;High Fire II&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [41473] [Spell]
-/// &lt;para&gt;Deals fire damage to target and all enemies nearby it with a potency of 12,000 for the first enemy and 8,000 for all remaining enemies. Additional Effect: Grants Astral Fire Duration: 15s Effect cannot be stacked with Umbral Ice Can only be executed while under the effect of Astral Fire III. ※Action changes to Fire III upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Deals fire damage to target and all enemies nearby it with a potency of 13,500 for the first enemy and 9,000 for all remaining enemies. Additional Effect: Grants Astral Fire Duration: 15s Effect cannot be stacked with Umbral Ice Can only be executed while under the effect of Astral Fire III. ※Action changes to Fire III upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 HighFireIiPvP = 41473,
 /// &lt;summary&gt;
@@ -38970,12 +38995,12 @@ WreathOfFirePvP = 41476,
 WreathOfIcePvP = 41478,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41480"&gt;&lt;strong&gt;Flare Star&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [41480] [Spell]
-/// &lt;para&gt;Deals fire damage with a potency of 20,000 to target and all enemies nearby it. Additional Effect: Afflicts target with Burns dealing fire damage over time Potency: 4,000 Duration: 12s Can only be executed while under the effect of Astral Fire and Elemental Star. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Deals fire damage with a potency of 20,000 to target and all enemies nearby it. Additional Effect: Afflicts target with Burns dealing fire damage over time Potency: 5,000 Duration: 12s Can only be executed while under the effect of Astral Fire and Elemental Star. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 FlareStarPvP = 41480,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/41481"&gt;&lt;strong&gt;Frost Star&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [41481] [Spell]
-/// &lt;para&gt;Deals ice damage with a potency of 15,000 to target and all enemies nearby it. Additional Effect: Afflicts target with Deep Freeze Deep Freeze Effect: Target is temporarily unable to act Duration: 3s Can only be executed while under the effect of Umbral Ice and Elemental Star. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+/// &lt;para&gt;Deals ice damage with a potency of 20,000 to target and all enemies nearby it. Additional Effect: Afflicts target with Deep Freeze Deep Freeze Effect: Target is temporarily unable to act Duration: 3s Can only be executed while under the effect of Umbral Ice and Elemental Star. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
 /// &lt;/summary&gt;
 FrostStarPvP = 41481,
 /// &lt;summary&gt;
@@ -39445,7 +39470,7 @@ HarmonicArrowPvP_41964 = 41964,
 TheSpriganatorPvE = 42038,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/42039"&gt;&lt;strong&gt;Roaring Eggscapade&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (All Classes) [42039] [Special]
-/// &lt;para&gt;Quickly dash 14 yalms forward destroying leafkin in your wake.&lt;/para&gt;
+/// &lt;para&gt;Quickly dash forward destroying leafkin in your wake.&lt;/para&gt;
 /// &lt;/summary&gt;
 RoaringEggscapadePvE = 42039,
 /// &lt;summary&gt;
@@ -39580,7 +39605,7 @@ RockyRollPvE = 44628,
 BigBurstPvE = 44629,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/45127"&gt;&lt;strong&gt;Pruning Pirouette&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (All Classes) [45127] [Special]
-/// &lt;para&gt;Delivers a trim to all nearby plantlife.&lt;/para&gt;
+/// &lt;para&gt;Delivers a trim to all nearby plant life.&lt;/para&gt;
 /// &lt;/summary&gt;
 PruningPirouettePvE = 45127,
 /// &lt;summary&gt;
@@ -39723,6 +39748,21 @@ AquaVitaePvE_46762 = 46762,
 /// &lt;para&gt;Deals magic damage three times in succession to all nearby enemies. Potency and area of effect increase with each successive attack. First Attack: 490 potency in a 3-yalm radius Second Attack: 630 potency in a 5-yalm radius Third Attack: 740 potency in an 8-yalm radius&lt;/para&gt;
 /// &lt;/summary&gt;
 ButterflyMotifPvE = 46763,
+/// &lt;summary&gt;
+/// &lt;see href="https://garlandtools.org/db/#action/46939"&gt;&lt;strong&gt;Variant Cure&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (GLA MRD PGL LNC ARC ROG THM ACN PLD MNK WAR DRG BRD BLM SMN NIN MCH DRK SAM RDM GNB DNC RPR VPR PCT) [46939] [Spell]
+/// &lt;para&gt;Restores target's HP. Cure Potency: 51,000 Additional Effect: Grants Regen Cure Potency: 15,000 Duration: 15s Additional Effect: Cure potency is doubled when target is under the effect of Rehabilitation This action is not affected by attributes.&lt;/para&gt;
+/// &lt;/summary&gt;
+VariantCurePvE_46939 = 46939,
+/// &lt;summary&gt;
+/// &lt;see href="https://garlandtools.org/db/#action/46940"&gt;&lt;strong&gt;Variant Spirit Dart&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (GLA MRD CNJ PLD WAR WHM SCH DRK AST GNB SGE) [46940] [Ability]
+/// &lt;para&gt;Deals damage over time to target and all enemies nearby it. Potency: 9,430 Duration: 30s This action is not affected by attributes or enhancing effects.&lt;/para&gt;
+/// &lt;/summary&gt;
+VariantSpiritDartPvE_46940 = 46940,
+/// &lt;summary&gt;
+/// &lt;see href="https://garlandtools.org/db/#action/46941"&gt;&lt;strong&gt;Variant Rampart&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (PGL LNC ARC ROG CNJ THM ACN MNK DRG BRD WHM BLM SMN SCH NIN MCH AST SAM RDM DNC RPR SGE VPR PCT) [46941] [Ability]
+/// &lt;para&gt;Reduces damage taken by 20%. Duration: 60s Additional Effect: Creates a barrier around self that absorbs damage equivalent to a heal of 76,500 potency Duration: 8s&lt;/para&gt;
+/// &lt;/summary&gt;
+VariantRampartPvE_46941 = 46941,
 /// &lt;summary&gt;
 /// &lt;see href="https://garlandtools.org/db/#action/46942"&gt;&lt;strong&gt;Variant Eagle Eye Shot&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (Any Disciple of War or Magic (excluding limited jobs)) [46942] [Ability]
 /// &lt;para&gt;Delivers a ranged attack with a potency of 150. Potency scales with item level.&lt;/para&gt;
@@ -41548,7 +41588,7 @@ namespace RotationSolver.Basic.Rotations.Duties;
 
 /// &lt;summary&gt;
 /// The Custom Rotation.
-/// &lt;br&gt;Number of Actions: 503&lt;/br&gt;
+/// &lt;br&gt;Number of Actions: 506&lt;/br&gt;
 /// &lt;/summary&gt;
 public abstract partial class DutyRotation
 {
@@ -52289,7 +52329,7 @@ public abstract partial class DutyRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/42039"&gt;&lt;strong&gt;Roaring Eggscapade&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (All Classes) [42039] [Special] Duty Action
-    /// &lt;para&gt;Quickly dash 14 yalms forward destroying leafkin in your wake.&lt;/para&gt;
+    /// &lt;para&gt;Quickly dash forward destroying leafkin in your wake.&lt;/para&gt;
     /// &lt;/summary&gt;
     [ID(42039)]
     public IBaseAction RoaringEggscapadePvE =&gt; _RoaringEggscapadePvECreator.Value;
@@ -52519,7 +52559,7 @@ public abstract partial class DutyRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/45127"&gt;&lt;strong&gt;Pruning Pirouette&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (All Classes) [45127] [Special] Duty Action
-    /// &lt;para&gt;Delivers a trim to all nearby plantlife.&lt;/para&gt;
+    /// &lt;para&gt;Delivers a trim to all nearby plant life.&lt;/para&gt;
     /// &lt;/summary&gt;
     [ID(45127)]
     public IBaseAction PruningPirouettePvE =&gt; _PruningPirouettePvECreator.Value;
@@ -53098,6 +53138,75 @@ public abstract partial class DutyRotation
     /// &lt;/summary&gt;
     [ID(46763)]
     public IBaseAction ButterflyMotifPvE =&gt; _ButterflyMotifPvECreator.Value;
+    private readonly Lazy&lt;IBaseAction&gt; _VariantCurePvE_46939Creator = new(() =&gt; 
+    {
+        IBaseAction action = new BaseAction((ActionID)46939, true);
+        CustomRotation.LoadActionSetting(ref action);
+    
+        var setting = action.Setting;
+        ModifyVariantCurePvE_46939(ref setting);
+        action.Setting = setting;
+    
+        return action;
+    });
+    
+    /// &lt;summary&gt;
+    /// Modify &lt;see href="https://garlandtools.org/db/#action/46939"&gt;&lt;strong&gt;Variant Cure&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (GLA MRD PGL LNC ARC ROG THM ACN PLD MNK WAR DRG BRD BLM SMN NIN MCH DRK SAM RDM GNB DNC RPR VPR PCT) [46939] [Spell] Duty Action
+    /// &lt;/summary&gt;
+    static partial void ModifyVariantCurePvE_46939(ref ActionSetting setting);
+    
+    /// &lt;summary&gt;
+    /// &lt;see href="https://garlandtools.org/db/#action/46939"&gt;&lt;strong&gt;Variant Cure&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (GLA MRD PGL LNC ARC ROG THM ACN PLD MNK WAR DRG BRD BLM SMN NIN MCH DRK SAM RDM GNB DNC RPR VPR PCT) [46939] [Spell] Duty Action
+    /// &lt;para&gt;Restores target's HP. Cure Potency: 51,000 Additional Effect: Grants Regen Cure Potency: 15,000 Duration: 15s Additional Effect: Cure potency is doubled when target is under the effect of Rehabilitation This action is not affected by attributes.&lt;/para&gt;
+    /// &lt;/summary&gt;
+    [ID(46939)]
+    public IBaseAction VariantCurePvE_46939 =&gt; _VariantCurePvE_46939Creator.Value;
+    private readonly Lazy&lt;IBaseAction&gt; _VariantSpiritDartPvE_46940Creator = new(() =&gt; 
+    {
+        IBaseAction action = new BaseAction((ActionID)46940, true);
+        CustomRotation.LoadActionSetting(ref action);
+    
+        var setting = action.Setting;
+        ModifyVariantSpiritDartPvE_46940(ref setting);
+        action.Setting = setting;
+    
+        return action;
+    });
+    
+    /// &lt;summary&gt;
+    /// Modify &lt;see href="https://garlandtools.org/db/#action/46940"&gt;&lt;strong&gt;Variant Spirit Dart&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (GLA MRD CNJ PLD WAR WHM SCH DRK AST GNB SGE) [46940] [Ability] Duty Action
+    /// &lt;/summary&gt;
+    static partial void ModifyVariantSpiritDartPvE_46940(ref ActionSetting setting);
+    
+    /// &lt;summary&gt;
+    /// &lt;see href="https://garlandtools.org/db/#action/46940"&gt;&lt;strong&gt;Variant Spirit Dart&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (GLA MRD CNJ PLD WAR WHM SCH DRK AST GNB SGE) [46940] [Ability] Duty Action
+    /// &lt;para&gt;Deals damage over time to target and all enemies nearby it. Potency: 9,430 Duration: 30s This action is not affected by attributes or enhancing effects.&lt;/para&gt;
+    /// &lt;/summary&gt;
+    [ID(46940)]
+    public IBaseAction VariantSpiritDartPvE_46940 =&gt; _VariantSpiritDartPvE_46940Creator.Value;
+    private readonly Lazy&lt;IBaseAction&gt; _VariantRampartPvE_46941Creator = new(() =&gt; 
+    {
+        IBaseAction action = new BaseAction((ActionID)46941, true);
+        CustomRotation.LoadActionSetting(ref action);
+    
+        var setting = action.Setting;
+        ModifyVariantRampartPvE_46941(ref setting);
+        action.Setting = setting;
+    
+        return action;
+    });
+    
+    /// &lt;summary&gt;
+    /// Modify &lt;see href="https://garlandtools.org/db/#action/46941"&gt;&lt;strong&gt;Variant Rampart&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (PGL LNC ARC ROG CNJ THM ACN MNK DRG BRD WHM BLM SMN SCH NIN MCH AST SAM RDM DNC RPR SGE VPR PCT) [46941] [Ability] Duty Action
+    /// &lt;/summary&gt;
+    static partial void ModifyVariantRampartPvE_46941(ref ActionSetting setting);
+    
+    /// &lt;summary&gt;
+    /// &lt;see href="https://garlandtools.org/db/#action/46941"&gt;&lt;strong&gt;Variant Rampart&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (PGL LNC ARC ROG CNJ THM ACN MNK DRG BRD WHM BLM SMN SCH NIN MCH AST SAM RDM DNC RPR SGE VPR PCT) [46941] [Ability] Duty Action
+    /// &lt;para&gt;Reduces damage taken by 20%. Duration: 60s Additional Effect: Creates a barrier around self that absorbs damage equivalent to a heal of 76,500 potency Duration: 8s&lt;/para&gt;
+    /// &lt;/summary&gt;
+    [ID(46941)]
+    public IBaseAction VariantRampartPvE_46941 =&gt; _VariantRampartPvE_46941Creator.Value;
     private readonly Lazy&lt;IBaseAction&gt; _VariantEagleEyeShotPvECreator = new(() =&gt; 
     {
         IBaseAction action = new BaseAction((ActionID)46942, true);
@@ -54640,7 +54749,7 @@ private sealed protected override IBaseAction LimitBreakPvP =&gt; PhalanxPvP;
 
 /// &lt;summary&gt;
 /// &lt;see href="https://na.finalfantasyxiv.com/jobguide/monk"&gt;&lt;strong&gt;monk&lt;/strong&gt;&lt;/see&gt;
-/// &lt;br&gt;Number of Actions: 55&lt;/br&gt;
+/// &lt;br&gt;Number of Actions: 54&lt;/br&gt;
 /// &lt;br&gt;Number of Traits: 17&lt;/br&gt;
 /// &lt;/summary&gt;
 [Jobs(Job.MNK, Job.PGL)]
@@ -55358,7 +55467,7 @@ public abstract partial class MonkRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29475"&gt;&lt;strong&gt;Dragon Kick&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [29475] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 5,500. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 6,000. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction DragonKickPvP =&gt; _DragonKickPvPCreator.Value;
@@ -55381,7 +55490,7 @@ public abstract partial class MonkRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29476"&gt;&lt;strong&gt;Twin Snakes&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [29476] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 6,000. Combo Action: Dragon Kick ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 6,500. Combo Action: Dragon Kick ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction TwinSnakesPvP =&gt; _TwinSnakesPvPCreator.Value;
@@ -55404,7 +55513,7 @@ public abstract partial class MonkRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29477"&gt;&lt;strong&gt;Demolish&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [29477] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 6,500. Combo Action: Twin Snakes ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 7,000. Combo Action: Twin Snakes ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction DemolishPvP =&gt; _DemolishPvPCreator.Value;
@@ -55450,7 +55559,7 @@ public abstract partial class MonkRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29481"&gt;&lt;strong&gt;Rising Phoenix&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [29481] [Ability]
-    /// &lt;para&gt;Delivers an attack with a potency of 4,000 to all nearby enemies. Additional Effect: Grants Fire Resonance Fire Resonance Effect: Increases damage dealt by next weaponskill by 50% Duration: 10s Additional Effect: Grants Fire's Rumination Duration: 10s Maximum Charges: 2 ※Flint's Reply changes to Fire's Reply while under the effect of Fire's Rumination.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 4,000 to all nearby enemies. Additional Effect: Grants Fire Resonance Fire Resonance Effect: Increases damage dealt by next weaponskill by 50% Duration: 10s Maximum Charges: 2&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction RisingPhoenixPvP =&gt; _RisingPhoenixPvPCreator.Value;
@@ -55795,7 +55904,7 @@ public abstract partial class MonkRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41444"&gt;&lt;strong&gt;Leaping Opo&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41444] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 7,000. Combo Action: Demolish ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 8,000. Combo Action: Demolish ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction LeapingOpoPvP =&gt; _LeapingOpoPvPCreator.Value;
@@ -55818,7 +55927,7 @@ public abstract partial class MonkRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41445"&gt;&lt;strong&gt;Rising Raptor&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41445] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 7,500. Combo Action: Leaping Opo ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 8,500. Combo Action: Leaping Opo ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction RisingRaptorPvP =&gt; _RisingRaptorPvPCreator.Value;
@@ -55841,33 +55950,10 @@ public abstract partial class MonkRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41446"&gt;&lt;strong&gt;Pouncing Coeurl&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41446] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 8,000. Combo Action: Rising Raptor ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 9,000. Combo Action: Rising Raptor ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction PouncingCoeurlPvP =&gt; _PouncingCoeurlPvPCreator.Value;
-    private readonly Lazy&lt;IBaseAction&gt; _FlintsReplyPvPCreator = new(() =&gt; 
-    {
-        IBaseAction action = new BaseAction((ActionID)41447, false);
-        CustomRotation.LoadActionSetting(ref action);
-    
-        var setting = action.Setting;
-        ModifyFlintsReplyPvP(ref setting);
-        action.Setting = setting;
-    
-        return action;
-    });
-    
-    /// &lt;summary&gt;
-    /// Modify &lt;see href="https://garlandtools.org/db/#action/41447"&gt;&lt;strong&gt;Flint's Reply&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41447] [Weaponskill]
-    /// &lt;/summary&gt;
-    static partial void ModifyFlintsReplyPvP(ref ActionSetting setting);
-    
-    /// &lt;summary&gt;
-    /// &lt;see href="https://garlandtools.org/db/#action/41447"&gt;&lt;strong&gt;Flint's Reply&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41447] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 6,000. Maximum Charges: 2&lt;/para&gt;
-    /// &lt;/summary&gt;
-    
-    public IBaseAction FlintsReplyPvP =&gt; _FlintsReplyPvPCreator.Value;
     private readonly Lazy&lt;IBaseAction&gt; _FiresReplyPvPCreator = new(() =&gt; 
     {
         IBaseAction action = new BaseAction((ActionID)41448, false);
@@ -55887,7 +55973,7 @@ public abstract partial class MonkRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41448"&gt;&lt;strong&gt;Fire's Reply&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MNK) [41448] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 8,000 to target and all enemies nearby it. Can only be executed while under the effect of Fire's Rumination. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 8,000 to target and all enemies nearby it. Maximum Charges: 2&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction FiresReplyPvP =&gt; _FiresReplyPvPCreator.Value;
@@ -55919,7 +56005,7 @@ public abstract partial class MonkRotation : CustomRotation
     
     /// &lt;inheritdoc/&gt;
     public override IBaseAction[] AllBaseActions =&gt; _AllBaseActions ??= [
-        BootshinePvE, TrueStrikePvE, SnapPunchPvE, TwinSnakesPvE, ArmOfTheDestroyerPvE, MantraPvE, DemolishPvE, PerfectBalancePvE, RockbreakerPvE, DragonKickPvE, TornadoKickPvE, ElixirFieldPvE, TheForbiddenChakraPvE, FormShiftPvE, RiddleOfEarthPvE, RiddleOfFirePvE, BrotherhoodPvE, FourpointFuryPvE, EnlightenmentPvE, SixsidedStarPvE, SteelPeakPvE, ThunderclapPvE, HowlingFistPvE, MasterfulBlitzPvE, CelestialRevolutionPvE, RiddleOfWindPvE, ShadowOfTheDestroyerPvE, RisingPhoenixPvE, PhantomRushPvE, FlintStrikePvE, DragonKickPvP, TwinSnakesPvP, DemolishPvP, PhantomRushPvP, RisingPhoenixPvP, RiddleOfEarthPvP, EarthsReplyPvP, ThunderclapPvP, SteeledMeditationPvE, InspiritedMeditationPvE, ForbiddenMeditationPvE, EnlightenedMeditationPvE, EarthsReplyPvE, LeapingOpoPvE, RisingRaptorPvE, PouncingCoeurlPvE, ElixirBurstPvE, WindsReplyPvE, FiresReplyPvE, LeapingOpoPvP, RisingRaptorPvP, PouncingCoeurlPvP, FlintsReplyPvP, FiresReplyPvP, WindsReplyPvP,
+        BootshinePvE, TrueStrikePvE, SnapPunchPvE, TwinSnakesPvE, ArmOfTheDestroyerPvE, MantraPvE, DemolishPvE, PerfectBalancePvE, RockbreakerPvE, DragonKickPvE, TornadoKickPvE, ElixirFieldPvE, TheForbiddenChakraPvE, FormShiftPvE, RiddleOfEarthPvE, RiddleOfFirePvE, BrotherhoodPvE, FourpointFuryPvE, EnlightenmentPvE, SixsidedStarPvE, SteelPeakPvE, ThunderclapPvE, HowlingFistPvE, MasterfulBlitzPvE, CelestialRevolutionPvE, RiddleOfWindPvE, ShadowOfTheDestroyerPvE, RisingPhoenixPvE, PhantomRushPvE, FlintStrikePvE, DragonKickPvP, TwinSnakesPvP, DemolishPvP, PhantomRushPvP, RisingPhoenixPvP, RiddleOfEarthPvP, EarthsReplyPvP, ThunderclapPvP, SteeledMeditationPvE, InspiritedMeditationPvE, ForbiddenMeditationPvE, EnlightenedMeditationPvE, EarthsReplyPvE, LeapingOpoPvE, RisingRaptorPvE, PouncingCoeurlPvE, ElixirBurstPvE, WindsReplyPvE, FiresReplyPvE, LeapingOpoPvP, RisingRaptorPvP, PouncingCoeurlPvP, FiresReplyPvP, WindsReplyPvP,
         ..base.AllBaseActions,
     ];
 
@@ -58175,7 +58261,7 @@ public abstract partial class DragoonRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29490"&gt;&lt;strong&gt;Chaotic Spring&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (DRG) [29490] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 8,000. Ignores the effects of Guard when dealing damage. Additional Effect: Absorbs 150% of damage dealt as HP This weaponskill does not share a recast timer with any other actions.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 9,000. Ignores the effects of Guard when dealing damage. Additional Effect: Absorbs 150% of damage dealt as HP This weaponskill does not share a recast timer with any other actions.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction ChaoticSpringPvP =&gt; _ChaoticSpringPvPCreator.Value;
@@ -60903,7 +60989,7 @@ public abstract partial class WhiteMageRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29228"&gt;&lt;strong&gt;Miracle of Nature&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (WHM) [29228] [Ability]
-    /// &lt;para&gt;Forcibly transforms target into a diminutive creature preventing them from using actions other than Purify. Duration: 2s Additional Effect: Reduces MP by 1,000 Has no effect on players under an effect that nullifies status afflictions that can be removed by Purify Relentless Rush Honing Dance players riding machina or non-player combatants.&lt;/para&gt;
+    /// &lt;para&gt;Forcibly transforms target into a diminutive creature preventing them from using actions other than Purify. Duration: 2s Additional Effect: Increases target's damage taken by 20% Has no effect on players under an effect that nullifies status afflictions that can be removed by Purify Relentless Rush Honing Dance players riding machina or non-player combatants.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction MiracleOfNaturePvP =&gt; _MiracleOfNaturePvPCreator.Value;
@@ -61982,7 +62068,7 @@ public abstract partial class BlackMageRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29649"&gt;&lt;strong&gt;Fire&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [29649] [Spell]
-    /// &lt;para&gt;Deals fire damage with a potency of 6,000. Additional Effect: Grants Astral Fire Duration: 15s Effect cannot be stacked with Umbral Ice. Additional Effect: Grants Paradox Duration: 15s ※Action changes to Fire III upon execution.&lt;/para&gt;
+    /// &lt;para&gt;Deals fire damage with a potency of 6,750. Additional Effect: Grants Astral Fire Duration: 15s Effect cannot be stacked with Umbral Ice. Additional Effect: Grants Paradox Duration: 15s ※Action changes to Fire III upon execution.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction FirePvP =&gt; _FirePvPCreator.Value;
@@ -62005,7 +62091,7 @@ public abstract partial class BlackMageRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29650"&gt;&lt;strong&gt;Fire IV&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [29650] [Spell]
-    /// &lt;para&gt;Deals fire damage with a potency of 10,000. Additional Effect: Grants Astral Fire III Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Astral Fire II. ※Action changes to High Fire II upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Deals fire damage with a potency of 11,250. Additional Effect: Grants Astral Fire III Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Astral Fire II. ※Action changes to High Fire II upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction FireIvPvP =&gt; _FireIvPvPCreator.Value;
@@ -62028,7 +62114,7 @@ public abstract partial class BlackMageRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29651"&gt;&lt;strong&gt;Flare&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [29651] [Spell]
-    /// &lt;para&gt;Deals fire damage with a potency of 12,000 to target and all enemies nearby it. Additional Effect: Grants Astral Fire III Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Soul Resonance. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Deals fire damage with a potency of 13,500 to target and all enemies nearby it. Additional Effect: Grants Astral Fire III Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Soul Resonance. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction FlarePvP =&gt; _FlarePvPCreator.Value;
@@ -62212,7 +62298,7 @@ public abstract partial class BlackMageRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/30896"&gt;&lt;strong&gt;Fire III&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [30896] [Spell]
-    /// &lt;para&gt;Deals fire damage with a potency of 8,000. Additional Effect: Grants Astral Fire II Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Astral Fire. ※Action changes to Fire IV upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Deals fire damage with a potency of 9,000. Additional Effect: Grants Astral Fire II Duration: 15s Effect cannot be stacked with Umbral Ice. Can only be executed while under the effect of Astral Fire. ※Action changes to Fire IV upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction FireIiiPvP =&gt; _FireIiiPvPCreator.Value;
@@ -62350,7 +62436,7 @@ public abstract partial class BlackMageRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41473"&gt;&lt;strong&gt;High Fire II&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [41473] [Spell]
-    /// &lt;para&gt;Deals fire damage to target and all enemies nearby it with a potency of 12,000 for the first enemy and 8,000 for all remaining enemies. Additional Effect: Grants Astral Fire Duration: 15s Effect cannot be stacked with Umbral Ice Can only be executed while under the effect of Astral Fire III. ※Action changes to Fire III upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Deals fire damage to target and all enemies nearby it with a potency of 13,500 for the first enemy and 9,000 for all remaining enemies. Additional Effect: Grants Astral Fire Duration: 15s Effect cannot be stacked with Umbral Ice Can only be executed while under the effect of Astral Fire III. ※Action changes to Fire III upon execution. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction HighFireIiPvP =&gt; _HighFireIiPvPCreator.Value;
@@ -62465,7 +62551,7 @@ public abstract partial class BlackMageRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41480"&gt;&lt;strong&gt;Flare Star&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [41480] [Spell]
-    /// &lt;para&gt;Deals fire damage with a potency of 20,000 to target and all enemies nearby it. Additional Effect: Afflicts target with Burns dealing fire damage over time Potency: 4,000 Duration: 12s Can only be executed while under the effect of Astral Fire and Elemental Star. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Deals fire damage with a potency of 20,000 to target and all enemies nearby it. Additional Effect: Afflicts target with Burns dealing fire damage over time Potency: 5,000 Duration: 12s Can only be executed while under the effect of Astral Fire and Elemental Star. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction FlareStarPvP =&gt; _FlareStarPvPCreator.Value;
@@ -62488,7 +62574,7 @@ public abstract partial class BlackMageRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41481"&gt;&lt;strong&gt;Frost Star&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (BLM) [41481] [Spell]
-    /// &lt;para&gt;Deals ice damage with a potency of 15,000 to target and all enemies nearby it. Additional Effect: Afflicts target with Deep Freeze Deep Freeze Effect: Target is temporarily unable to act Duration: 3s Can only be executed while under the effect of Umbral Ice and Elemental Star. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Deals ice damage with a potency of 20,000 to target and all enemies nearby it. Additional Effect: Afflicts target with Deep Freeze Deep Freeze Effect: Target is temporarily unable to act Duration: 3s Can only be executed while under the effect of Umbral Ice and Elemental Star. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction FrostStarPvP =&gt; _FrostStarPvPCreator.Value;
@@ -68063,7 +68149,7 @@ public abstract partial class NinjaRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29511"&gt;&lt;strong&gt;Bunshin&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (NIN) [29511] [Ability]
-    /// &lt;para&gt;Grants 5 stacks of Bunshin each stack allowing your shadow to attack enemies each time you execute a weaponskill. Bunshin Potency: 4,000 Potency is halved when executing Fuma Shuriken Zesho Meppo Forked Raiju or Fleeting Raiju. Duration: 20s Additional Effect: Grants Shade Shift creating a shadow that absorbs damage equivalent to a heal of 8,000 potency Duration: 10s ※Action changes to Huton while under the effect of Three Mudra.&lt;/para&gt;
+    /// &lt;para&gt;Grants 5 stacks of Bunshin each stack allowing your shadow to attack enemies each time you execute a weaponskill. Bunshin Potency: 4,000 Potency is halved when executing Fuma Shuriken or Zesho Meppo. Duration: 20s Additional Effect: Grants Shade Shift creating a shadow that absorbs damage equivalent to a heal of 8,000 potency Duration: 10s ※Action changes to Huton while under the effect of Three Mudra.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction BunshinPvP =&gt; _BunshinPvPCreator.Value;
@@ -68086,7 +68172,7 @@ public abstract partial class NinjaRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29512"&gt;&lt;strong&gt;Huton&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (NIN) [29512] [Spell]
-    /// &lt;para&gt;Grants Huton creating a barrier that absorbs damage equivalent to a heal of 16,000 potency. While barrier is active reduces weaponskill recast time by 20% and increases movement speed by 25%. Duration: 10s Movement speed returns to normal when barrier is completely absorbed. Can only be executed while under the effect of Three Mudra. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Grants Huton creating a barrier that absorbs damage equivalent to a heal of 16,000 potency. While barrier is active reduces weaponskill recast time by 20% and increases movement speed by 50%. Duration: 10s Movement speed returns to normal when barrier is completely absorbed. Can only be executed while under the effect of Three Mudra. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction HutonPvP =&gt; _HutonPvPCreator.Value;
@@ -68316,7 +68402,7 @@ public abstract partial class NinjaRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41451"&gt;&lt;strong&gt;Dokumori&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (NIN) [41451] [Ability]
-    /// &lt;para&gt;Delivers an attack with a potency of 2,000 to all enemies in a cone before you. Additional Effect: Increases target's damage taken by 10% Duration: 8s Additional Effect: Grants Zesho Meppo Ready Duration: 10s ※Action changes to Goka Mekkyaku while under the effect of Three Mudra. ※Aeolian Edge Combo changes to Zesho Meppo while under the effect of Zesho Meppo Ready.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 2,000 to all enemies in a cone before you. Additional Effect: Increases target's damage taken by 10% Duration: 6s Additional Effect: Grants Zesho Meppo Ready Duration: 10s ※Action changes to Goka Mekkyaku while under the effect of Three Mudra. ※Aeolian Edge Combo changes to Zesho Meppo while under the effect of Zesho Meppo Ready.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction DokumoriPvP =&gt; _DokumoriPvPCreator.Value;
@@ -69423,7 +69509,7 @@ public abstract partial class MachinistRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29405"&gt;&lt;strong&gt;Drill&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (MCH) [29405] [Weaponskill]
-    /// &lt;para&gt;Delivers a ranged attack with a potency of 9,000. Potency is increased to 18,000 while under the effect of Analysis. Ignores the effects of Guard when dealing damage. Additional Effect: Grants Bioblaster Primed Maximum Charges: 2 Can only be executed while under the effect of Drill Primed. This weaponskill does not share a recast timer with any other actions. ※Action changes to Bioblaster while under the effect of Bioblaster Primed.&lt;/para&gt;
+    /// &lt;para&gt;Delivers a ranged attack with a potency of 10,000. Potency is increased to 20,000 while under the effect of Analysis. Ignores the effects of Guard when dealing damage. Additional Effect: Grants Bioblaster Primed Maximum Charges: 2 Can only be executed while under the effect of Drill Primed. This weaponskill does not share a recast timer with any other actions. ※Action changes to Bioblaster while under the effect of Bioblaster Primed.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction DrillPvP =&gt; _DrillPvPCreator.Value;
@@ -72166,7 +72252,7 @@ public abstract partial class AstrologianRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29243"&gt;&lt;strong&gt;Aspected Benefic&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (AST) [29243] [Spell]
-    /// &lt;para&gt;Restores target's HP. Cure Potency: 6,000 Potency increases up to 9,000 as the target's HP decreases reaching its maximum value when the target has 50% HP or less. Additional Effect: Grants Diurnal Benefic to target Diurnal Benefic Effect: Gradually restores HP Cure Potency: 3,000 Duration: 6s When cast via Double Cast grants Nocturnal Benefic. Nocturnal Benefic Effect: Creates a barrier around target that absorbs damage equivalent to a heal of 4,000 potency Duration: 12s Maximum Charges: 2 This action does not share a recast timer with any other actions.&lt;/para&gt;
+    /// &lt;para&gt;Restores target's HP. Cure Potency: 6,000 Potency increases up to 9,000 as the target's HP decreases reaching its maximum value when the target has 50% HP or less. Additional Effect: Grants Diurnal Benefic to target Diurnal Benefic Effect: Gradually restores HP Cure Potency: 3,000 Duration: 6s When cast via Double Cast grants Nocturnal Benefic. Nocturnal Benefic Effect: Creates a barrier around target that absorbs damage equivalent to a heal of 6,000 potency Duration: 12s Maximum Charges: 2 This action does not share a recast timer with any other actions.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction AspectedBeneficPvP =&gt; _AspectedBeneficPvPCreator.Value;
@@ -72189,7 +72275,7 @@ public abstract partial class AstrologianRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29244"&gt;&lt;strong&gt;Gravity II&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (AST) [29244] [Spell]
-    /// &lt;para&gt;Deals unaspected damage with a potency of 7,500 to target and all enemies nearby it. Additional Effect: Afflicts first target with Heavy +75% Duration: 3s When cast via Double Cast Binds first target. Duration: 3s This action does not share a recast timer with any other actions.&lt;/para&gt;
+    /// &lt;para&gt;Deals unaspected damage with a potency of 8,000 to target and all enemies nearby it. Additional Effect: Afflicts first target with Heavy +75% Duration: 3s When cast via Double Cast Binds first target. Duration: 3s This action does not share a recast timer with any other actions.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction GravityIiPvP =&gt; _GravityIiPvPCreator.Value;
@@ -72258,7 +72344,7 @@ public abstract partial class AstrologianRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29247"&gt;&lt;strong&gt;Aspected Benefic&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (AST) [29247] [Ability]
-    /// &lt;para&gt;Restores target's HP. Cure Potency: 6,000 Potency increases up to 9,000 as the target's HP decreases reaching its maximum value when the target has 50% HP or less. Additional Effect: Grants Diurnal Benefic to target Diurnal Benefic Effect: Gradually restores HP Cure Potency: 3,000 Duration: 6s When cast via Double Cast grants Nocturnal Benefic. Nocturnal Benefic Effect: Creates a barrier around target that absorbs damage equivalent to a heal of 4,000 potency Duration: 12s Maximum Charges: 2 This action does not share a recast timer with any other actions.&lt;/para&gt;
+    /// &lt;para&gt;Restores target's HP. Cure Potency: 6,000 Potency increases up to 9,000 as the target's HP decreases reaching its maximum value when the target has 50% HP or less. Additional Effect: Grants Diurnal Benefic to target Diurnal Benefic Effect: Gradually restores HP Cure Potency: 3,000 Duration: 6s When cast via Double Cast grants Nocturnal Benefic. Nocturnal Benefic Effect: Creates a barrier around target that absorbs damage equivalent to a heal of 6,000 potency Duration: 12s Maximum Charges: 2 This action does not share a recast timer with any other actions.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction AspectedBeneficPvP_29247 =&gt; _AspectedBeneficPvP_29247Creator.Value;
@@ -72281,7 +72367,7 @@ public abstract partial class AstrologianRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29248"&gt;&lt;strong&gt;Gravity II&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (AST) [29248] [Ability]
-    /// &lt;para&gt;Deals unaspected damage with a potency of 7,500 to target and all enemies nearby it. Additional Effect: Afflicts first target with Heavy +75% Duration: 3s When cast via Double Cast Binds first target. Duration: 3s This action does not share a recast timer with any other actions.&lt;/para&gt;
+    /// &lt;para&gt;Deals unaspected damage with a potency of 8,000 to target and all enemies nearby it. Additional Effect: Afflicts first target with Heavy +75% Duration: 3s When cast via Double Cast Binds first target. Duration: 3s This action does not share a recast timer with any other actions.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction GravityIiPvP_29248 =&gt; _GravityIiPvP_29248Creator.Value;
@@ -74070,7 +74156,7 @@ public abstract partial class SamuraiRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29536"&gt;&lt;strong&gt;Meikyo Shisui&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (SAM) [29536] [Ability]
-    /// &lt;para&gt;Grants Meikyo Shisui. Meikyo Shisui Effect: Nullifies status afflictions that can be removed by Purify as well as knockback and draw-in effects Duration: 2s Additional Effect: Grants Tendo Setsugekka Ready Duration: 10s ※Action changes to Tendo Setsugekka upon execution.&lt;/para&gt;
+    /// &lt;para&gt;Grants Meikyo Shisui. Meikyo Shisui Effect: Nullifies status afflictions that can be removed by Purify as well as knockback and draw-in effects while increasing HP recovered via healing actions by 20% Duration: 3s Additional Effect: Grants Tendo Setsugekka Ready Duration: 10s ※Action changes to Tendo Setsugekka upon execution.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction MeikyoShisuiPvP =&gt; _MeikyoShisuiPvPCreator.Value;
@@ -74254,7 +74340,7 @@ public abstract partial class SamuraiRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41454"&gt;&lt;strong&gt;Tendo Setsugekka&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (SAM) [41454] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 10,000. Can only be executed while under the effect of Tendo Setsugekka Ready. ※This action cannot be assigned to a hotbar. ※Action changes to Tendo Kaeshi Setsugekka upon execution.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 10,000. Additional Effect: Restores own HP Cure Potency: 10,000 Can only be executed while under the effect of Tendo Setsugekka Ready. ※This action cannot be assigned to a hotbar. ※Action changes to Tendo Kaeshi Setsugekka upon execution.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction TendoSetsugekkaPvP =&gt; _TendoSetsugekkaPvPCreator.Value;
@@ -74277,7 +74363,7 @@ public abstract partial class SamuraiRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/41455"&gt;&lt;strong&gt;Tendo Kaeshi Setsugekka&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (SAM) [41455] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 10,000. Combo Action: Tendo Setsugekka ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 10,000. Combo Action: Tendo Setsugekka Additional Effect: Restores own HP Cure Potency: 10,000 ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction TendoKaeshiSetsugekkaPvP =&gt; _TendoKaeshiSetsugekkaPvPCreator.Value;
@@ -81842,7 +81928,7 @@ public abstract partial class DancerRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29428"&gt;&lt;strong&gt;Fan Dance&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (DNC) [29428] [Ability]
-    /// &lt;para&gt;Delivers an attack with a potency of 6,000 to all enemies in a cone before you. Additional Effect: Reduces damage taken by self and party member designated as your Dance Partner by 20% Duration: 5s&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 6,000 to all enemies in a cone before you. Additional Effect: Reduces damage taken by self and party member designated as your Dance Partner by 20% Duration: 6s&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction FanDancePvP =&gt; _FanDancePvPCreator.Value;
@@ -81865,7 +81951,7 @@ public abstract partial class DancerRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29429"&gt;&lt;strong&gt;Curing Waltz&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (DNC) [29429] [Ability]
-    /// &lt;para&gt;Restores own HP and the HP of all nearby party members. Cure Potency: 8,000 Additional Effect: Party member designated as your Dance Partner will also heal self and nearby party members This action's effects extend through obstructions.&lt;/para&gt;
+    /// &lt;para&gt;Restores own HP and the HP of all nearby party members. Cure Potency: 12,000 Additional Effect: Party member designated as your Dance Partner will also heal self and nearby party members This action's effects extend through obstructions.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction CuringWaltzPvP =&gt; _CuringWaltzPvPCreator.Value;
@@ -82829,7 +82915,7 @@ public abstract partial class ReaperRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/24397"&gt;&lt;strong&gt;Grim Reaping&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (RPR) [24397] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 200 to all enemies in a cone before you. Can only be executed while under the effect of Enshrouded. Lemure Shroud Cost: 1 This action does not share a recast timer with any other actions. Upon execution the recast timer for this action will be applied to all other weaponskills and magic actions. ※This action cannot be assigned to a hotbar. ※Guillotine changes to Grim Reaping when requirements for execution are met.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 220 to all enemies in a cone before you. Can only be executed while under the effect of Enshrouded. Lemure Shroud Cost: 1 This action does not share a recast timer with any other actions. Upon execution the recast timer for this action will be applied to all other weaponskills and magic actions. ※This action cannot be assigned to a hotbar. ※Guillotine changes to Grim Reaping when requirements for execution are met.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction GrimReapingPvE =&gt; _GrimReapingPvECreator.Value;
@@ -83105,7 +83191,7 @@ public abstract partial class ReaperRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29543"&gt;&lt;strong&gt;Void Reaping&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (RPR) [29543] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 10,000. Can only be executed while under the effect of Enshrouded. This weaponskill does not share a recast timer with any other actions. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 12,000. Additional Effect: Absorbs 50% of damage dealt as HP Can only be executed while under the effect of Enshrouded. This weaponskill does not share a recast timer with any other actions. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction VoidReapingPvP =&gt; _VoidReapingPvPCreator.Value;
@@ -83128,7 +83214,7 @@ public abstract partial class ReaperRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/29544"&gt;&lt;strong&gt;Cross Reaping&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvP&lt;/i&gt; (RPR) [29544] [Weaponskill]
-    /// &lt;para&gt;Delivers an attack with a potency of 10,000. Combo Action: Void Reaping Can only be executed while under the effect of Enshrouded. This weaponskill does not share a recast timer with any other actions. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
+    /// &lt;para&gt;Delivers an attack with a potency of 12,000. Combo Action: Void Reaping Additional Effect: Absorbs 50% of damage dealt as HP Can only be executed while under the effect of Enshrouded. This weaponskill does not share a recast timer with any other actions. ※This action cannot be assigned to a hotbar.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction CrossReapingPvP =&gt; _CrossReapingPvPCreator.Value;
@@ -83358,7 +83444,7 @@ public abstract partial class ReaperRotation : CustomRotation
     
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/36969"&gt;&lt;strong&gt;Sacrificium&lt;/strong&gt;&lt;/see&gt; &lt;i&gt;PvE&lt;/i&gt; (RPR) [36969] [Ability]
-    /// &lt;para&gt;Deals unaspected damage to target and all enemies nearby it with a potency of 600 for the first enemy and 20% less for all remaining enemies. Can only be executed while under the effect of Enshrouded and Oblatio. ※This action cannot be assigned to a hotbar. ※Gluttony changes to Sacrificium when requirements for execution are met.&lt;/para&gt;
+    /// &lt;para&gt;Deals unaspected damage to target and all enemies nearby it with a potency of 700 for the first enemy and 20% less for all remaining enemies. Can only be executed while under the effect of Enshrouded and Oblatio. ※This action cannot be assigned to a hotbar. ※Gluttony changes to Sacrificium when requirements for execution are met.&lt;/para&gt;
     /// &lt;/summary&gt;
     
     public IBaseAction SacrificiumPvE =&gt; _SacrificiumPvECreator.Value;
@@ -83716,7 +83802,7 @@ private sealed protected override IBaseAction LimitBreakPvP =&gt; TenebraeLemuru
     public static IBaseTrait EnhancedPlentifulHarvestTrait { get; } = new BaseTrait(597);
     /// &lt;summary&gt;
     /// &lt;see href="https://garlandtools.org/db/#action/50657"&gt;&lt;strong&gt;Melee Mastery III&lt;/strong&gt;&lt;/see&gt; (RPR) [657]
-    /// &lt;para&gt;Increases the potency of Slice to 420 Waxing Slice to 260 Infernal Slice to 280 Soul Slice to 520 Gibbet to 500 Gallows to 500 Unveiled Gibbet to 440 Unveiled Gallows to 440 Void Reaping to 540 Cross Reaping to 540 Harvest Moon to 800 and Lemure's Slice to 280.&lt;/para&gt;
+    /// &lt;para&gt;Increases the potency of Slice to 420 Waxing Slice to 260 Infernal Slice to 280 Soul Slice to 520 Gibbet to 500 Gallows to 500 Unveiled Gibbet to 440 Unveiled Gallows to 440 Void Reaping to 560 Cross Reaping to 560 Harvest Moon to 800 and Lemure's Slice to 280.&lt;/para&gt;
     /// &lt;/summary&gt;
     public static IBaseTrait MeleeMasteryIiiTrait { get; } = new BaseTrait(657);
 
@@ -88863,385 +88949,385 @@ private sealed protected override IBaseAction LimitBreakPvP =&gt; AdventOfChocob
   </data>
   <data name="OpCode" xml:space="preserve">
     <value>/// &lt;summary&gt;
-///Actor Set Pos
+///Actor Gauge
 /// &lt;/summary&gt;
-[Description("Actor Set Pos")]
-ActorSetPos = 514,
-/// &lt;summary&gt;
-///Actor Cast
-/// &lt;/summary&gt;
-[Description("Actor Cast")]
-ActorCast = 417,
+[Description("Actor Gauge")]
+ActorGauge = 106,
 /// &lt;summary&gt;
 ///Actor Move
 /// &lt;/summary&gt;
 [Description("Actor Move")]
-ActorMove = 315,
-/// &lt;summary&gt;
-///Actor Gauge
-/// &lt;/summary&gt;
-[Description("Actor Gauge")]
-ActorGauge = 460,
-/// &lt;summary&gt;
-///Actor Control
-/// &lt;/summary&gt;
-[Description("Actor Control")]
-ActorControl = 712,
-/// &lt;summary&gt;
-///Actor Control Self
-/// &lt;/summary&gt;
-[Description("Actor Control Self")]
-ActorControlSelf = 691,
-/// &lt;summary&gt;
-///Airship Exploration Result
-/// &lt;/summary&gt;
-[Description("Airship Exploration Result")]
-AirshipExplorationResult = 277,
+ActorMove = 866,
 /// &lt;summary&gt;
 ///Airship Status List
 /// &lt;/summary&gt;
 [Description("Airship Status List")]
-AirshipStatusList = 552,
+AirshipStatusList = 734,
+/// &lt;summary&gt;
+///Actor Set Pos
+/// &lt;/summary&gt;
+[Description("Actor Set Pos")]
+ActorSetPos = 456,
 /// &lt;summary&gt;
 ///Airship Status
 /// &lt;/summary&gt;
 [Description("Airship Status")]
-AirshipStatus = 374,
+AirshipStatus = 845,
 /// &lt;summary&gt;
-///Actor Control Target
+///Airship Exploration Result
 /// &lt;/summary&gt;
-[Description("Actor Control Target")]
-ActorControlTarget = 224,
+[Description("Airship Exploration Result")]
+AirshipExplorationResult = 844,
+/// &lt;summary&gt;
+///Actor Control Self
+/// &lt;/summary&gt;
+[Description("Actor Control Self")]
+ActorControlSelf = 535,
 /// &lt;summary&gt;
 ///Airship Timers
 /// &lt;/summary&gt;
 [Description("Airship Timers")]
-AirshipTimers = 966,
+AirshipTimers = 204,
 /// &lt;summary&gt;
-///Currency Crystal Info
+///Actor Control
 /// &lt;/summary&gt;
-[Description("Currency Crystal Info")]
-CurrencyCrystalInfo = 610,
+[Description("Actor Control")]
+ActorControl = 231,
 /// &lt;summary&gt;
-///CFNotify
+///Actor Cast
 /// &lt;/summary&gt;
-[Description("CFNotify")]
-CFNotify = 591,
+[Description("Actor Cast")]
+ActorCast = 608,
+/// &lt;summary&gt;
+///Actor Control Target
+/// &lt;/summary&gt;
+[Description("Actor Control Target")]
+ActorControlTarget = 369,
 /// &lt;summary&gt;
 ///Crafting Log
 /// &lt;/summary&gt;
 [Description("Crafting Log")]
-CraftingLog = 534,
+CraftingLog = 565,
+/// &lt;summary&gt;
+///Currency Crystal Info
+/// &lt;/summary&gt;
+[Description("Currency Crystal Info")]
+CurrencyCrystalInfo = 409,
 /// &lt;summary&gt;
 ///Container Info
 /// &lt;/summary&gt;
 [Description("Container Info")]
-ContainerInfo = 525,
+ContainerInfo = 854,
+/// &lt;summary&gt;
+///CFNotify
+/// &lt;/summary&gt;
+[Description("CFNotify")]
+CFNotify = 645,
 /// &lt;summary&gt;
 ///Desynth Result
 /// &lt;/summary&gt;
 [Description("Desynth Result")]
-DesynthResult = 485,
-/// &lt;summary&gt;
-///Event Play 8
-/// &lt;/summary&gt;
-[Description("Event Play 8")]
-EventPlay8 = 462,
-/// &lt;summary&gt;
-///Event Play 16
-/// &lt;/summary&gt;
-[Description("Event Play 16")]
-EventPlay16 = 602,
-/// &lt;summary&gt;
-///Event Start
-/// &lt;/summary&gt;
-[Description("Event Start")]
-EventStart = 760,
-/// &lt;summary&gt;
-///Event Play 255
-/// &lt;/summary&gt;
-[Description("Event Play 255")]
-EventPlay255 = 823,
-/// &lt;summary&gt;
-///Event Play 128
-/// &lt;/summary&gt;
-[Description("Event Play 128")]
-EventPlay128 = 451,
-/// &lt;summary&gt;
-///Effect Result Basic
-/// &lt;/summary&gt;
-[Description("Effect Result Basic")]
-EffectResultBasic = 427,
-/// &lt;summary&gt;
-///Event Play
-/// &lt;/summary&gt;
-[Description("Event Play")]
-EventPlay = 850,
-/// &lt;summary&gt;
-///Effect
-/// &lt;/summary&gt;
-[Description("Effect")]
-Effect = 487,
-/// &lt;summary&gt;
-///Event Play 4
-/// &lt;/summary&gt;
-[Description("Event Play 4")]
-EventPlay4 = 411,
+DesynthResult = 330,
 /// &lt;summary&gt;
 ///Event Finish
 /// &lt;/summary&gt;
 [Description("Event Finish")]
-EventFinish = 104,
+EventFinish = 572,
 /// &lt;summary&gt;
-///Event Play 32
+///Event Play 128
 /// &lt;/summary&gt;
-[Description("Event Play 32")]
-EventPlay32 = 129,
+[Description("Event Play 128")]
+EventPlay128 = 823,
 /// &lt;summary&gt;
-///Examine
+///Event Play 16
 /// &lt;/summary&gt;
-[Description("Examine")]
-Examine = 166,
-/// &lt;summary&gt;
-///Environment Control
-/// &lt;/summary&gt;
-[Description("Environment Control")]
-EnvironmentControl = 182,
-/// &lt;summary&gt;
-///Event Play 64
-/// &lt;/summary&gt;
-[Description("Event Play 64")]
-EventPlay64 = 194,
-/// &lt;summary&gt;
-///Examine Search Info
-/// &lt;/summary&gt;
-[Description("Examine Search Info")]
-ExamineSearchInfo = 339,
+[Description("Event Play 16")]
+EventPlay16 = 862,
 /// &lt;summary&gt;
 ///Effect Result
 /// &lt;/summary&gt;
 [Description("Effect Result")]
-EffectResult = 276,
+EffectResult = 644,
+/// &lt;summary&gt;
+///Event Play
+/// &lt;/summary&gt;
+[Description("Event Play")]
+EventPlay = 692,
+/// &lt;summary&gt;
+///Examine Search Info
+/// &lt;/summary&gt;
+[Description("Examine Search Info")]
+ExamineSearchInfo = 419,
+/// &lt;summary&gt;
+///Event Play 255
+/// &lt;/summary&gt;
+[Description("Event Play 255")]
+EventPlay255 = 554,
+/// &lt;summary&gt;
+///Event Play 32
+/// &lt;/summary&gt;
+[Description("Event Play 32")]
+EventPlay32 = 438,
+/// &lt;summary&gt;
+///Examine
+/// &lt;/summary&gt;
+[Description("Examine")]
+Examine = 876,
+/// &lt;summary&gt;
+///Environment Control
+/// &lt;/summary&gt;
+[Description("Environment Control")]
+EnvironmentControl = 902,
+/// &lt;summary&gt;
+///Event Start
+/// &lt;/summary&gt;
+[Description("Event Start")]
+EventStart = 188,
+/// &lt;summary&gt;
+///Effect Result Basic
+/// &lt;/summary&gt;
+[Description("Effect Result Basic")]
+EffectResultBasic = 313,
+/// &lt;summary&gt;
+///Event Play 4
+/// &lt;/summary&gt;
+[Description("Event Play 4")]
+EventPlay4 = 300,
+/// &lt;summary&gt;
+///Event Play 64
+/// &lt;/summary&gt;
+[Description("Event Play 64")]
+EventPlay64 = 152,
+/// &lt;summary&gt;
+///Event Play 8
+/// &lt;/summary&gt;
+[Description("Event Play 8")]
+EventPlay8 = 248,
+/// &lt;summary&gt;
+///Effect
+/// &lt;/summary&gt;
+[Description("Effect")]
+Effect = 182,
 /// &lt;summary&gt;
 ///Free Company Info
 /// &lt;/summary&gt;
 [Description("Free Company Info")]
-FreeCompanyInfo = 795,
+FreeCompanyInfo = 730,
 /// &lt;summary&gt;
 ///Free Company Dialog
 /// &lt;/summary&gt;
 [Description("Free Company Dialog")]
-FreeCompanyDialog = 150,
+FreeCompanyDialog = 257,
 /// &lt;summary&gt;
 ///Gathering Log
 /// &lt;/summary&gt;
 [Description("Gathering Log")]
-GatheringLog = 892,
-/// &lt;summary&gt;
-///Inventory Transaction Finish
-/// &lt;/summary&gt;
-[Description("Inventory Transaction Finish")]
-InventoryTransactionFinish = 845,
-/// &lt;summary&gt;
-///Item Info
-/// &lt;/summary&gt;
-[Description("Item Info")]
-ItemInfo = 148,
+GatheringLog = 458,
 /// &lt;summary&gt;
 ///Inventory Action Ack
 /// &lt;/summary&gt;
 [Description("Inventory Action Ack")]
-InventoryActionAck = 923,
-/// &lt;summary&gt;
-///Inventory Transaction
-/// &lt;/summary&gt;
-[Description("Inventory Transaction")]
-InventoryTransaction = 425,
-/// &lt;summary&gt;
-///Init Zone
-/// &lt;/summary&gt;
-[Description("Init Zone")]
-InitZone = 420,
+InventoryActionAck = 517,
 /// &lt;summary&gt;
 ///Island Workshop Supply Demand
 /// &lt;/summary&gt;
 [Description("Island Workshop Supply Demand")]
-IslandWorkshopSupplyDemand = 352,
+IslandWorkshopSupplyDemand = 685,
 /// &lt;summary&gt;
 ///Item Market Board Info
 /// &lt;/summary&gt;
 [Description("Item Market Board Info")]
-ItemMarketBoardInfo = 141,
+ItemMarketBoardInfo = 794,
+/// &lt;summary&gt;
+///Inventory Transaction Finish
+/// &lt;/summary&gt;
+[Description("Inventory Transaction Finish")]
+InventoryTransactionFinish = 448,
+/// &lt;summary&gt;
+///Item Info
+/// &lt;/summary&gt;
+[Description("Item Info")]
+ItemInfo = 424,
+/// &lt;summary&gt;
+///Inventory Transaction
+/// &lt;/summary&gt;
+[Description("Inventory Transaction")]
+InventoryTransaction = 282,
+/// &lt;summary&gt;
+///Init Zone
+/// &lt;/summary&gt;
+[Description("Init Zone")]
+InitZone = 582,
 /// &lt;summary&gt;
 ///Logout
 /// &lt;/summary&gt;
 [Description("Logout")]
-Logout = 694,
-/// &lt;summary&gt;
-///Market Board Purchase
-/// &lt;/summary&gt;
-[Description("Market Board Purchase")]
-MarketBoardPurchase = 122,
-/// &lt;summary&gt;
-///Market Board Search Result
-/// &lt;/summary&gt;
-[Description("Market Board Search Result")]
-MarketBoardSearchResult = 403,
-/// &lt;summary&gt;
-///Market Board Item Listing
-/// &lt;/summary&gt;
-[Description("Market Board Item Listing")]
-MarketBoardItemListing = 105,
+Logout = 723,
 /// &lt;summary&gt;
 ///Market Board Item Listing Count
 /// &lt;/summary&gt;
 [Description("Market Board Item Listing Count")]
-MarketBoardItemListingCount = 528,
+MarketBoardItemListingCount = 165,
+/// &lt;summary&gt;
+///Market Board Search Result
+/// &lt;/summary&gt;
+[Description("Market Board Search Result")]
+MarketBoardSearchResult = 168,
+/// &lt;summary&gt;
+///Market Board Purchase
+/// &lt;/summary&gt;
+[Description("Market Board Purchase")]
+MarketBoardPurchase = 218,
+/// &lt;summary&gt;
+///Market Board Item Listing
+/// &lt;/summary&gt;
+[Description("Market Board Item Listing")]
+MarketBoardItemListing = 450,
 /// &lt;summary&gt;
 ///Market Board Item Listing History
 /// &lt;/summary&gt;
 [Description("Market Board Item Listing History")]
-MarketBoardItemListingHistory = 887,
+MarketBoardItemListingHistory = 751,
 /// &lt;summary&gt;
 ///Npc Spawn
 /// &lt;/summary&gt;
 [Description("Npc Spawn")]
-NpcSpawn = 744,
+NpcSpawn = 963,
 /// &lt;summary&gt;
 ///Object Spawn
 /// &lt;/summary&gt;
 [Description("Object Spawn")]
-ObjectSpawn = 284,
-/// &lt;summary&gt;
-///Place Field Marker Preset
-/// &lt;/summary&gt;
-[Description("Place Field Marker Preset")]
-PlaceFieldMarkerPreset = 522,
+ObjectSpawn = 187,
 /// &lt;summary&gt;
 ///Player Setup
 /// &lt;/summary&gt;
 [Description("Player Setup")]
-PlayerSetup = 215,
-/// &lt;summary&gt;
-///Place Field Marker
-/// &lt;/summary&gt;
-[Description("Place Field Marker")]
-PlaceFieldMarker = 902,
-/// &lt;summary&gt;
-///Prepare Zoning
-/// &lt;/summary&gt;
-[Description("Prepare Zoning")]
-PrepareZoning = 819,
-/// &lt;summary&gt;
-///Player Spawn
-/// &lt;/summary&gt;
-[Description("Player Spawn")]
-PlayerSpawn = 318,
-/// &lt;summary&gt;
-///Player Stats
-/// &lt;/summary&gt;
-[Description("Player Stats")]
-PlayerStats = 752,
+PlayerSetup = 365,
 /// &lt;summary&gt;
 ///Playtime
 /// &lt;/summary&gt;
 [Description("Playtime")]
-Playtime = 400,
+Playtime = 531,
+/// &lt;summary&gt;
+///Prepare Zoning
+/// &lt;/summary&gt;
+[Description("Prepare Zoning")]
+PrepareZoning = 142,
+/// &lt;summary&gt;
+///Place Field Marker Preset
+/// &lt;/summary&gt;
+[Description("Place Field Marker Preset")]
+PlaceFieldMarkerPreset = 491,
+/// &lt;summary&gt;
+///Player Stats
+/// &lt;/summary&gt;
+[Description("Player Stats")]
+PlayerStats = 687,
+/// &lt;summary&gt;
+///Player Spawn
+/// &lt;/summary&gt;
+[Description("Player Spawn")]
+PlayerSpawn = 970,
+/// &lt;summary&gt;
+///Place Field Marker
+/// &lt;/summary&gt;
+[Description("Place Field Marker")]
+PlaceFieldMarker = 284,
 /// &lt;summary&gt;
 ///Result Dialog
 /// &lt;/summary&gt;
 [Description("Result Dialog")]
-ResultDialog = 829,
+ResultDialog = 977,
 /// &lt;summary&gt;
 ///Retainer Information
 /// &lt;/summary&gt;
 [Description("Retainer Information")]
-RetainerInformation = 980,
-/// &lt;summary&gt;
-///Status Effect List
-/// &lt;/summary&gt;
-[Description("Status Effect List")]
-StatusEffectList = 798,
-/// &lt;summary&gt;
-///Submarine Status List
-/// &lt;/summary&gt;
-[Description("Submarine Status List")]
-SubmarineStatusList = 652,
-/// &lt;summary&gt;
-///Submarine Timers
-/// &lt;/summary&gt;
-[Description("Submarine Timers")]
-SubmarineTimers = 615,
-/// &lt;summary&gt;
-///Submarine Progression Status
-/// &lt;/summary&gt;
-[Description("Submarine Progression Status")]
-SubmarineProgressionStatus = 147,
+RetainerInformation = 506,
 /// &lt;summary&gt;
 ///System Log Message
 /// &lt;/summary&gt;
 [Description("System Log Message")]
-SystemLogMessage = 858,
+SystemLogMessage = 817,
 /// &lt;summary&gt;
 ///Status Effect List 2
 /// &lt;/summary&gt;
 [Description("Status Effect List 2")]
-StatusEffectList2 = 510,
+StatusEffectList2 = 515,
+/// &lt;summary&gt;
+///Status Effect List
+/// &lt;/summary&gt;
+[Description("Status Effect List")]
+StatusEffectList = 479,
 /// &lt;summary&gt;
 ///Status Effect List 3
 /// &lt;/summary&gt;
 [Description("Status Effect List 3")]
-StatusEffectList3 = 235,
+StatusEffectList3 = 432,
 /// &lt;summary&gt;
 ///Submarine Exploration Result
 /// &lt;/summary&gt;
 [Description("Submarine Exploration Result")]
-SubmarineExplorationResult = 621,
+SubmarineExplorationResult = 359,
+/// &lt;summary&gt;
+///Submarine Timers
+/// &lt;/summary&gt;
+[Description("Submarine Timers")]
+SubmarineTimers = 116,
+/// &lt;summary&gt;
+///Submarine Progression Status
+/// &lt;/summary&gt;
+[Description("Submarine Progression Status")]
+SubmarineProgressionStatus = 696,
+/// &lt;summary&gt;
+///Submarine Status List
+/// &lt;/summary&gt;
+[Description("Submarine Status List")]
+SubmarineStatusList = 496,
 /// &lt;summary&gt;
 ///Update Class Info
 /// &lt;/summary&gt;
 [Description("Update Class Info")]
-UpdateClassInfo = 699,
-/// &lt;summary&gt;
-///Update Hp Mp Tp
-/// &lt;/summary&gt;
-[Description("Update Hp Mp Tp")]
-UpdateHpMpTp = 234,
+UpdateClassInfo = 612,
 /// &lt;summary&gt;
 ///Update Search Info
 /// &lt;/summary&gt;
 [Description("Update Search Info")]
-UpdateSearchInfo = 444,
+UpdateSearchInfo = 975,
 /// &lt;summary&gt;
 ///Update Inventory Slot
 /// &lt;/summary&gt;
 [Description("Update Inventory Slot")]
-UpdateInventorySlot = 717,
+UpdateInventorySlot = 894,
+/// &lt;summary&gt;
+///Update Hp Mp Tp
+/// &lt;/summary&gt;
+[Description("Update Hp Mp Tp")]
+UpdateHpMpTp = 321,
 /// &lt;summary&gt;
 ///Weather Change
 /// &lt;/summary&gt;
 [Description("Weather Change")]
-WeatherChange = 146,
+WeatherChange = 290,
 /// &lt;summary&gt;
 ///Inventory Modify Handler
 /// &lt;/summary&gt;
 [Description("Inventory Modify Handler")]
-InventoryModifyHandler = 563,
+InventoryModifyHandler = 969,
 /// &lt;summary&gt;
 ///Market Board Purchase Handler
 /// &lt;/summary&gt;
 [Description("Market Board Purchase Handler")]
-MarketBoardPurchaseHandler = 884,
+MarketBoardPurchaseHandler = 888,
 /// &lt;summary&gt;
 ///Set Search Info Handler
 /// &lt;/summary&gt;
 [Description("Set Search Info Handler")]
-SetSearchInfoHandler = 109,
+SetSearchInfoHandler = 383,
 /// &lt;summary&gt;
 ///Update Position Handler
 /// &lt;/summary&gt;
 [Description("Update Position Handler")]
-UpdatePositionHandler = 936,
+UpdatePositionHandler = 795,
 /// &lt;summary&gt;
 ///Lobby Error
 /// &lt;/summary&gt;

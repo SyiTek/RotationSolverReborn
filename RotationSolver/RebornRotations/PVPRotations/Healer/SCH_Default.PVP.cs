@@ -1,6 +1,6 @@
 ﻿namespace RotationSolver.RebornRotations.PVPRotations.Healer;
 
-[Rotation("Default PVP", CombatType.PvP, GameVersion = "7.41")]
+[Rotation("Default PVP", CombatType.PvP, GameVersion = "7.45")]
 [SourceCode(Path = "main/RebornRotations/PVPRotations/Healer/SCH_Default.PVP.cs")]
 
 public class SCH_DefaultPVP : ScholarRotation
@@ -27,22 +27,20 @@ public class SCH_DefaultPVP : ScholarRotation
             return true;
         }
 
-        if (DeploymentTacticsPvP.CanUse(out action, usedUp: true) && Target.HasStatus(true, StatusID.Biolysis_3089))
+        if (!IsLastAction(false, DeploymentTacticsPvP))
         {
-            return true;
-        }
+			if (DeploymentTacticsPvP.CanUse(out action, usedUp: true))
+			{
+				return true;
+			}
+		}
 
-        return base.AttackAbility(nextGCD, out action);
-    }
+		if (ExpedientPvP.CanUse(out action, usedUp: true))
+		{
+			return true;
+		}
 
-    protected override bool DefenseAreaAbility(IAction nextGCD, out IAction? action)
-    {
-        if (ExpedientPvP.CanUse(out action, usedUp: true))
-        {
-            return true;
-        }
-
-        return base.DefenseAreaAbility(nextGCD, out action);
+		return base.AttackAbility(nextGCD, out action);
     }
 
     protected override bool HealAreaAbility(IAction nextGCD, out IAction? action)

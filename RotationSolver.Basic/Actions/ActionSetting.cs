@@ -39,7 +39,7 @@ public enum SpecialActionType : byte
 /// <summary>
 /// Setting from the developer.
 /// </summary>
-public class ActionSetting()
+public class ActionSetting
 {
     /// <summary>
     /// The Ninjutsu action of this action.
@@ -62,10 +62,15 @@ public class ActionSetting()
     /// </summary>
     public bool StatusFromSelf { get; set; } = true;
 
-    /// <summary>
-    /// The status that is provided to the target of the ability.
-    /// </summary>
-    public StatusID[]? TargetStatusProvide { get; set; } = null;
+	/// <summary>
+	/// Is this action a Mudra. 
+	/// </summary>
+	public bool IsMudra { get; set; } = false;
+
+	/// <summary>
+	/// The status that is provided to the target of the ability.
+	/// </summary>
+	public StatusID[]? TargetStatusProvide { get; set; } = null;
 
     /// <summary>
     /// The status that it needs on the target.

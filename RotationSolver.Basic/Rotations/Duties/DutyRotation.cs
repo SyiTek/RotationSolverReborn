@@ -200,32 +200,35 @@ public partial class DutyRotation : IDisposable
 
         if (InVariantDungeon)
         {
-            ImGui.Text($"VariantUltimatumPvE Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantUltimatumSet)}");
-            ImGui.Spacing();
-            ImGui.Text($"VariantSpiritDartPvE_33863  Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantSpiritDartSet)}");
+			ImGui.Text($"Variant Spirit Dart Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantSpiritDartSet)}");
+			ImGui.Text($"VariantSpiritDartPvE_46940 Slotted: {VariantSpiritDartPvE_46940.Info.IsOnSlot}");
             ImGui.Text($"VariantSpiritDartPvE_33863 Slotted: {VariantSpiritDartPvE_33863.Info.IsOnSlot}");
-            ImGui.Spacing();
-            ImGui.Text($"VariantSpiritDartPvE  Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantSpiritDartSet)}");
             ImGui.Text($"VariantSpiritDartPvE Slotted: {VariantSpiritDartPvE.Info.IsOnSlot}");
-            ImGui.Spacing();
-            ImGui.Text($"VariantRampartPvE_33864 Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantRampartSet)}");
-            ImGui.Spacing();
-            ImGui.Text($"VariantRampartPvE Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantRampartSet)}");
-            ImGui.Spacing();
-            ImGui.Text($"VariantCurePvE_33862  Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantCureSet)}");
-            ImGui.Text($"VariantCurePvE_33862 Slotted: {VariantCurePvE_33862.Info.IsOnSlot}");
-            ImGui.Spacing();
-            ImGui.Text($"VariantCurePvE  Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantCureSet)}");
+			ImGui.Spacing();
+			ImGui.Text($"Variant Rampart Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantRampartSet)}");
+			ImGui.Text($"VariantRampartPvE_46941 Slotted: {VariantRampartPvE_46941.Info.IsOnSlot}");
+            ImGui.Text($"VariantRampartPvE_33864 Slotted: {VariantRampartPvE_33864.Info.IsOnSlot}");
+			ImGui.Text($"VariantRampartPvE Slotted: {VariantRampartPvE.Info.IsOnSlot}");
+			ImGui.Spacing();
+			ImGui.Text($"Variant Cure Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantCureSet)}");
+			ImGui.Text($"VariantCurePvE_46939 Slotted: {VariantCurePvE_46939.Info.IsOnSlot}");
+			ImGui.Text($"VariantCurePvE_33862 Slotted: {VariantCurePvE_33862.Info.IsOnSlot}");
             ImGui.Text($"VariantCurePvE Slotted: {VariantCurePvE.Info.IsOnSlot}");
             ImGui.Spacing();
-            ImGui.Text($"VariantRaisePvE Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantRampartSet)}");
-            ImGui.Spacing();
-            ImGui.Text($"VariantRaiseIiPvE Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantRaiseSet)}");
-            ImGui.Spacing();
-            ImGui.Text($"VariantRampartPvE Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantRaiseSet)}");
-            ImGui.Spacing();
-            ImGui.Spacing();
-            ImGui.Text($"Sildihn Subterrane: {SildihnSubterrane}");
+            ImGui.Text($"Variant Raise Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantRaiseSet)}");
+			ImGui.Text($"VariantRaisePvE Slotted: {VariantRaisePvE.Info.IsOnSlot}");
+			ImGui.Spacing();
+            ImGui.Text($"Variant Raise Ii Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantRaiseSet)}");
+			ImGui.Text($"VariantRaiseIiPvE Slotted: {VariantRaiseIiPvE.Info.IsOnSlot}");
+			ImGui.Spacing();
+			ImGui.Text($"Variant Eagle Eye Shot Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantEagleEyeShotSet)}");
+			ImGui.Text($"VariantEagleEyeShotPvE Slotted: {VariantEagleEyeShotPvE.Info.IsOnSlot}");
+			ImGui.Spacing();
+			ImGui.Text($"Variant Ultimatum Status: {StatusHelper.PlayerHasStatus(true, StatusID.VariantUltimatumSet)}");
+			ImGui.Text($"VariantUltimatumPvE Slotted: {VariantUltimatumPvE.Info.IsOnSlot}");
+			ImGui.Spacing();
+			ImGui.Text($"The Merchant's Tale: {TheMerchantsTale}");
+			ImGui.Text($"Sildihn Subterrane: {SildihnSubterrane}");
             ImGui.Text($"Mount Rokkon: {MountRokkon}");
             ImGui.Text($"Aloalo Island: {AloaloIsland}");
             ImGui.Spacing();
@@ -285,10 +288,20 @@ public partial class DutyRotation : IDisposable
     /// </summary>
     public static bool ArkveldEX => DataCenter.ArkveldEX;
 
-    /// <summary>
-    /// 
-    /// </summary>
-    public static bool SildihnSubterrane => DataCenter.SildihnSubterrane;
+	/// <summary>
+	/// 
+	/// </summary>
+	public static bool TheMerchantsTaleAdvanced => DataCenter.TheMerchantsTaleAdvanced;
+
+	/// <summary>
+	/// 
+	/// </summary>
+	public static bool TheMerchantsTale => DataCenter.TheMerchantsTale;
+
+	/// <summary>
+	/// 
+	/// </summary>
+	public static bool SildihnSubterrane => DataCenter.SildihnSubterrane;
 
     /// <summary>
     /// 
@@ -425,12 +438,48 @@ public partial class DutyRotation : IDisposable
     /// </summary>
     public static AutoStatus CommandStatus => DataCenter.CommandStatus;
 
-    #region Phantom Levels
+	/// <summary>
+	/// Is there any hostile target in range? 25 for ranged jobs and healer, 3 for melee and tank.
+	/// </summary>
+	[Description("Has hostiles in Range")]
+	public static bool HasHostilesInRange => DataCenter.HasHostilesInRange;
 
-    /// <summary>
-    /// Gets the name of the current active Phantom Job, or None if none are active.
-    /// </summary>
-    public static string? ActivePhantomJob => GetPhantomJob().ToString();
+	/// <summary>
+	/// Is there any hostile target in 25 yalms?
+	/// </summary>
+	[Description("Has hostiles in 25 yalms")]
+	public static bool HasHostilesInMaxRange => DataCenter.HasHostilesInMaxRange;
+
+	/// <summary>
+	/// How many hostile targets in range? 25 for ranged jobs and healer, 3 for melee and tank.
+	/// </summary>
+	[Description("The number of hostiles in Range")]
+	public static int NumberOfHostilesInRange => DataCenter.NumberOfHostilesInRange;
+
+	/// <summary>
+	/// How many hostile targets in max range (25 yalms) regardless of job
+	/// </summary>
+	[Description("The number of hostiles in max Range")]
+	public static int NumberOfHostilesInMaxRange => DataCenter.NumberOfHostilesInMaxRange;
+
+	/// <summary>
+	/// How many hostile targets in range? 25 for ranged jobs and healer, 3 for melee and tank. This is all can attack.
+	/// </summary>
+	[Description("The number of all hostiles in Range")]
+	public static int NumberOfAllHostilesInRange => DataCenter.NumberOfAllHostilesInRange;
+
+	/// <summary>
+	/// How many hostile targets in max range (25 yalms) regardless of job. This is all can attack.
+	/// </summary>
+	[Description("The number of all hostiles in max Range")]
+	public static int NumberOfAllHostilesInMaxRange => DataCenter.NumberOfAllHostilesInMaxRange;
+
+	#region Phantom Levels
+
+	/// <summary>
+	/// Gets the name of the current active Phantom Job, or None if none are active.
+	/// </summary>
+	public static string? ActivePhantomJob => GetPhantomJob().ToString();
 
     public static byte FreelancerLevel
     {

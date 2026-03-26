@@ -225,26 +225,26 @@ internal partial class Configs : IPluginConfiguration
 
 	[ConditionBool, UI("Intercept player input and queue it for RSR to execute the action. (PvE only)",
     Filter = AutoActionUsage, Section = 5)]
-    private static readonly bool _interceptAction2 = false;
+    private static readonly bool _interceptAction3 = true;
 
     [ConditionBool, UI("Allow intercepting Spells.",
-    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction2))]
-    private static readonly bool _interceptSpell2 = false;
+    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction3))]
+    private static readonly bool _interceptSpell3 = true;
 
     [ConditionBool, UI("Allow intercepting Weaponskills.",
-    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction2))]
-    private static readonly bool _interceptWeaponskill2 = false;
+    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction3))]
+    private static readonly bool _interceptWeaponskill3 = true;
 
     [ConditionBool, UI("Allow intercepting Abilities.",
-    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction2))]
-    private static readonly bool _interceptAbility2 = false;
+    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction3))]
+    private static readonly bool _interceptAbility3 = true;
 
     [ConditionBool, UI("Allow intercepting actions in macros.",
-    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction2))]
+    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction3))]
     private static readonly bool _interceptMacro = false;
 
     [ConditionBool, UI("Allow intercepting actions that are currently on cooldown.",
-    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction2))]
+    Filter = AutoActionUsage, Section = 5, Parent = nameof(InterceptAction3))]
     private static readonly bool _interceptCooldown = false;
 
     [UI("Intercepted action execution window (amount of time RSR is allowed to attempt to use an action after it has been intercepted)",
@@ -752,11 +752,11 @@ internal partial class Configs : IPluginConfiguration
         Filter = HealingActionCondition, Section = 2)]
     private static readonly bool _raiseBrinkOfDeath = true;
 
-    [JobConfig, UI("Raise non-Healers from bottom of party list to the top (Light Party 2 Healer Behavior, Experimental)",
+    [JobConfig, UI("Raise non-Healers from bottom of party list to the top (Light Party 2 Healer Behavior)",
         Filter = HealingActionCondition, Section = 2)]
     private static readonly bool _h2 = false;
 
-    [JobConfig, UI("Raise Red Mage and Summoners first if no Tanks or Healers are dead (Experimental)",
+    [JobConfig, UI("Raise Red Mage and Summoners first if no Tanks or Healers are dead",
         Filter = HealingActionCondition, Section = 2)]
     private static readonly bool _offRaiserRaise = false;
 
@@ -767,7 +767,7 @@ internal partial class Configs : IPluginConfiguration
     /// the specified amount of time before your cooldown ends to cast Swiftcast. This is to prevent using your Swiftcast too early and waste it
     /// if your co-healer manages to raise your target within your global cooldown period.
     /// </markdown>
-    [JobConfig, UI("How early before next GCD should RSR use swiftcast for raise (Experimental)",
+    [JobConfig, UI("How early before next GCD should RSR use swiftcast for raise",
         Filter = HealingActionCondition, Section = 2)]
     [Range(0, 1.0f, ConfigUnitType.Seconds, 0.01f)]
     public float SwiftcastBuffer { get; set; } = 0.6f;

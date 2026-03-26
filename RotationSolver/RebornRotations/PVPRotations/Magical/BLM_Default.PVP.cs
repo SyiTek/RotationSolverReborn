@@ -1,6 +1,6 @@
 ﻿namespace RotationSolver.RebornRotations.PVPRotations.Magical;
 
-[Rotation("Default PVP", CombatType.PvP, GameVersion = "7.41")]
+[Rotation("Default PVP", CombatType.PvP, GameVersion = "7.45")]
 [SourceCode(Path = "main/RebornRotations/PVPRotations/Magical/BLM_Default.PVP.cs")]
 
 public class BLM_DefaultPVP : BlackMageRotation
@@ -63,13 +63,7 @@ public class BLM_DefaultPVP : BlackMageRotation
     #region GCDs
     protected override bool GeneralGCD(out IAction? action)
     {
-        if (XenoglossyPvP.CanUse(out action, usedUp: true)
-            && (Player?.GetHealthRatio() < XenoglossyLowHP || Player?.GetHealthRatio() > XenoglossyHighHP))
-        {
-            return true;
-        }
-
-        if (FlareStarPvP.CanUse(out action))
+		if (FlareStarPvP.CanUse(out action))
         {
             return true;
         }
@@ -79,7 +73,23 @@ public class BLM_DefaultPVP : BlackMageRotation
             return true;
         }
 
-        if (ParadoxPvP.CanUse(out action))
+		if (FlarePvP.CanUse(out action))
+		{
+			return true;
+		}
+
+		if (FreezePvP.CanUse(out action))
+		{
+			return true;
+		}
+
+		if (XenoglossyPvP.CanUse(out action, usedUp: true)
+			&& (Player?.GetHealthRatio() < XenoglossyLowHP || Player?.GetHealthRatio() > XenoglossyHighHP))
+		{
+			return true;
+		}
+
+		if (ParadoxPvP.CanUse(out action))
         {
             return true;
         }
@@ -89,22 +99,36 @@ public class BLM_DefaultPVP : BlackMageRotation
             return true;
         }
 
-        if (FirePvP.CanUse(out action))
-        {
-            return true;
-        }
+		if (HighFireIiPvP.CanUse(out action, skipAoeCheck: true))
+		{
+			return true;
+		}
 
-        if (BlizzardIiiPvP.CanUse(out action))
-        {
-            return true;
-        }
+		if (HighBlizzardIiPvP.CanUse(out action))
+		{
+			return true;
+		}
 
-        if (BlizzardPvP.CanUse(out action))
-        {
-            return true;
-        }
+		if (IsMoving && BlizzardIvPvP.CanUse(out action))
+		{
+			return true;
+		}
 
-        return base.GeneralGCD(out action);
+		if (IsMoving && BlizzardIiiPvP.CanUse(out action))
+		{
+			return true;
+		}
+
+		if (BlizzardPvP.CanUse(out action))
+		{
+			return true;
+		}
+
+		if (FirePvP.CanUse(out action))
+		{
+			return true;
+		}
+		return base.GeneralGCD(out action);
     }
     #endregion
 }

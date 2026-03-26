@@ -159,6 +159,13 @@ internal static class DataCenter
 	internal static ConcurrentQueue<VfxNewData> VfxDataQueue { get; } = new();
 
 	/// <summary>
+	/// Players currently targeted by tankbuster VFX markers (populated from VFX queue).
+	/// </summary>
+	internal static List<IBattleChara> TankbusterTargets { get; } = [];
+
+	private static readonly Lock _tankbusterLock = new();
+
+	/// <summary>
 	/// Only recorded 15s hps.
 	/// </summary>
 	public const int HP_RECORD_TIME = 240;
@@ -541,6 +548,16 @@ internal static class DataCenter
 	/// <summary>
 	/// 
 	/// </summary>
+	public static bool TheMerchantsTaleAdvanced => IsInTerritory(1316);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	public static bool TheMerchantsTale => IsInTerritory(1315);
+
+	/// <summary>
+	/// 
+	/// </summary>
 	public static bool SildihnSubterrane => IsInTerritory(1069);
 
 	/// <summary>
@@ -556,7 +573,7 @@ internal static class DataCenter
 	/// <summary>
 	/// 
 	/// </summary>
-	public static bool InVariantDungeon => AloaloIsland || MountRokkon || SildihnSubterrane;
+	public static bool InVariantDungeon => TheMerchantsTaleAdvanced || TheMerchantsTale || AloaloIsland || MountRokkon || SildihnSubterrane;
 	#endregion
 
 	#region Misc Duty Info
@@ -621,11 +638,18 @@ internal static class DataCenter
 		{
 			return true;
 		}
+
 		if (Job == Job.RDM && PlayerSyncedLevel() >= 64)
 		{
 			return true;
 		}
+
 		if (DutyRotation.ChemistLevel >= 3)
+		{
+			return true;
+		}
+
+		if (StatusHelper.PlayerHasStatus(false, StatusID.VariantRaiseSet))
 		{
 			return true;
 		}
@@ -688,29 +712,31 @@ internal static class DataCenter
 
 	#region GCD
 	/// <summary>
-	/// Returns the time remaining until the next GCD (Global Cooldown) after considering the current animation lock.
+	/// Returns the current animation lock remaining time (seconds).
 	/// </summary>
 	public static float AnimationLock => Player.AnimationLock;
 
 	/// <summary>
-	/// Returns the time remaining until the next GCD (Global Cooldown) after considering the current animation lock.
+	/// Time until the next ability relative to the next GCD window.
+	/// Non-negative (clamped to 0).
 	/// </summary>
-	public static float NextAbilityToNextGCD => DefaultGCDRemain - AnimationLock;
+	public static float NextAbilityToNextGCD => Math.Max(0f, DefaultGCDRemain - AnimationLock);
 
 	/// <summary>
-	/// Returns the total duration of the default GCD.
+	/// Returns the total duration of the default GCD (seconds). Clamped to non-negative.
 	/// </summary>
-	public static float DefaultGCDTotal => ActionManagerHelper.GetDefaultRecastTime();
+	public static float DefaultGCDTotal => Math.Max(0f, ActionManagerHelper.GetDefaultRecastTime());
 
 	/// <summary>
 	/// Returns the remaining time for the default GCD by subtracting the elapsed time from the total recast time.
+	/// Clamped to non-negative.
 	/// </summary>
-	public static float DefaultGCDRemain => DefaultGCDTotal - DefaultGCDElapsed;
+	public static float DefaultGCDRemain => Math.Max(0f, DefaultGCDTotal - DefaultGCDElapsed);
 
 	/// <summary>
-	/// Returns the elapsed time since the start of the default GCD.
+	/// Returns the elapsed time since the start of the default GCD. Clamped to non-negative.
 	/// </summary>
-	public static float DefaultGCDElapsed => ActionManagerHelper.GetDefaultRecastTimeElapsed();
+	public static float DefaultGCDElapsed => Math.Max(0f, ActionManagerHelper.GetDefaultRecastTimeElapsed());
 
 	/// <summary>
 	/// Per-rotation override for Action Ahead. Set by individual rotations via UpdateInfo().
@@ -721,8 +747,9 @@ internal static class DataCenter
 	/// <summary>
 	/// Calculates the action ahead time based on the default GCD total and minimum animation lock.
 	/// Uses per-rotation override if set, otherwise falls back to global config.
+	/// Result is clamped to non-negative.
 	/// </summary>
-	public static float CalculatedActionAhead => DefaultGCDTotal * (RotationActionAheadOverride ?? Service.Config.Action6Head);
+	public static float CalculatedActionAhead => Math.Max(0f, DefaultGCDTotal * (RotationActionAheadOverride ?? Service.Config.Action6Head));
 
 	/// <summary>
 	/// Calculates the total GCD time for a given number of GCDs and an optional offset.
@@ -1749,41 +1776,57 @@ internal static class DataCenter
 		});
 	}
 
-	public static bool IsCastingTankVfx()
-	{
-		return IsCastingVfx(VfxDataQueue, s =>
-		{
-			if (!Player.Available || Player.Object == null)
-			{
-				return false;
-			}
+    public static bool IsCastingTankVfx()
+    {
+        // Populate TankbusterTargets from the VFX queue and return whether any tankbuster VFX was found.
+        lock (_tankbusterLock)
+        {
+            TankbusterTargets.Clear();
+            if (!Player.Available || Player.Object == null) return false;
 
-			if (string.IsNullOrEmpty(s.Path))
-			{
-				return false;
-			}
+            if (VfxDataQueue == null || VfxDataQueue.IsEmpty) return false;
 
-			bool isTank = TargetFilter.PlayerJobCategory(JobRole.Tank);
-			bool isPlayerTarget = s.ObjectId == Player.Object.GameObjectId;
+            bool found = false;
+            bool isTank = TargetFilter.PlayerJobCategory(JobRole.Tank);
 
-			foreach (var p in TankbusterPaths)
-			{
-				if (s.Path.StartsWith(p, PathCmp))
-				{
-					if (!isTank || isPlayerTarget)
-					{
-						if (Service.Config.InDebug)
-						{
-							PluginLog.Debug($"Tank lock-on VFX triggered: {s.Path}, ObjectId: {s.ObjectId}");
-						}
-						return true;
-					}
-				}
-			}
+            foreach (var s in VfxDataQueue)
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(s.Path)) continue;
 
-			return false;
-		});
-	}
+                    foreach (var p in TankbusterPaths)
+                    {
+                        if (!s.Path.StartsWith(p, PathCmp)) continue;
+
+                        bool isPlayerTarget = s.ObjectId == Player.Object.GameObjectId;
+
+                        if (!isTank || isPlayerTarget)
+                        {
+                            if (Service.Config.InDebug)
+                            {
+                                PluginLog.Debug($"Tank lock-on VFX triggered: {s.Path}, ObjectId: {s.ObjectId}");
+                            }
+
+							// Try to resolve the object id to a party/alliance member and add to the list
+							if (Svc.Objects.SearchById(s.ObjectId) is IBattleChara obj && obj.IsParty() && !obj.IsDead && !TankbusterTargets.Contains(obj))
+							{
+								TankbusterTargets.Add(obj);
+							}
+
+							found = true;
+                        }
+                    }
+                }
+                catch (AccessViolationException ex)
+                {
+                    PluginLog.Warning($"AccessViolation in IsCastingTankVfx while scanning VFX: {ex.Message}");
+                }
+            }
+
+            return found;
+        }
+    }
 
 	// Improved shared AOE detection using cached sets, covers both regular and multi-hit stack markers
 	public static bool IsCastingAreaVfx()

@@ -1,6 +1,6 @@
 ﻿namespace RotationSolver.RebornRotations.PVPRotations.Healer;
 
-[Rotation("Default PVP", CombatType.PvP, GameVersion = "7.41")]
+[Rotation("Default PVP", CombatType.PvP, GameVersion = "7.45")]
 [SourceCode(Path = "main/RebornRotations/PVPRotations/Healer/AST_Default.PVP.cs")]
 
 public class AST_DefaultPVP : AstrologianRotation
@@ -77,11 +77,6 @@ public class AST_DefaultPVP : AstrologianRotation
             return true;
         }
 
-        if (MacrocosmosPvP.CanUse(out action))
-        {
-            return true;
-        }
-
         if (GravityIiPvP_29248.CanUse(out action, usedUp: true))
         {
             return true;
@@ -134,7 +129,12 @@ public class AST_DefaultPVP : AstrologianRotation
 
     protected override bool GeneralGCD(out IAction? action)
     {
-        if (GravityIiPvP.CanUse(out action))
+		if (NumberOfHostilesInRangeOf(20) > 0 && MacrocosmosPvP.CanUse(out action))
+		{
+			return true;
+		}
+
+		if (GravityIiPvP.CanUse(out action))
         {
             return true;
         }

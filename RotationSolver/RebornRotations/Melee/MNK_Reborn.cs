@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace RotationSolver.RebornRotations.Melee;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.41", Description = "Uses Lunar Solar Opener from The Balance")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45", Description = "Uses Lunar Solar Opener from The Balance")]
 [SourceCode(Path = "main/RebornRotations/Melee/MNK_Reborn.cs")]
 
 
@@ -303,7 +303,7 @@ public sealed class MNK_Reborn : MonkRotation
         // use bh when bh and rof are ready (opener) or ask bh to wait for rof's cd to be close and then use bh
         if (!CombatElapsedLessGCD(2)
             && ((!BrotherhoodPvE.Cooldown.IsCoolingDown && !RiddleOfFirePvE.Cooldown.IsCoolingDown) || Math.Abs(BrotherhoodPvE.Cooldown.CoolDownGroup - RiddleOfFirePvE.Cooldown.CoolDownGroup) < 3)
-            && BrotherhoodPvE.CanUse(out act))
+            && IsBurst && BrotherhoodPvE.CanUse(out act))
         {
             return true;
         }
