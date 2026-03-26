@@ -256,8 +256,10 @@ public sealed class SezuraiDRG : DragoonRotation
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // BMR-aware: Feint proactively when raidwide imminent
-        // Skip during active burst to avoid clipping damage oGCDs
-        if (BmrFeintWindow && !InAnyBurst && FeintPvE.CanUse(out act, skipComboCheck: true))
+        // Feint: 10% phys + 5% magic -- skip if purely magic damage (save for physical)
+        if (BmrFeintWindow && !InAnyBurst
+            && (IsPhysicalDamageIncoming || !IsMagicalDamageIncoming)
+            && FeintPvE.CanUse(out act, skipComboCheck: true))
             return true;
 
         // Non-BMR fallback: Feint when framework triggers defense

@@ -84,10 +84,7 @@ public sealed class SezuraiWHM : WhiteMageRotation
     /// </summary>
     private bool CanBurst => MergedStatus.HasFlag(AutoStatus.Burst);
 
-    /// <summary>
-    /// True when Presence of Mind buff is active on the player.
-    /// </summary>
-    private static bool HasPresenceOfMind => StatusHelper.PlayerHasStatus(true, StatusID.PresenceOfMind);
+    // HasPresenceOfMind is now provided by the base WhiteMageRotation class
 
     /// <summary>
     /// True when the player is medicated.

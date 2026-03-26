@@ -232,6 +232,10 @@ public sealed class SezuraiWAR : WarriorRotation
         if (StatusHelper.PlayerHasStatus(true, StatusID.Holmgang_409) && Player?.GetHealthRatio() < 0.3f)
             return false;
 
+        // Skip stacking more mitigation if party already has 30%+ covered
+        if (GetCurrentMitigationPercent() > 0.30f)
+            return false;
+
         // === BMR-AWARE TANKBUSTER MITIGATION ===
         // Balance: Bloodwhetting first (short CD, always available), then layer ONE heavier CD.
         // Mitigation is multiplicative — spreading across TBs is more efficient than dumping all on one.

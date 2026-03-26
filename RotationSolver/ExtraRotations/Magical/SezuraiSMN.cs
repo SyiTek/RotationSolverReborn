@@ -293,8 +293,9 @@ public sealed class SezuraiSMN : SummonerRotation
 
         if (rwSoon)
         {
-            // Addle first for party benefit (reduces boss damage output)
-            if (AddlePvE.CanUse(out act))
+            // Addle: 10% magic + 5% phys -- skip if purely physical damage
+            if ((IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+                && AddlePvE.CanUse(out act))
                 return true;
             // Radiant Aegis: personal shield for survivability before raidwide
             if (!HasRadiantAegisStatus && RadiantAegisPvE.CanUse(out act))
@@ -305,7 +306,8 @@ public sealed class SezuraiSMN : SummonerRotation
         // Non-BMR: use when framework triggers defense
         if (!HasRadiantAegisStatus && RadiantAegisPvE.CanUse(out act))
             return true;
-        if (AddlePvE.CanUse(out act))
+        if ((IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+            && AddlePvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);

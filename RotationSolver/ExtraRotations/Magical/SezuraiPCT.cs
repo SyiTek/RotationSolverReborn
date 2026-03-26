@@ -409,8 +409,9 @@ public sealed class SezuraiPCT : PictomancerRotation
                     if (TemperaGrassaPvE.CanUse(out act))
                         return true;
 
-                    // Tempera on CD? Use Addle as fallback for this RW
-                    if (AddlePvE.CanUse(out act))
+                    // Tempera on CD? Use Addle as fallback (10% magic + 5% phys)
+                    if ((IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+                        && AddlePvE.CanUse(out act))
                         return true;
                 }
                 else if (HasTemperaShield && !TargetHasAddle)
@@ -441,7 +442,8 @@ public sealed class SezuraiPCT : PictomancerRotation
                 {
                     // Tempera is available or coming back soon -- save Addle for next raidwide
                 }
-                else if (AddlePvE.CanUse(out act))
+                else if ((IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+                    && AddlePvE.CanUse(out act))
                     return true;
             }
         }

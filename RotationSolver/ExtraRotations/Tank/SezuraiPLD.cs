@@ -278,6 +278,10 @@ public sealed class SezuraiPLD : PaladinRotation
         if (StatusHelper.PlayerHasStatus(true, StatusID.HallowedGround))
             return base.DefenseSingleAbility(nextGCD, out act);
 
+        // Skip stacking more mitigation if party already has 30%+ covered
+        if (GetCurrentMitigationPercent() > 0.30f)
+            return base.DefenseSingleAbility(nextGCD, out act);
+
         // === BMR-AWARE TANKBUSTER MITIGATION ===
         // Balance: Holy Sheltron on every TB + liberally on autos.
         // Layer ONE of Rampart/Guardian/Bulwark for heavy TBs, don't stack all.

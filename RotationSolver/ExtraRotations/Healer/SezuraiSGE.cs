@@ -81,19 +81,11 @@ public sealed class SezuraiSGE : SageRotation
     private bool CanBurst => MergedStatus.HasFlag(AutoStatus.Burst);
 
     /// <summary>
-    /// True when raid buffs are likely active (check for common raid buff statuses).
-    /// Since SGE has no personal raid buff, we align with party 120s windows.
+    /// True when raid buffs are active. Uses framework's party-composition-aware
+    /// HasBuffs system instead of manual status checks -- automatically adapts to
+    /// whatever jobs are in the party.
     /// </summary>
-    private static bool InRaidBuffs =>
-        StatusHelper.PlayerHasStatus(true, StatusID.BattleLitany)
-        || StatusHelper.PlayerHasStatus(true, StatusID.Divination)
-        || StatusHelper.PlayerHasStatus(true, StatusID.Brotherhood)
-        || StatusHelper.PlayerHasStatus(true, StatusID.ArcaneCircle)
-        || StatusHelper.PlayerHasStatus(true, StatusID.BattleVoice)
-        || StatusHelper.PlayerHasStatus(true, StatusID.SearingLight)
-        || StatusHelper.PlayerHasStatus(true, StatusID.Embolden)
-        || StatusHelper.PlayerHasStatus(true, StatusID.TechnicalFinish)
-        || StatusHelper.PlayerHasStatus(true, StatusID.ChainStratagem);
+    private static bool InRaidBuffs => HasBuffs;
 
     /// <summary>
     /// Whether Addersgall can be spent freely (above the reserve threshold).

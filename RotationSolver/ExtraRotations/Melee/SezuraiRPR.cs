@@ -366,7 +366,9 @@ public sealed class SezuraiRPR : ReaperRotation
         // Skip Feint during active burst to preserve weave slots for damage oGCDs
         if (BmrFeintWindow)
         {
-            if (!InActiveBurst && FeintPvE.CanUse(out act))
+            // Feint: 10% phys + 5% magic -- skip if purely magic damage
+            if (!InActiveBurst && (IsPhysicalDamageIncoming || !IsMagicalDamageIncoming)
+                && FeintPvE.CanUse(out act))
                 return true;
             if (ArcaneCrestPvE.CanUse(out act))
                 return true;

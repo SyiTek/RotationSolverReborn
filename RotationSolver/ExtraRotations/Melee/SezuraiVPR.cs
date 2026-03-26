@@ -481,8 +481,10 @@ public sealed class SezuraiVPR : ViperRotation
     protected sealed override bool DefenseAreaAbility(IAction nextGCD, out IAction? act)
     {
         // BMR-aware: Feint proactively when raidwide imminent
-        // Skip during active burst to avoid clipping damage oGCDs
-        if (BmrFeintWindow && !InActiveBurst && NoAbilityReady && FeintPvE.CanUse(out act))
+        // Feint: 10% phys + 5% magic -- skip if purely magic damage
+        if (BmrFeintWindow && !InActiveBurst && NoAbilityReady
+            && (IsPhysicalDamageIncoming || !IsMagicalDamageIncoming)
+            && FeintPvE.CanUse(out act))
             return true;
 
         // Non-BMR fallback: Feint when framework triggers defense

@@ -516,7 +516,10 @@ public sealed class SezuraiMNK : MonkRotation
         // Feint goes out 1-5s before raidwide so the debuff covers the damage snapshot
         bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
 
-        if ((rwSoon || !BmrActive) && FeintPvE.CanUse(out act))
+        // Feint: 10% phys + 5% magic -- skip if purely magic damage
+        if ((rwSoon || !BmrActive)
+            && (IsPhysicalDamageIncoming || !IsMagicalDamageIncoming)
+            && FeintPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);

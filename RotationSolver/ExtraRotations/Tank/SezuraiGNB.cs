@@ -245,8 +245,9 @@ public sealed class SezuraiGNB : GunbreakerRotation
 
         if (rwSoon)
         {
-            // Heart of Light: primary raidwide tool (10% magic / 5% phys, 30y, 15s)
-            if (HeartOfLightPvE.CanUse(out act, skipAoeCheck: true))
+            // Heart of Light: 10% MAGIC mitigation -- prefer for magic damage
+            if ((!InCombat || IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+                && HeartOfLightPvE.CanUse(out act, skipAoeCheck: true))
                 return true;
 
             // Reprisal: use if Heart of Light is on CD for this raidwide
@@ -265,7 +266,9 @@ public sealed class SezuraiGNB : GunbreakerRotation
         if (!BmrActive && NoMercySoon && !HasNoMercy)
             return base.DefenseAreaAbility(nextGCD, out act);
 
-        if (HeartOfLightPvE.CanUse(out act, skipAoeCheck: true))
+        // Heart of Light: 10% MAGIC mitigation -- skip for physical damage
+        if ((!InCombat || IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+            && HeartOfLightPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
         if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
@@ -284,6 +287,10 @@ public sealed class SezuraiGNB : GunbreakerRotation
         // Don't stack mit during Superbolide -- invuln handles it
         act = null;
         if (StatusHelper.PlayerHasStatus(true, StatusID.Superbolide) && Player?.GetHealthRatio() < 0.3f)
+            return false;
+
+        // Skip stacking more mitigation if party already has 30%+ covered
+        if (GetCurrentMitigationPercent() > 0.30f)
             return false;
 
         // === BMR-AWARE TANKBUSTER MITIGATION ===

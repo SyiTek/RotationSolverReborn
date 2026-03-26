@@ -429,37 +429,33 @@ public sealed class SezuraiRDM : RedMageRotation
 
             bool preferAddle = !_lastRwUsedAddle;
 
-            if (preferAddle)
+            // Addle: 10% magic + 5% phys -- prefer for magic damage
+            bool addleEffective = IsMagicalDamageIncoming || !IsPhysicalDamageIncoming;
+
+            if (preferAddle && addleEffective)
             {
                 if (AddlePvE.CanUse(out act))
                 {
                     _lastRwUsedAddle = true;
-                    _lastRwMitTime = BmrRaidwideIn;
-                    return true;
-                }
-                // Addle on CD, fall through to Barrier
-                if (MagickBarrierPvE.CanUse(out act))
-                {
-                    _lastRwUsedAddle = false;
                     _lastRwMitTime = BmrRaidwideIn;
                     return true;
                 }
             }
-            else
+
+            // Magick Barrier: works for all damage types
+            if (MagickBarrierPvE.CanUse(out act))
             {
-                if (MagickBarrierPvE.CanUse(out act))
-                {
-                    _lastRwUsedAddle = false;
-                    _lastRwMitTime = BmrRaidwideIn;
-                    return true;
-                }
-                // Barrier on CD, fall through to Addle
-                if (AddlePvE.CanUse(out act))
-                {
-                    _lastRwUsedAddle = true;
-                    _lastRwMitTime = BmrRaidwideIn;
-                    return true;
-                }
+                _lastRwUsedAddle = false;
+                _lastRwMitTime = BmrRaidwideIn;
+                return true;
+            }
+
+            // Fallback: Addle if Barrier is on CD and Addle would be effective
+            if (!preferAddle && addleEffective && AddlePvE.CanUse(out act))
+            {
+                _lastRwUsedAddle = true;
+                _lastRwMitTime = BmrRaidwideIn;
+                return true;
             }
 
             return base.DefenseAreaAbility(nextGCD, out act);

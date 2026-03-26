@@ -336,8 +336,9 @@ public sealed class SezuraiSAM : SamuraiRotation
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // BMR-aware: Feint proactively when raidwide imminent
-        // Skip during active big burst to avoid clipping damage oGCDs (Zanshin/Shoha/Senei)
-        if (BmrFeintWindow && !IsBigBurst)
+        // Feint: 10% phys + 5% magic -- skip if purely magic damage
+        if (BmrFeintWindow && !IsBigBurst
+            && (IsPhysicalDamageIncoming || !IsMagicalDamageIncoming))
         {
             if (FeintPvE.CanUse(out act))
                 return true;

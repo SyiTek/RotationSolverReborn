@@ -339,13 +339,16 @@ public sealed class SezuraiBLM : BlackMageRotation
 
         if (rwSoon)
         {
-            if (AddlePvE.CanUse(out act))
+            // Addle: 10% magic + 5% phys -- skip if purely physical damage
+            if ((IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+                && AddlePvE.CanUse(out act))
                 return true;
             return base.DefenseAreaAbility(nextGCD, out act);
         }
 
         // Non-BMR fallback
-        if (!BmrActive && AddlePvE.CanUse(out act))
+        if (!BmrActive && (IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+            && AddlePvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);

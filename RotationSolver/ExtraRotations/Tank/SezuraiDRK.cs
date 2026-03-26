@@ -582,6 +582,10 @@ public sealed class SezuraiDRK : DarkKnightRotation
             && Player?.GetHealthRatio() < 0.3f)
             return base.DefenseSingleAbility(nextGCD, out act);
 
+        // Skip stacking more mitigation if party already has 30%+ covered
+        if (GetCurrentMitigationPercent() > 0.30f)
+            return base.DefenseSingleAbility(nextGCD, out act);
+
         // === BMR-AWARE TANKBUSTER MITIGATION ===
         // Balance: "TBN is an extremely strong tool for tankbusters" -- always use TBN first.
         // Mitigation is multiplicative -- spreading across TBs is more efficient than dumping all on one.
@@ -610,8 +614,9 @@ public sealed class SezuraiDRK : DarkKnightRotation
             if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
                 return true;
 
-            // Dark Mind: 20% magic mitigation (only matters for magic TBs, but no harm)
-            if (DarkMindPvE.CanUse(out act))
+            // Dark Mind: 20% MAGIC mitigation -- only use vs magic damage
+            if ((!InCombat || IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+                && DarkMindPvE.CanUse(out act))
                 return true;
 
             // Shadowed Vigil / Shadow Wall: heavy personal mit for big TBs (30%)
@@ -688,8 +693,9 @@ public sealed class SezuraiDRK : DarkKnightRotation
         // BMR path: raidwide is imminent
         if (rwSoon)
         {
-            // Dark Missionary: primary raidwide tool -- 10% magic damage reduction for party
-            if (DarkMissionaryPvE.CanUse(out act))
+            // Dark Missionary: 10% MAGIC damage reduction -- only useful vs magic damage
+            if ((!InCombat || IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+                && DarkMissionaryPvE.CanUse(out act))
                 return true;
 
             // Reprisal: use when Missionary is on CD for this raidwide
@@ -707,11 +713,12 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (!BmrActive && InBurstWindow)
             return base.DefenseAreaAbility(nextGCD, out act);
 
-        // Dark Missionary: 10% magic mitigation for party
-        if (DarkMissionaryPvE.CanUse(out act))
+        // Dark Missionary: 10% MAGIC mitigation for party -- skip if physical damage incoming
+        if ((!InCombat || IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+            && DarkMissionaryPvE.CanUse(out act))
             return true;
 
-        // Reprisal: 10% damage reduction on enemies
+        // Reprisal: 10% damage reduction on enemies (works for all damage types)
         if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
