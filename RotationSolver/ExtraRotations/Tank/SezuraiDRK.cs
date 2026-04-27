@@ -165,29 +165,29 @@ public sealed class SezuraiDRK : DarkKnightRotation
 
         // BMR Timeline
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
-            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BMRDamageIn < 9999f ? $"{BMRDamageIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -255,17 +255,17 @@ public sealed class SezuraiDRK : DarkKnightRotation
         // BMR-aware: only use Living Dead if TB is actually imminent and HP is critical.
         // This is DRK's invuln -- it requires healer coordination (Walking Dead / Undead Rebirth).
         // Without BMR: use the framework's health threshold as before.
-        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool tbImminent = BMRActive && BMRTankbusterIn is > 0 and <= 3f;
         bool hpCritical = Player?.GetHealthRatio() <= Service.Config.HealthForDyingTanks;
 
         if (LivingDeadPvE.CanUse(out act))
         {
             // BMR path: only invuln if TB is about to hit and we are low
-            if (BmrActive && tbImminent && hpCritical)
+            if (BMRActive && tbImminent && hpCritical)
                 return true;
 
             // Non-BMR path: use framework HP threshold
-            if (!BmrActive && hpCritical)
+            if (!BMRActive && hpCritical)
                 return true;
         }
 
@@ -273,7 +273,7 @@ public sealed class SezuraiDRK : DarkKnightRotation
         // BMR-aware: don't pot if downtime is imminent (waste of pot duration)
         if (BurstMed && InCombat && InBurstWindow && InEvenBurst)
         {
-            bool downtimeWastesPot = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+            bool downtimeWastesPot = BMRActive && BMRDowntimeIn is > 0 and <= 10f;
             if (!downtimeWastesPot && UseBurstMedicine(out act))
                 return true;
         }
@@ -329,9 +329,9 @@ public sealed class SezuraiDRK : DarkKnightRotation
         }
 
         // === BMR DOWNTIME/VULNERABILITY AWARENESS ===
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
-        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
-        bool vulnWindowSoon = BmrActive && BmrVulnerableIn is > 0 and <= 30f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 15f;
+        bool downtimeVeryClose = BMRActive && BMRDowntimeIn is > 0 and <= 8f;
+        bool vulnWindowSoon = BMRActive && BMRVulnerableIn is > 0 and <= 30f;
 
         // === BMR: DUMP BURST BEFORE DOWNTIME ===
         // If downtime is <=15s away, dump Living Shadow and Delirium NOW so they
@@ -341,12 +341,12 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (downtimeSoon && InCombat && HasHostilesInRange && DarkSideTime > 0)
         {
             // Living Shadow: deploy ASAP before downtime -- it attacks independently
-            if (BmrDowntimeIn > 5f && LivingShadowPvE.CanUse(out act, skipAoeCheck: true))
+            if (BMRDowntimeIn > 5f && LivingShadowPvE.CanUse(out act, skipAoeCheck: true))
                 return true;
 
             // Delirium: only start if we have enough time to spend all 3 stacks (~8s)
             // Balance: "pre-cast Delirium only if you can immediately consume all stacks"
-            if (BmrDowntimeIn > 10f && DeliriumPvE.CanUse(out act))
+            if (BMRDowntimeIn > 10f && DeliriumPvE.CanUse(out act))
                 return true;
 
             // MP dump: spend Edge/Flood of Shadow aggressively before downtime
@@ -374,10 +374,10 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (CanBurst && InCombat && HasHostilesInRange)
         {
             // BMR: skip starting burst CDs if downtime is <10s (not enough time to spend stacks)
-            bool downtimeTooClose = BmrActive && BmrDowntimeIn is > 0 and < 10f;
+            bool downtimeTooClose = BMRActive && BMRDowntimeIn is > 0 and < 10f;
 
             // BMR: hold for vulnerability window if it is soon and CDs won't come back
-            bool holdForVuln = vulnWindowSoon && BmrVulnerableIn > 5f
+            bool holdForVuln = vulnWindowSoon && BMRVulnerableIn > 5f
                 && !LivingShadowPvE.Cooldown.WillHaveOneChargeGCD(4);
 
             if (!downtimeTooClose && !holdForVuln)
@@ -471,8 +471,8 @@ public sealed class SezuraiDRK : DarkKnightRotation
     protected override bool GeneralGCD(out IAction? act)
     {
         // === BMR DOWNTIME AWARENESS ===
-        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+        bool downtimeVeryClose = BMRActive && BMRDowntimeIn is > 0 and <= 3f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 8f;
 
         // === DISESTEEM (Dawntrail addition) ===
         // Use immediately when Scorn buff is active. This is a high-potency
@@ -591,10 +591,10 @@ public sealed class SezuraiDRK : DarkKnightRotation
         // Mitigation is multiplicative -- spreading across TBs is more efficient than dumping all on one.
         // DRK rule: TBN (25% shield + Dark Arts) -> Oblation (10% mit, 1 charge, hold 1 reserve)
         //   -> ONE heavier CD if needed. Don't stack everything.
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 5f;
+        bool tbSoon = BMRActive && BMRTankbusterIn is > 0 and <= 5f;
 
         // With BMR active and no TB coming soon, don't waste single-target mits
-        if (BmrActive && !tbSoon)
+        if (BMRActive && !tbSoon)
             return base.DefenseSingleAbility(nextGCD, out act);
 
         // --- TB is imminent (BMR path) ---
@@ -684,10 +684,10 @@ public sealed class SezuraiDRK : DarkKnightRotation
         //
         // Dark Missionary: 10% magic mitigation for the party (90s CD)
         // Reprisal: 10% enemy damage reduction (60s CD) -- use on SEPARATE raidwides from Missionary.
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwSoon = BMRActive && BMRRaidwideIn is > 0 and <= 5f;
 
         // With BMR active and no raidwide coming soon, don't waste party mits
-        if (BmrActive && !rwSoon)
+        if (BMRActive && !rwSoon)
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // BMR path: raidwide is imminent
@@ -710,7 +710,7 @@ public sealed class SezuraiDRK : DarkKnightRotation
 
         // === NON-BMR FALLBACK ===
         // Without BMR: skip during burst (oGCD slots needed for damage)
-        if (!BmrActive && InBurstWindow)
+        if (!BMRActive && InBurstWindow)
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // Dark Missionary: 10% MAGIC mitigation for party -- skip if physical damage incoming
@@ -753,7 +753,7 @@ public sealed class SezuraiDRK : DarkKnightRotation
         // TBN on self as a pseudo-heal when HP is low (shield + potential Dark Arts)
         // Only if BMR says no TB is coming soon -- don't waste TBN on auto-damage
         // right before a buster where we really need it
-        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 0 and <= 8f;
+        bool tbComingSoon = BMRActive && BMRTankbusterIn is > 0 and <= 8f;
 
         if (!tbComingSoon && AutoTBN && InCombat
             && Player?.GetHealthRatio() < TBNThreshold
@@ -804,7 +804,7 @@ public sealed class SezuraiDRK : DarkKnightRotation
         // (this method handles MP-costing Edge/Flood only)
 
         // BMR: dump MP before downtime -- don't let resources sit idle
-        if (BmrActive && BmrDowntimeIn is > 0 and <= 10f)
+        if (BMRActive && BMRDowntimeIn is > 0 and <= 10f)
             return CurrentMp >= 3000;
 
         // During even-minute burst: spend aggressively (target 5 Edges)
@@ -853,7 +853,7 @@ public sealed class SezuraiDRK : DarkKnightRotation
         // BMR: dump Blood before downtime -- resources idle during downtime = wasted damage
         // Note: the main downtime dump in GeneralGCD also catches this, but this ensures
         // the ShouldSpendBlood path is aligned too
-        if (BmrActive && BmrDowntimeIn is > 0 and <= 10f && Blood >= 50)
+        if (BMRActive && BMRDowntimeIn is > 0 and <= 10f && Blood >= 50)
             return true;
 
         // Save Blood for Living Shadow if it is coming up very soon
@@ -861,7 +861,7 @@ public sealed class SezuraiDRK : DarkKnightRotation
         if (LivingShadowPvE.EnoughLevel
             && LivingShadowPvE.Cooldown.WillHaveOneCharge(5)
             && Blood < 100
-            && !(BmrActive && BmrDowntimeIn is > 0 and <= 15f))
+            && !(BMRActive && BMRDowntimeIn is > 0 and <= 15f))
             return false;
 
         // Overcap prevention: spend at 90+ Blood since combo/Blood Weapon will push to 100

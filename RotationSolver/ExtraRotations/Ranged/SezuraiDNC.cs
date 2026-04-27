@@ -83,34 +83,34 @@ public sealed class SezuraiDNC : DancerRotation
     /// <summary>
     /// BMR is active and usable for timeline decisions.
     /// </summary>
-    private bool BmrUsable => BmrActive && UseBmrBurstOptimization;
+    private bool BmrUsable => BMRActive && UseBmrBurstOptimization;
 
     /// <summary>
     /// Downtime is imminent within N seconds (boss going untargetable).
     /// Returns false if BMR is not active.
     /// </summary>
     private bool DowntimeWithin(float seconds) =>
-        BmrUsable && BmrDowntimeIn is > 0 and < float.MaxValue && BmrDowntimeIn <= seconds;
+        BmrUsable && BMRDowntimeIn is > 0 and < float.MaxValue && BMRDowntimeIn <= seconds;
 
     /// <summary>
     /// Vulnerability window is coming within N seconds.
     /// Returns false if BMR is not active.
     /// </summary>
     private bool VulnerableWithin(float seconds) =>
-        BmrUsable && BmrVulnerableIn is > 0 and < float.MaxValue && BmrVulnerableIn <= seconds;
+        BmrUsable && BMRVulnerableIn is > 0 and < float.MaxValue && BMRVulnerableIn <= seconds;
 
     /// <summary>
     /// Raidwide damage is imminent within N seconds.
     /// Returns false if BMR is not active.
     /// </summary>
     private bool RaidwideWithin(float seconds) =>
-        BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn <= seconds;
+        BMRActive && BMRRaidwideIn is > 0 and < float.MaxValue && BMRRaidwideIn <= seconds;
 
     /// <summary>
     /// Generic damage (any type) is imminent within N seconds.
     /// </summary>
     private bool DamageWithin(float seconds) =>
-        BmrActive && BmrDamageIn is > 0 and < float.MaxValue && BmrDamageIn <= seconds;
+        BMRActive && BMRDamageIn is > 0 and < float.MaxValue && BMRDamageIn <= seconds;
 
     #endregion
 
@@ -159,28 +159,28 @@ public sealed class SezuraiDNC : DancerRotation
         ImGui.Text($"Flourish: {(FlourishPvE.Cooldown.IsCoolingDown ? $"{FlourishPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"ShieldSamba: {(ShieldSambaPvE.Cooldown.IsCoolingDown ? $"{ShieldSambaPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text("--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -351,9 +351,9 @@ public sealed class SezuraiDNC : DancerRotation
             return true;
 
         // Non-BMR fallback: use when framework triggers heal
-        if (!BmrActive && CuringWaltzPvE.CanUse(out act))
+        if (!BMRActive && CuringWaltzPvE.CanUse(out act))
             return true;
-        if (!BmrActive && ImprovisationPvE.CanUse(out act))
+        if (!BMRActive && ImprovisationPvE.CanUse(out act))
             return true;
 
         return base.HealAreaAbility(nextGCD, out act);

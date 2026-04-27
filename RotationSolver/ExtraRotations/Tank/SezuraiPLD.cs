@@ -126,28 +126,28 @@ public sealed class SezuraiPLD : PaladinRotation
         ImGui.Text($"Reprisal: {(ReprisalPvE.Cooldown.IsCoolingDown ? $"{ReprisalPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"HallowedGround: {(HallowedGroundPvE.Cooldown.IsCoolingDown ? $"{HallowedGroundPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -223,11 +223,11 @@ public sealed class SezuraiPLD : PaladinRotation
         // DPS loss from channel, so only use when we know a big raidwide is coming.
         //
         // Reprisal: 10% enemy damage reduction — use on SEPARATE raidwides from Veil.
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
-        bool rwMedium = BmrActive && BmrRaidwideIn is > 5f and <= 8f;
+        bool rwSoon = BMRActive && BMRRaidwideIn is > 0 and <= 5f;
+        bool rwMedium = BMRActive && BMRRaidwideIn is > 5f and <= 8f;
 
         // With BMR active and no raidwide coming soon, don't waste party mits
-        if (BmrActive && !rwSoon && !rwMedium)
+        if (BMRActive && !rwSoon && !rwMedium)
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // BMR: Divine Veil 3-8s before raidwide (shield needs a heal to pop)
@@ -254,15 +254,15 @@ public sealed class SezuraiPLD : PaladinRotation
 
         // === NON-BMR FALLBACK ===
         // Without BMR: use whenever the framework says DefenseArea is needed
-        if (!BmrActive && DivineVeilPvE.CanUse(out act))
+        if (!BMRActive && DivineVeilPvE.CanUse(out act))
             return true;
 
-        if (!BmrActive && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+        if (!BMRActive && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
         // Passage of Arms: channel-based, only for specific mechanics
         // Don't use with BMR timing by default (locks you in place = DPS loss)
-        if (!BmrActive && PassageOfArmsPvE.CanUse(out act))
+        if (!BMRActive && PassageOfArmsPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -287,12 +287,12 @@ public sealed class SezuraiPLD : PaladinRotation
         // Layer ONE of Rampart/Guardian/Bulwark for heavy TBs, don't stack all.
         // Mitigation is multiplicative -- spreading across TBs is more efficient.
         // Icy Veins: "Use one of Rampart, Guardian, or Bulwark on every tankbuster."
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
-        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool tbSoon = BMRActive && BMRTankbusterIn is > 0 and <= 6f;
+        bool tbImminent = BMRActive && BMRTankbusterIn is > 0 and <= 3f;
 
         // With BMR active and no TB coming soon, don't waste single-target mits
         // Still allow Sheltron for overcap prevention (handled by GeneralAbility)
-        if (BmrActive && !tbSoon)
+        if (BMRActive && !tbSoon)
             return base.DefenseSingleAbility(nextGCD, out act);
 
         // --- TB is imminent (BMR path) ---
@@ -380,17 +380,17 @@ public sealed class SezuraiPLD : PaladinRotation
         // BMR-aware: only Hallowed if TB is actually imminent AND HP is critical.
         // Don't panic-Hallowed from random damage -- save for planned invulns.
         // Without BMR: use the framework's health threshold as before.
-        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool tbImminent = BMRActive && BMRTankbusterIn is > 0 and <= 3f;
         bool hpCritical = Player?.GetHealthRatio() <= HealthForDyingTanks;
 
         if (HallowedGroundPvE.CanUse(out act))
         {
             // BMR path: only invuln if TB is about to hit and we're low
-            if (BmrActive && tbImminent && hpCritical)
+            if (BMRActive && tbImminent && hpCritical)
                 return true;
 
             // Non-BMR path: use framework HP threshold
-            if (!BmrActive && hpCritical)
+            if (!BMRActive && hpCritical)
                 return true;
         }
 
@@ -399,7 +399,7 @@ public sealed class SezuraiPLD : PaladinRotation
         // BMR-aware: don't pot if downtime is imminent (waste of pot duration).
         if (BurstMed && HasFightOrFlight && InCombat)
         {
-            bool downtimeWastesPot = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+            bool downtimeWastesPot = BMRActive && BMRDowntimeIn is > 0 and <= 10f;
             if (!downtimeWastesPot && UseBurstMedicine(out act))
                 return true;
         }
@@ -414,8 +414,8 @@ public sealed class SezuraiPLD : PaladinRotation
         // BMR: Hold briefly for vulnerability windows if very close.
         if (CanBurst && InCombat && HasHostilesInRange)
         {
-            bool downtimeTooClose = BmrActive && BmrDowntimeIn is > 0 and < 12f;
-            bool holdForVuln = BmrActive && BmrVulnerableIn is > 0 and <= 5f
+            bool downtimeTooClose = BMRActive && BMRDowntimeIn is > 0 and < 12f;
+            bool holdForVuln = BMRActive && BMRVulnerableIn is > 0 and <= 5f
                 && !FightOrFlightPvE.Cooldown.WillHaveOneChargeGCD(2);
 
             if (!downtimeTooClose && !holdForVuln)
@@ -429,7 +429,7 @@ public sealed class SezuraiPLD : PaladinRotation
         // If downtime is close (8-12s) and FoF is available, pop it NOW to get partial value
         // rather than losing it entirely during the untargetable phase.
         // Only if we have at least some procs/resources to spend.
-        bool downtimeVerySoon = BmrActive && BmrDowntimeIn is > 0 and <= 12f;
+        bool downtimeVerySoon = BMRActive && BMRDowntimeIn is > 0 and <= 12f;
         if (downtimeVerySoon && InCombat && HasHostilesInRange
             && (HasConfiteorReady || RequiescatStacks > 0 || HasAtonementReady || HasDivineMight))
         {
@@ -478,8 +478,8 @@ public sealed class SezuraiPLD : PaladinRotation
     protected override bool AttackAbility(IAction nextGCD, out IAction? act)
     {
         // === BMR DOWNTIME/VULNERABILITY AWARENESS ===
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
-        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 15f;
+        bool downtimeVeryClose = BMRActive && BMRDowntimeIn is > 0 and <= 8f;
 
         // 1. Blade of Honor: follow-up to Imperator, use immediately (cannot hold)
         if (BladeOfHonorPvE.CanUse(out act, skipAoeCheck: true))
@@ -560,8 +560,8 @@ public sealed class SezuraiPLD : PaladinRotation
     protected override bool GeneralGCD(out IAction? act)
     {
         // === BMR DOWNTIME AWARENESS ===
-        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+        bool downtimeVeryClose = BMRActive && BMRDowntimeIn is > 0 and <= 3f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 10f;
 
         // =======================================================
         // PRIORITY 1: Confiteor combo (MUST finish once started)

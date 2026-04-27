@@ -129,28 +129,28 @@ public sealed class SezuraiWAR : WarriorRotation
         ImGui.Text($"Reprisal: {(ReprisalPvE.Cooldown.IsCoolingDown ? $"{ReprisalPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"Holmgang: {(HolmgangPvE.Cooldown.IsCoolingDown ? $"{HolmgangPvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -240,10 +240,10 @@ public sealed class SezuraiWAR : WarriorRotation
         // Balance: Bloodwhetting first (short CD, always available), then layer ONE heavier CD.
         // Mitigation is multiplicative — spreading across TBs is more efficient than dumping all on one.
         // Don't fire mits if TB is >8s away.
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 5f;
+        bool tbSoon = BMRActive && BMRTankbusterIn is > 0 and <= 5f;
 
         // With BMR active and no TB coming soon, don't waste single-target mits
-        if (BmrActive && !tbSoon)
+        if (BMRActive && !tbSoon)
         {
             // Still allow Bloodwhetting for self-healing if HP is low (handled by HealSingleAbility)
             return base.DefenseSingleAbility(nextGCD, out act);
@@ -323,10 +323,10 @@ public sealed class SezuraiWAR : WarriorRotation
         //
         // Shake It Off: 15% MaxHP shield + 300p HoT. Bonus 2% per buff consumed (Thrill, Damnation, BW).
         // Reprisal: 10% enemy damage reduction — use on SEPARATE raidwides from Shake.
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwSoon = BMRActive && BMRRaidwideIn is > 0 and <= 5f;
 
         // With BMR active and no raidwide coming soon, don't waste party mits
-        if (BmrActive && !rwSoon)
+        if (BMRActive && !rwSoon)
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // Shake It Off: primary raidwide tool — shield + HoT for the whole party
@@ -343,10 +343,10 @@ public sealed class SezuraiWAR : WarriorRotation
 
         // === NON-BMR FALLBACK ===
         // Without BMR: use whenever the framework says DefenseArea is needed
-        if (!BmrActive && ShakeItOffPvE.CanUse(out act, skipAoeCheck: true))
+        if (!BMRActive && ShakeItOffPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
-        if (!BmrActive && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+        if (!BMRActive && ReprisalPvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -420,17 +420,17 @@ public sealed class SezuraiWAR : WarriorRotation
         // Balance: "Warrior's invuln. Prevents most attacks from lowering HP below 1 for 10s."
         // BMR-aware: only Holmgang if TB is actually imminent AND HP is critical.
         // Without BMR: use the framework's health threshold as before.
-        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool tbImminent = BMRActive && BMRTankbusterIn is > 0 and <= 3f;
         bool hpCritical = Player?.GetHealthRatio() <= Service.Config.HealthForDyingTanks;
 
         if (HolmgangPvE.CanUse(out act))
         {
             // BMR path: only invuln if TB is about to hit and we're low
-            if (BmrActive && tbImminent && hpCritical)
+            if (BMRActive && tbImminent && hpCritical)
                 return true;
 
             // Non-BMR path: use framework HP threshold
-            if (!BmrActive && hpCritical)
+            if (!BMRActive && hpCritical)
                 return true;
         }
 
@@ -439,7 +439,7 @@ public sealed class SezuraiWAR : WarriorRotation
         // BMR-aware: don't pot if downtime is imminent (waste of pot duration).
         if (BurstMed && InBurstWindow && InCombat)
         {
-            bool downtimeWastesPot = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+            bool downtimeWastesPot = BMRActive && BMRDowntimeIn is > 0 and <= 10f;
             if (!downtimeWastesPot && UseBurstMedicine(out act))
                 return true;
         }
@@ -463,9 +463,9 @@ public sealed class SezuraiWAR : WarriorRotation
         }
 
         // === BMR DOWNTIME/VULNERABILITY AWARENESS ===
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
-        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
-        bool vulnWindowSoon = BmrActive && BmrVulnerableIn is > 0 and <= 30f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 15f;
+        bool downtimeVeryClose = BMRActive && BMRDowntimeIn is > 0 and <= 8f;
+        bool vulnWindowSoon = BMRActive && BMRVulnerableIn is > 0 and <= 30f;
 
         // === BMR: DUMP BURST BEFORE DOWNTIME ===
         // If downtime is very close (<=8s) and IR is available, pop it NOW and burn stacks.
@@ -490,10 +490,10 @@ public sealed class SezuraiWAR : WarriorRotation
         if (CanBurst && InCombat && HasHostilesInRange)
         {
             // BMR: skip IR if downtime too close (unless we already handled it above)
-            bool downtimeTooClose = BmrActive && BmrDowntimeIn is > 0 and < 10f && !downtimeVeryClose;
+            bool downtimeTooClose = BMRActive && BMRDowntimeIn is > 0 and < 10f && !downtimeVeryClose;
 
             // BMR: hold for vulnerability window if it's soon and IR won't come off CD again
-            bool holdForVuln = vulnWindowSoon && BmrVulnerableIn > 5f
+            bool holdForVuln = vulnWindowSoon && BMRVulnerableIn > 5f
                 && !InnerReleasePvE.Cooldown.WillHaveOneChargeGCD(4);
 
             if (!downtimeTooClose && !holdForVuln
@@ -623,8 +623,8 @@ public sealed class SezuraiWAR : WarriorRotation
         bool hasSurgingTempestSafety = !SurgingTempestWillEnd(3) || !StormsEyePvE.EnoughLevel;
 
         // === BMR DOWNTIME AWARENESS ===
-        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+        bool downtimeVeryClose = BMRActive && BMRDowntimeIn is > 0 and <= 3f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 8f;
 
         // =====================================================================
         // PRIORITY 1: Primal Ruination (follow-up to Primal Rend)

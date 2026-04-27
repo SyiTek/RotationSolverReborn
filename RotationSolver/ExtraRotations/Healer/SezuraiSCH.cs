@@ -207,8 +207,8 @@ public sealed class SezuraiSCH : ScholarRotation
         // SCH has: Sacred Soil (10% ground mit + HoT), Expedient (10% party mit + sprint),
         //          Fey Illumination (5% magic mit + heal potency), Seraph/Consolation (shields).
         // Use at most 2 mits per raidwide event. Sacred Soil needs placement time (8s window).
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 8f;
-        bool rwImminent = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwSoon = BMRActive && BMRRaidwideIn is > 0 and <= 8f;
+        bool rwImminent = BMRActive && BMRRaidwideIn is > 0 and <= 5f;
         bool canSpendAetherflowOnHeal = HealMode != HealModeStrategy.DPSBot || !HasAetherflow;
         int mitsUsed = 0;
 
@@ -276,8 +276,8 @@ public sealed class SezuraiSCH : ScholarRotation
         // Recitation + Excog = guaranteed crit + free (no Aetherflow cost) — the dream combo.
         // Protraction: 10% max HP increase + healing received buff — stacks with Excog.
         // 8s window: enough time to weave Recitation -> Excogitation -> Protraction.
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 8f;
-        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 5f;
+        bool tbSoon = BMRActive && BMRTankbusterIn is > 0 and <= 8f;
+        bool tbImminent = BMRActive && BMRTankbusterIn is > 0 and <= 5f;
 
         if (tbSoon)
         {
@@ -371,7 +371,7 @@ public sealed class SezuraiSCH : ScholarRotation
         //
         // Exception: Sacred Soil has BOTH mit AND HoT, so it goes in DefenseAreaAbility for pre-placement.
         // Exception: Consolation is a shield — it goes in DefenseAreaAbility for pre-shielding.
-        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+        bool rwComingSoon = BMRActive && BMRRaidwideIn is > 1f and <= 8f;
         bool canSpendAetherflowOnHeal = HealMode != HealModeStrategy.DPSBot || !HasAetherflow;
 
         // === Seraphism: emergency healing super mode ===
@@ -455,7 +455,7 @@ public sealed class SezuraiSCH : ScholarRotation
         //
         // BMR vuln window: if BMR knows a vulnerability window is coming, hold Chain Strat
         // to align the crit buff with the vuln debuff for maximum party DPS.
-        bool vulnSoon = BmrActive && BmrVulnerableIn is > 0 and <= 10f;
+        bool vulnSoon = BMRActive && BMRVulnerableIn is > 0 and <= 10f;
         bool holdForVuln = vulnSoon && ChainStratagemPvE.Cooldown.HasOneCharge;
 
         if (CanBurst && !holdForVuln && ChainStratagemPvE.CanUse(out act))
@@ -463,7 +463,7 @@ public sealed class SezuraiSCH : ScholarRotation
 
         // If vuln window is imminent (1-3s), fire Chain Strat regardless of burst flag
         // so it lands right as the boss becomes vulnerable.
-        if (vulnSoon && BmrVulnerableIn <= 3f && ChainStratagemPvE.CanUse(out act))
+        if (vulnSoon && BMRVulnerableIn <= 3f && ChainStratagemPvE.CanUse(out act))
             return true;
 
         // === Baneful Impaction (follow-up to Chain Stratagem) ===
@@ -511,7 +511,7 @@ public sealed class SezuraiSCH : ScholarRotation
         //
         // BMR downtime: dump all remaining stacks before downtime to avoid waste.
         // Aetherflow stacks don't persist through phase transitions in savage.
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 10f;
 
         if (HasAetherflow && EnergyDrainPvE.CanUse(out act))
         {
@@ -790,29 +790,29 @@ public sealed class SezuraiSCH : ScholarRotation
         ImGui.Text($"PartyHP: {PartyMembersAverHP:P0}");
 
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
-            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BMRDamageIn < 9999f ? $"{BMRDamageIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 

@@ -87,19 +87,19 @@ public sealed class SezuraiNIN : NinjaRotation
     /// BMR signals downtime within 20s — we should dump burst cooldowns now.
     /// Falls back to false when BMR is not active.
     /// </summary>
-    private bool BmrDowntimeSoon => BmrDumpBeforeDowntime && BmrActive && BmrDowntimeIn is > 0 and <= 20f;
+    private bool BmrDowntimeSoon => BmrDumpBeforeDowntime && BMRActive && BMRDowntimeIn is > 0 and <= 20f;
 
     /// <summary>
     /// BMR signals downtime within 10s — dump remaining resources immediately.
     /// </summary>
-    private bool BmrDowntimeImminent => BmrDumpBeforeDowntime && BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+    private bool BmrDowntimeImminent => BmrDumpBeforeDowntime && BMRActive && BMRDowntimeIn is > 0 and <= 10f;
 
     /// <summary>
     /// BMR signals a vulnerability window within 30s — hold Kunai's Bane for it.
     /// Only applies if burst is not already active and the option is enabled.
     /// </summary>
-    private bool BmrShouldHoldBurstForVuln => BmrHoldBurstForVuln && BmrActive
-        && BmrVulnerableIn is > 0 and <= 30f
+    private bool BmrShouldHoldBurstForVuln => BmrHoldBurstForVuln && BMRActive
+        && BMRVulnerableIn is > 0 and <= 30f
         && !InActiveBurst;
 
     /// <summary>
@@ -107,30 +107,30 @@ public sealed class SezuraiNIN : NinjaRotation
     /// so using it now would waste it (boss leaves before window ends
     /// and it won't be back for the return). Don't pop burst.
     /// </summary>
-    private bool BmrShouldSkipBurst => BmrDumpBeforeDowntime && BmrActive
-        && BmrDowntimeIn is > 0 and <= 15f
+    private bool BmrShouldSkipBurst => BmrDumpBeforeDowntime && BMRActive
+        && BMRDowntimeIn is > 0 and <= 15f
         && !InActiveBurst
         && KunaisBanePvE.Cooldown.HasOneCharge;
 
     /// <summary>
     /// True when BMR says downtime is within 5s — don't start TCJ (takes ~5s to execute).
     /// </summary>
-    private bool BmrBlockTCJ => BmrActive && BmrDowntimeIn is > 0 and <= 5f;
+    private bool BmrBlockTCJ => BMRActive && BMRDowntimeIn is > 0 and <= 5f;
 
     /// <summary>
     /// True when BMR says downtime is within 3s — don't start new ninjutsu (takes ~3s).
     /// </summary>
-    private bool BmrBlockNinjutsu => BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+    private bool BmrBlockNinjutsu => BMRActive && BMRDowntimeIn is > 0 and <= 3f;
 
     /// <summary>
     /// Raidwide is coming within 5s — for defensive timing.
     /// </summary>
-    private bool BmrRaidwideSoon => BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+    private bool BmrRaidwideSoon => BMRActive && BMRRaidwideIn is > 0 and <= 5f;
 
     /// <summary>
     /// Raidwide is coming within 3s — tighter timing for Shade Shift.
     /// </summary>
-    private bool BmrRaidwideImminent => BmrActive && BmrRaidwideIn is > 0 and <= 3f;
+    private bool BmrRaidwideImminent => BMRActive && BMRRaidwideIn is > 0 and <= 3f;
 
     #endregion
 
@@ -622,28 +622,28 @@ public sealed class SezuraiNIN : NinjaRotation
         ImGui.Text($"BmrBlockTCJ: {BmrBlockTCJ} | BmrBlockNinjutsu: {BmrBlockNinjutsu}");
         ImGui.Text($"BmrRaidwideSoon: {BmrRaidwideSoon} | BmrRaidwideImminent: {BmrRaidwideImminent}");
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -897,7 +897,7 @@ public sealed class SezuraiNIN : NinjaRotation
             return true;
 
         // Fallback when BMR is not active — use Shade Shift whenever framework requests defense.
-        if (!BmrActive && ShadeShiftPvE.CanUse(out act))
+        if (!BMRActive && ShadeShiftPvE.CanUse(out act))
             return true;
 
         return base.DefenseSingleAbility(nextGCD, out act);

@@ -1,101 +1,101 @@
-using RotationSolver.IPC;
+﻿using RotationSolver.IPC;
 
 namespace RotationSolver.Updaters;
 
 internal static class BossModUpdater
 {
-    private static bool _checkedAvailability;
-    private static bool _isAvailable;
+	private static bool _checkedAvailability;
+	private static bool _isAvailable;
 
-    public static void Update()
-    {
-        if (!Service.Config.UseBmrTimeline)
-        {
-            if (DataCenter.BmrHasActiveModule)
-                DataCenter.ResetBmrData();
-            return;
-        }
+	public static void Update()
+	{
+		if (!Service.Config.UseBmrTimeline)
+		{
+			if (DataCenter.BMRHasActiveModule)
+				DataCenter.ResetBmrData();
+			return;
+		}
 
-        if (!_checkedAvailability)
-        {
-            _isAvailable = BossModTimeline_IPCSubscriber.IsEnabled;
-            _checkedAvailability = true;
-        }
+		if (!_checkedAvailability)
+		{
+			_isAvailable = BMRTimeline_IPCSubscriber.IsEnabled;
+			_checkedAvailability = true;
+		}
 
-        if (!_isAvailable)
-        {
-            DataCenter.ResetBmrData();
-            return;
-        }
+		if (!_isAvailable)
+		{
+			DataCenter.ResetBmrData();
+			return;
+		}
 
-        try
-        {
-            DataCenter.BmrHasActiveModule = BossModTimeline_IPCSubscriber.HasActiveModule?.Invoke() ?? false;
+		try
+		{
+			DataCenter.BMRHasActiveModule = BMRTimeline_IPCSubscriber.HasActiveModule?.Invoke() ?? false;
 
-            if (!DataCenter.BmrHasActiveModule)
-            {
-                DataCenter.ResetBmrData();
-                return;
-            }
+			if (!DataCenter.BMRHasActiveModule)
+			{
+				DataCenter.ResetBmrData();
+				return;
+			}
 
-            DataCenter.BmrActiveModuleName = BossModTimeline_IPCSubscriber.ActiveModuleName?.Invoke();
+			DataCenter.BMRActiveModuleName = BMRTimeline_IPCSubscriber.ActiveModuleName?.Invoke();
 
-            // Store whether IPC Funcs are bound (null = BMR doesn't have that endpoint)
-            DataCenter.BmrDebugTimelineRwFunc = BossModTimeline_IPCSubscriber.NextRaidwideIn != null;
-            DataCenter.BmrDebugTimelineTbFunc = BossModTimeline_IPCSubscriber.NextTankbusterIn != null;
-            DataCenter.BmrDebugHintsRwFunc = BossModTimeline_IPCSubscriber.NextRaidwideDamageIn != null;
-            DataCenter.BmrDebugHintsTbFunc = BossModTimeline_IPCSubscriber.NextTankbusterDamageIn != null;
+			// Store whether IPC Funcs are bound (null = BMR doesn't have that endpoint)
+			DataCenter.BMRDebugTimelineRwFunc = BMRTimeline_IPCSubscriber.NextRaidwideIn != null;
+			DataCenter.BMRDebugTimelineTbFunc = BMRTimeline_IPCSubscriber.NextTankbusterIn != null;
+			DataCenter.BMRDebugHintsRwFunc = BMRTimeline_IPCSubscriber.NextRaidwideDamageIn != null;
+			DataCenter.BMRDebugHintsTbFunc = BMRTimeline_IPCSubscriber.NextTankbusterDamageIn != null;
 
-            // Poll Timeline endpoints (state machine flags)
-            var timelineRaidwide = BossModTimeline_IPCSubscriber.NextRaidwideIn?.Invoke() ?? float.MaxValue;
-            var timelineTankbuster = BossModTimeline_IPCSubscriber.NextTankbusterIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrNextKnockbackIn = BossModTimeline_IPCSubscriber.NextKnockbackIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrNextDowntimeIn = BossModTimeline_IPCSubscriber.NextDowntimeIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrNextDowntimeEndIn = BossModTimeline_IPCSubscriber.NextDowntimeEndIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrNextVulnerableIn = BossModTimeline_IPCSubscriber.NextVulnerableIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrNextVulnerableEndIn = BossModTimeline_IPCSubscriber.NextVulnerableEndIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrDebugTimelineRaidwide = timelineRaidwide;
-            DataCenter.BmrDebugTimelineTankbuster = timelineTankbuster;
+			// Poll Timeline endpoints (state machine flags)
+			var timelineRaidwide = BMRTimeline_IPCSubscriber.NextRaidwideIn?.Invoke() ?? float.MaxValue;
+			var timelineTankbuster = BMRTimeline_IPCSubscriber.NextTankbusterIn?.Invoke() ?? float.MaxValue;
+			DataCenter.BMRNextKnockbackIn = BMRTimeline_IPCSubscriber.NextKnockbackIn?.Invoke() ?? float.MaxValue;
+			DataCenter.BMRNextDowntimeIn = BMRTimeline_IPCSubscriber.NextDowntimeIn?.Invoke() ?? float.MaxValue;
+			DataCenter.BMRNextDowntimeEndIn = BMRTimeline_IPCSubscriber.NextDowntimeEndIn?.Invoke() ?? float.MaxValue;
+			DataCenter.BMRNextVulnerableIn = BMRTimeline_IPCSubscriber.NextVulnerableIn?.Invoke() ?? float.MaxValue;
+			DataCenter.BMRNextVulnerableEndIn = BMRTimeline_IPCSubscriber.NextVulnerableEndIn?.Invoke() ?? float.MaxValue;
+			DataCenter.BMRDebugTimelineRaidwide = timelineRaidwide;
+			DataCenter.BMRDebugTimelineTankbuster = timelineTankbuster;
 
-            // Poll Hints endpoints (component-level damage predictions)
-            var damageIn = BossModTimeline_IPCSubscriber.NextDamageIn?.Invoke() ?? float.MaxValue;
-            var damageType = BossModTimeline_IPCSubscriber.NextDamageType?.Invoke() ?? 0;
-            DataCenter.BmrNextDamageIn = damageIn;
-            DataCenter.BmrNextDamageType = damageType;
-            DataCenter.BmrDebugGenericDamageIn = damageIn;
-            DataCenter.BmrDebugGenericDamageType = damageType;
+			// Poll Hints endpoints (component-level damage predictions)
+			var damageIn = BMRTimeline_IPCSubscriber.NextDamageIn?.Invoke() ?? float.MaxValue;
+			var damageType = BMRTimeline_IPCSubscriber.NextDamageType?.Invoke() ?? 0;
+			DataCenter.BMRNextDamageIn = damageIn;
+			DataCenter.BMRNextDamageType = damageType;
+			DataCenter.BMRDebugGenericDamageIn = damageIn;
+			DataCenter.BMRDebugGenericDamageType = damageType;
 
-            // Type-specific Hints endpoints
-            var hintsRaidwide = BossModTimeline_IPCSubscriber.NextRaidwideDamageIn?.Invoke() ?? float.MaxValue;
-            var hintsTankbuster = BossModTimeline_IPCSubscriber.NextTankbusterDamageIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrDebugHintsRaidwide = hintsRaidwide;
-            DataCenter.BmrDebugHintsTankbuster = hintsTankbuster;
+			// Type-specific Hints endpoints
+			var hintsRaidwide = BMRTimeline_IPCSubscriber.NextRaidwideDamageIn?.Invoke() ?? float.MaxValue;
+			var hintsTankbuster = BMRTimeline_IPCSubscriber.NextTankbusterDamageIn?.Invoke() ?? float.MaxValue;
+			DataCenter.BMRDebugHintsRaidwide = hintsRaidwide;
+			DataCenter.BMRDebugHintsTankbuster = hintsTankbuster;
 
-            // Filter out invalid values (<=0 means endpoint missing/SafeWrapper default or damage already resolved)
-            if (hintsRaidwide <= 0f) hintsRaidwide = float.MaxValue;
-            if (hintsTankbuster <= 0f) hintsTankbuster = float.MaxValue;
+			// Filter out invalid values (<=0 means endpoint missing/SafeWrapper default or damage already resolved)
+			if (hintsRaidwide <= 0f) hintsRaidwide = float.MaxValue;
+			if (hintsTankbuster <= 0f) hintsTankbuster = float.MaxValue;
 
-            // Final fallback: use generic damage prediction if type matches
-            var genericRaidwide = (damageType == 2 && damageIn > 0f) ? damageIn : float.MaxValue;
-            var genericTankbuster = (damageType == 1 && damageIn > 0f) ? damageIn : float.MaxValue;
+			// Final fallback: use generic damage prediction if type matches
+			var genericRaidwide = (damageType == 2 && damageIn > 0f) ? damageIn : float.MaxValue;
+			var genericTankbuster = (damageType == 1 && damageIn > 0f) ? damageIn : float.MaxValue;
 
-            // Merge all sources: Timeline OR type-specific Hints OR generic damage prediction
-            DataCenter.BmrNextRaidwideIn = Math.Min(Math.Min(timelineRaidwide, hintsRaidwide), genericRaidwide);
-            DataCenter.BmrNextTankbusterIn = Math.Min(Math.Min(timelineTankbuster, hintsTankbuster), genericTankbuster);
+			// Merge all sources: Timeline OR type-specific Hints OR generic damage prediction
+			DataCenter.BMRNextRaidwideIn = Math.Min(Math.Min(timelineRaidwide, hintsRaidwide), genericRaidwide);
+			DataCenter.BMRNextTankbusterIn = Math.Min(Math.Min(timelineTankbuster, hintsTankbuster), genericTankbuster);
 
-            DataCenter.BmrSpecialModeIn = BossModTimeline_IPCSubscriber.SpecialModeIn?.Invoke() ?? float.MaxValue;
-            DataCenter.BmrSpecialModeType = BossModTimeline_IPCSubscriber.SpecialModeType?.Invoke() ?? 0;
-            DataCenter.BmrDebugTimelineWalk = BossModTimeline_IPCSubscriber.DebugTimelineWalk?.Invoke();
-        }
-        catch
-        {
-            DataCenter.ResetBmrData();
-            _checkedAvailability = false;
-        }
-    }
+			DataCenter.BMRSpecialModeIn = BMRTimeline_IPCSubscriber.SpecialModeIn?.Invoke() ?? float.MaxValue;
+			DataCenter.BMRSpecialModeType = BMRTimeline_IPCSubscriber.SpecialModeType?.Invoke() ?? 0;
+			DataCenter.BMRDebugTimelineWalk = BMRTimeline_IPCSubscriber.DebugTimelineWalk?.Invoke();
+		}
+		catch
+		{
+			DataCenter.ResetBmrData();
+			_checkedAvailability = false;
+		}
+	}
 
-    public static void ResetAvailabilityCheck()
-    {
-        _checkedAvailability = false;
-    }
+	public static void ResetAvailabilityCheck()
+	{
+		_checkedAvailability = false;
+	}
 }

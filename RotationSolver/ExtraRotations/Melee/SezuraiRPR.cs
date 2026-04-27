@@ -111,38 +111,38 @@ public sealed class SezuraiRPR : ReaperRotation
     /// True when BMR is active AND the user has enabled our BMR config toggle.
     /// All BMR checks go through this so there's a single kill-switch.
     /// </summary>
-    private bool BmrUsable => UseBmr && BmrActive;
+    private bool BmrUsable => UseBmr && BMRActive;
 
     /// <summary>
     /// BMR: downtime is imminent and close enough to worry about (~20s).
     /// Used for Arcane Circle dump decisions and resource management.
     /// </summary>
-    private bool BmrDowntimeSoon => BmrUsable && BmrDowntimeIn is > 0 and <= 20f;
+    private bool BmrDowntimeSoon => BmrUsable && BMRDowntimeIn is > 0 and <= 20f;
 
     /// <summary>
     /// BMR: downtime is very close (~8s). Dump remaining Soul gauge via Blood Stalk / Gibbet/Gallows.
     /// Also use Harvest Moon and Soulsow prep.
     /// </summary>
-    private bool BmrDowntimeImminent => BmrUsable && BmrDowntimeIn is > 0 and <= 8f;
+    private bool BmrDowntimeImminent => BmrUsable && BMRDowntimeIn is > 0 and <= 8f;
 
     /// <summary>
     /// BMR: downtime too close for Enshroud (~12s). Full Enshroud window is 5 GCDs + Communio + Perfectio.
     /// At ~2.5s GCD that's roughly 12-13s minimum. Don't enter if we can't finish.
     /// </summary>
-    private bool BmrBlockEnshroud => BmrUsable && BmrDowntimeIn is > 0 and <= 12f;
+    private bool BmrBlockEnshroud => BmrUsable && BMRDowntimeIn is > 0 and <= 12f;
 
     /// <summary>
     /// BMR: downtime too close to start a new 1-2-3 combo (~5s). 3 GCDs at 2.5s = 7.5s,
     /// but a partial combo is worse than ranged filler or gauge dump.
     /// </summary>
-    private bool BmrBlockNewCombo => BmrUsable && BmrDowntimeIn is > 0 and <= 5f;
+    private bool BmrBlockNewCombo => BmrUsable && BMRDowntimeIn is > 0 and <= 5f;
 
     /// <summary>
     /// BMR: vulnerability window coming within 30s -- hold Arcane Circle for it.
     /// Per Balance: align burst with party buff / vuln windows for maximum value.
     /// </summary>
     private bool BmrHoldACForVuln => BmrUsable
-        && BmrVulnerableIn is > 0 and <= 30f
+        && BMRVulnerableIn is > 0 and <= 30f
         && ArcaneCirclePvE.Cooldown.HasOneCharge;
 
     /// <summary>
@@ -151,26 +151,26 @@ public sealed class SezuraiRPR : ReaperRotation
     /// The double Enshroud + Gluttony window needs ~12-15s minimum.
     /// </summary>
     private bool BmrBlockACBeforeDowntime => BmrUsable
-        && BmrDowntimeIn is > 0 and <= 15f
+        && BMRDowntimeIn is > 0 and <= 15f
         && !InActiveBurst;
 
     /// <summary>
     /// BMR: raidwide damage incoming soon (~3s). Use self-healing proactively.
     /// Bloodbath before raidwide heals on damage dealt, Second Wind is a flat heal.
     /// </summary>
-    private bool BmrRaidwideSoon => BmrUsable && BmrRaidwideIn is > 0 and <= 3f;
+    private bool BmrRaidwideSoon => BmrUsable && BMRRaidwideIn is > 0 and <= 3f;
 
     /// <summary>
     /// BMR: raidwide damage incoming within Feint/Arcane Crest application window (~5s).
     /// Feint lasts 10s and reduces physical damage by 10% + magic by 5%.
     /// Arcane Crest provides a self shield that grants party regen when broken.
     /// </summary>
-    private bool BmrFeintWindow => BmrUsable && BmrRaidwideIn is > 0 and <= 5f;
+    private bool BmrFeintWindow => BmrUsable && BMRRaidwideIn is > 0 and <= 5f;
 
     /// <summary>
     /// BMR: knockback incoming within Arm's Length application window (~5s).
     /// </summary>
-    private bool BmrKnockbackSoon => BmrUsable && BmrKnockbackIn is > 0 and <= 5f;
+    private bool BmrKnockbackSoon => BmrUsable && BMRKnockbackIn is > 0 and <= 5f;
 
     #endregion
 
@@ -280,29 +280,29 @@ public sealed class SezuraiRPR : ReaperRotation
         ImGui.Text($"FeintWindow: {BmrFeintWindow} | RaidwideSoon: {BmrRaidwideSoon}");
         ImGui.Text($"KnockbackSoon: {BmrKnockbackSoon}");
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
-            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BMRDamageIn < 9999f ? $"{BMRDamageIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -640,7 +640,7 @@ public sealed class SezuraiRPR : ReaperRotation
         // Communio + Perfectio is worth far more than extra reaping GCDs.
         // Only do this when downtime < 5s (one more GCD might not happen).
         if (HasEnshrouded && LemureShroud >= 2 && CommunioPvE.EnoughLevel
-            && BmrUsable && BmrDowntimeIn is > 0 and <= 5f)
+            && BmrUsable && BMRDowntimeIn is > 0 and <= 5f)
         {
             // Override: force Communio if we can cast it
             if (!IsMoving && CommunioPvE.CanUse(out act, skipAoeCheck: true))
@@ -727,7 +727,7 @@ public sealed class SezuraiRPR : ReaperRotation
         // BMR: skip refreshing Death's Design if downtime < 3s -- waste of a GCD
         // when the buff will persist through downtime anyway.
         // ======================================================================
-        bool bmrSkipDDRefresh = BmrUsable && BmrDowntimeIn is > 0 and <= 3f;
+        bool bmrSkipDDRefresh = BmrUsable && BMRDowntimeIn is > 0 and <= 3f;
 
         if (!bmrSkipDDRefresh)
         {
@@ -792,7 +792,7 @@ public sealed class SezuraiRPR : ReaperRotation
         // BMR: Don't start Soul Slice if downtime < 3s and Soul is already high,
         // since the generated gauge will be wasted.
         // ======================================================================
-        bool bmrSkipSoulSlice = BmrUsable && BmrDowntimeIn is > 0 and <= 3f && Soul >= 80;
+        bool bmrSkipSoulSlice = BmrUsable && BMRDowntimeIn is > 0 and <= 3f && Soul >= 80;
 
         if (!bmrSkipSoulSlice)
         {

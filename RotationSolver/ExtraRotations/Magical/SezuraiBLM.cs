@@ -62,26 +62,26 @@ public sealed class SezuraiBLM : BlackMageRotation
     /// Always false when BMR is inactive (safe fallback).
     /// </summary>
     private bool BmrDowntimeWithin(float seconds)
-        => BmrActive && BmrDowntimeIn is > 0 and < float.MaxValue && BmrDowntimeIn <= seconds;
+        => BMRActive && BMRDowntimeIn is > 0 and < float.MaxValue && BMRDowntimeIn <= seconds;
 
     /// <summary>
     /// True when BMR reports a vulnerability window within the specified seconds.
     /// Always false when BMR is inactive (safe fallback).
     /// </summary>
     private bool BmrVulnWithin(float seconds)
-        => BmrActive && BmrVulnerableIn is > 0 and < float.MaxValue && BmrVulnerableIn <= seconds;
+        => BMRActive && BMRVulnerableIn is > 0 and < float.MaxValue && BMRVulnerableIn <= seconds;
 
     /// <summary>
     /// True when BMR reports a raidwide within the specified seconds.
     /// </summary>
     private bool BmrRaidwideWithin(float seconds)
-        => BmrActive && BmrRaidwideIn is > 0 and < float.MaxValue && BmrRaidwideIn <= seconds;
+        => BMRActive && BMRRaidwideIn is > 0 and < float.MaxValue && BMRRaidwideIn <= seconds;
 
     /// <summary>
     /// True when BMR reports a knockback within the specified seconds.
     /// </summary>
     private bool BmrKnockbackWithin(float seconds)
-        => BmrActive && BmrKnockbackIn is > 0 and < float.MaxValue && BmrKnockbackIn <= seconds;
+        => BMRActive && BMRKnockbackIn is > 0 and < float.MaxValue && BMRKnockbackIn <= seconds;
 
     #endregion
 
@@ -213,15 +213,15 @@ public sealed class SezuraiBLM : BlackMageRotation
 
         ImGui.Separator();
         ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.6f, 1f, 1f), "--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
             ImGui.Text($"-- BMR Decisions --");
             ImGui.Text($"DowntimeWithin(3.5): {BmrDowntimeWithin(3.5f)} (use instants)");
             ImGui.Text($"DowntimeWithin(5): {BmrDowntimeWithin(5f)} (transpose prep)");
@@ -233,17 +233,17 @@ public sealed class SezuraiBLM : BlackMageRotation
             ImGui.Text($"VulnWithin(30): {BmrVulnWithin(30f)} (hold LL)");
             ImGui.Text($"KnockbackWithin(5): {BmrKnockbackWithin(5f)} (Arms Length)");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -321,7 +321,7 @@ public sealed class SezuraiBLM : BlackMageRotation
         // Without BMR: use whenever the framework triggers defense.
         bool rwSoon = BmrRaidwideWithin(3f);
 
-        if ((rwSoon || !BmrActive) && ManawardPvE.CanUse(out act))
+        if ((rwSoon || !BMRActive) && ManawardPvE.CanUse(out act))
             return true;
 
         return base.DefenseSingleAbility(nextGCD, out act);
@@ -347,7 +347,7 @@ public sealed class SezuraiBLM : BlackMageRotation
         }
 
         // Non-BMR fallback
-        if (!BmrActive && (IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
+        if (!BMRActive && (IsMagicalDamageIncoming || !IsPhysicalDamageIncoming)
             && AddlePvE.CanUse(out act))
             return true;
 
@@ -362,7 +362,7 @@ public sealed class SezuraiBLM : BlackMageRotation
         // Without BMR: use whenever the framework triggers anti-knockback.
         bool kbSoon = BmrKnockbackWithin(5f);
 
-        if ((kbSoon || !BmrActive) && ArmsLengthPvE.CanUse(out act))
+        if ((kbSoon || !BMRActive) && ArmsLengthPvE.CanUse(out act))
             return true;
         return base.AntiKnockbackAbility(nextGCD, out act);
     }
@@ -439,7 +439,7 @@ public sealed class SezuraiBLM : BlackMageRotation
             // and the vuln window is within 30s (don't hold forever)
             bool bmrHoldForVuln = BmrHoldLeyLinesForVuln
                 && BmrVulnWithin(30f)
-                && BmrVulnerableIn > 3f  // Don't hold if vuln is already happening
+                && BMRVulnerableIn > 3f  // Don't hold if vuln is already happening
                 && LeyLinesPvE.Cooldown.HasOneCharge;
 
             if (InCombat && HasHostilesInRange && !bmrBlockLeyLines && !bmrHoldForVuln)

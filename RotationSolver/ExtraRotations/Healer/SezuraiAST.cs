@@ -247,7 +247,7 @@ public sealed class SezuraiAST : AstrologianRotation
         // BMR-aware: if tankbuster is coming, prioritize mit tools for it
         // Per Balance/Icy Veins: Exaltation is THE tankbuster tool (10% mit + 500p delayed heal)
         // Layer with Bole (10% mit card) + Celestial Intersection (400p shield) for big TBs
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+        bool tbSoon = BMRActive && BMRTankbusterIn is > 0 and <= 6f;
 
         if (tbSoon)
         {
@@ -294,7 +294,7 @@ public sealed class SezuraiAST : AstrologianRotation
         // Earthly Star placement is NOT here — it's in AttackAbility (primarily a damage tool).
         // Star DETONATION for healing is in HealAreaAbility and AttackAbility (burst).
 
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwSoon = BMRActive && BMRRaidwideIn is > 0 and <= 5f;
 
         // Sun Sign: 10% party mit for 15s — use when available (it's free, Suntouched from Neutral Sect)
         if (SunSignPvE.CanUse(out act))
@@ -307,7 +307,7 @@ public sealed class SezuraiAST : AstrologianRotation
         if (rwSoon && CollectiveUnconsciousPvE.CanUse(out act))
             return true;
 
-        if (!BmrActive && CollectiveUnconsciousPvE.CanUse(out act))
+        if (!BMRActive && CollectiveUnconsciousPvE.CanUse(out act))
             return true;
 
         return base.DefenseAreaAbility(nextGCD, out act);
@@ -327,8 +327,8 @@ public sealed class SezuraiAST : AstrologianRotation
         // Let DefenseSingleAbility handle MIT (Exaltation, Bole, CI shields),
         // then fire heals AFTER the TB hits when the tank actually needs them.
         // Essential Dignity scales inversely with HP — it heals MORE on a low-HP tank post-TB.
-        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 1f and <= 8f;
-        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+        bool tbComingSoon = BMRActive && BMRTankbusterIn is > 1f and <= 8f;
+        bool rwComingSoon = BMRActive && BMRRaidwideIn is > 1f and <= 8f;
 
         if (tbComingSoon || rwComingSoon)
             return base.HealSingleAbility(nextGCD, out act);
@@ -353,7 +353,7 @@ public sealed class SezuraiAST : AstrologianRotation
         // Celestial Intersection: 200p heal + 400p shield (2 charges, 30s recharge)
         // Per Balance: "Use one charge regularly to avoid capping, hold one for emergencies"
         // BMR-aware: if TB is imminent, spend both charges for max shield
-        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 4f;
+        bool tbImminent = BMRActive && BMRTankbusterIn is > 0 and <= 4f;
         if (CelestialIntersectionPvE.CanUse(out act, usedUp: tbImminent || CelestialIntersectionPvE.Cooldown.CurrentCharges == 2))
             return true;
 
@@ -378,7 +378,7 @@ public sealed class SezuraiAST : AstrologianRotation
         // BMR-aware: if a raidwide is coming SOON, don't waste heals — let MIT handle it.
         // Heals should fire AFTER damage, not before. The framework triggers this method
         // when party HP drops, which should be after the raidwide hits.
-        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+        bool rwComingSoon = BMRActive && BMRRaidwideIn is > 1f and <= 8f;
 
         // Earthly Star (charged): 720p heal — highest priority AoE heal
         // This is our best post-raidwide heal. Only detonate when HP is actually low.
@@ -545,7 +545,7 @@ public sealed class SezuraiAST : AstrologianRotation
             // --- BMR-aware Earthly Star placement ---
             // Per Balance: "Place it 10 seconds before the raidwide so you can detonate after damage"
             // Place star so it matures to Giant Dominance (10s) right before raidwide hits
-            if (BmrActive && BmrRaidwideIn is > 10f and <= 20f
+            if (BMRActive && BMRRaidwideIn is > 10f and <= 20f
                 && !HasGiantDominance && !HasEarthlyDominance
                 && EarthlyStarPvE.CanUse(out act))
             {
@@ -628,10 +628,10 @@ public sealed class SezuraiAST : AstrologianRotation
         // Per Balance: best for 1-HP mechanics, back-to-back raidwides, DRK Living Dead.
         // BMR-aware: cast 5-8s before raidwide so buff is active when damage hits.
         // Without BMR: fall back to original multi-hit restriction logic.
-        if (BmrActive && BmrRaidwideIn is > 2f and <= 8f && MacrocosmosPvE.CanUse(out act))
+        if (BMRActive && BMRRaidwideIn is > 2f and <= 8f && MacrocosmosPvE.CanUse(out act))
             return true;
 
-        if (!BmrActive && ((MultiHitRestrict && IsCastingMultiHit) || !MultiHitRestrict))
+        if (!BMRActive && ((MultiHitRestrict && IsCastingMultiHit) || !MultiHitRestrict))
         {
             if (MacrocosmosPvE.CanUse(out act))
                 return true;
@@ -657,8 +657,8 @@ public sealed class SezuraiAST : AstrologianRotation
         // DefenseSingleAbility/DefenseAreaAbility handle MIT.
         // After damage hits, framework re-triggers and heals fire then.
         // This applies to ALL heal modes (Balanced, DPSFocus, Healbot).
-        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 1f and <= 8f;
-        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+        bool tbComingSoon = BMRActive && BMRTankbusterIn is > 1f and <= 8f;
+        bool rwComingSoon = BMRActive && BMRRaidwideIn is > 1f and <= 8f;
         if (tbComingSoon || rwComingSoon)
             return base.HealSingleGCD(out act);
 
@@ -698,7 +698,7 @@ public sealed class SezuraiAST : AstrologianRotation
         // Helios/Aspected Helios before raidwide = GCD wasted on full HP party.
         // MIT handles pre-damage, these GCD heals fire AFTER damage when HP drops.
         // This applies to ALL heal modes (Balanced, DPSFocus, Healbot).
-        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+        bool rwComingSoon = BMRActive && BMRRaidwideIn is > 1f and <= 8f;
         if (rwComingSoon)
             return base.HealAreaGCD(out act);
 
@@ -851,28 +851,28 @@ public sealed class SezuraiAST : AstrologianRotation
         ImGui.Text($"CanHealAreaSpell: {CanHealAreaSpell}");
         ImGui.Text($"PartyHP: {PartyMembersAverHP:P0}");
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 

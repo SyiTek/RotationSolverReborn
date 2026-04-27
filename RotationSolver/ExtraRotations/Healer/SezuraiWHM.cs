@@ -288,8 +288,8 @@ public sealed class SezuraiWHM : WhiteMageRotation
         // Plenary Indulgence: 60s CD. In 7.4 also provides mitigation.
         // Lighter CD -- use more liberally on lesser raidwides where Temperance is overkill.
 
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
-        bool rwMedium = BmrActive && BmrRaidwideIn is > 5f and <= 8f;
+        bool rwSoon = BMRActive && BMRRaidwideIn is > 0 and <= 5f;
+        bool rwMedium = BMRActive && BMRRaidwideIn is > 5f and <= 8f;
 
         if (rwSoon)
         {
@@ -364,7 +364,7 @@ public sealed class SezuraiWHM : WhiteMageRotation
         //
         // Strategy: Benison first (cheap, 2 charges, covers auto-attacks too),
         // then Aquaveil for heavy TBs. Max 2 mits per TB to preserve for next mechanic.
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+        bool tbSoon = BMRActive && BMRTankbusterIn is > 0 and <= 6f;
 
         if (tbSoon)
         {
@@ -408,7 +408,7 @@ public sealed class SezuraiWHM : WhiteMageRotation
         // Core principle: heal AFTER damage, not before. Healing at full HP = 100% overheal.
         // If a TB is coming in 1-4s, hold single-target heals -- the damage hasn't hit yet.
         // DefenseSingleAbility already applied Benison/Aquaveil MIT; heals fire post-damage.
-        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 1f and <= 4f;
+        bool tbComingSoon = BMRActive && BMRTankbusterIn is > 1f and <= 4f;
 
         if (tbComingSoon)
         {
@@ -467,7 +467,7 @@ public sealed class SezuraiWHM : WhiteMageRotation
         // EXCEPTION: Asylum placement -- it is BOTH mit (10% heal received buff at L78)
         // AND healing (regen ticks). Place it BEFORE raidwide so the regen starts ticking
         // immediately after damage, and the 10% heal buff amplifies post-RW heals.
-        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+        bool rwComingSoon = BMRActive && BMRRaidwideIn is > 1f and <= 8f;
 
         // Asylum BEFORE raidwide: ground regen + 10% healing received buff (at L78+)
         // Per Balance: "980p total across 8 buffed ticks + instant tick. 90s CD."
@@ -513,7 +513,7 @@ public sealed class SezuraiWHM : WhiteMageRotation
         //
         // BMR downtime awareness: if downtime is imminent, accelerate burst usage.
         // Don't waste PoM on the last 5s before boss jumps.
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 15f;
 
         // --- Presence of Mind (120s personal haste + Sacred Sight stacks) ---
         // Use during burst, or accelerate if downtime is coming soon
@@ -521,14 +521,14 @@ public sealed class SezuraiWHM : WhiteMageRotation
             return true;
 
         // If downtime is coming and PoM is available, use it now to get value before boss jumps
-        if (downtimeSoon && BmrDowntimeIn > 5f && PresenceOfMindPvE.CanUse(out act))
+        if (downtimeSoon && BMRDowntimeIn > 5f && PresenceOfMindPvE.CanUse(out act))
             return true;
 
         // --- Assize (45s CD, 400 potency damage + 400 potency heal + 500 MP) ---
         // NEVER hold Assize. It is damage, healing, AND MP recovery in one oGCD.
         // Per Balance: "Assize should be used on cooldown in pretty much all scenarios."
         // BMR note: if downtime is imminent (<3s), hold Assize -- it would miss the target.
-        bool downtimeImminent = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
+        bool downtimeImminent = BMRActive && BMRDowntimeIn is > 0 and <= 3f;
         if (!downtimeImminent && AssizePvE.CanUse(out act, skipAoeCheck: true))
             return true;
 
@@ -778,29 +778,29 @@ public sealed class SezuraiWHM : WhiteMageRotation
         ImGui.Text($"CanHealAreaSpell: {CanHealAreaSpell}");
         ImGui.Text($"PartyHP: {PartyMembersAverHP:P0}");
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
-            ImGui.Text($"DamageIn: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"DamageIn: {(BMRDamageIn < 9999f ? $"{BMRDamageIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 

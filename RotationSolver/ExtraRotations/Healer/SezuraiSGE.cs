@@ -244,8 +244,8 @@ public sealed class SezuraiSGE : SageRotation
         // Mitigation is multiplicative (two 10% = 19%, not 20%), so spreading is more
         // efficient total damage reduction over the fight.
 
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
-        bool rwMedium = BmrActive && BmrRaidwideIn is > 5f and <= 15f;
+        bool rwSoon = BMRActive && BMRRaidwideIn is > 0 and <= 5f;
+        bool rwMedium = BMRActive && BMRRaidwideIn is > 5f and <= 15f;
 
         if (rwSoon)
         {
@@ -279,7 +279,7 @@ public sealed class SezuraiSGE : SageRotation
 
             // If Kerachole is available and RW is ~5-8s out, still good to pre-apply
             // (15s duration means it will cover the hit)
-            if (BmrRaidwideIn <= 8f && CanSpendAddersgall && KeracholePvE.CanUse(out act))
+            if (BMRRaidwideIn <= 8f && CanSpendAddersgall && KeracholePvE.CanUse(out act))
                 return true;
 
             return base.DefenseAreaAbility(nextGCD, out act);
@@ -308,8 +308,8 @@ public sealed class SezuraiSGE : SageRotation
         //
         // Strategy: Spread across TBs. Max 2 tools per TB.
 
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 5f;
-        bool tbMedium = BmrActive && BmrTankbusterIn is > 5f and <= 10f;
+        bool tbSoon = BMRActive && BMRTankbusterIn is > 0 and <= 5f;
+        bool tbMedium = BMRActive && BMRTankbusterIn is > 5f and <= 10f;
 
         if (tbSoon)
         {
@@ -359,7 +359,7 @@ public sealed class SezuraiSGE : SageRotation
     {
         // BMR-aware: if a tankbuster is coming soon, don't waste Taurochole on chip damage.
         // Save it for the TB where the 10% mit matters.
-        bool tbComingSoon = BmrActive && BmrTankbusterIn is > 1f and <= 8f;
+        bool tbComingSoon = BMRActive && BMRTankbusterIn is > 1f and <= 8f;
 
         // Soteria: boosts Kardia heals, free, no Addersgall cost
         // Use when a tank needs extra passive healing
@@ -401,7 +401,7 @@ public sealed class SezuraiSGE : SageRotation
         // Per Balance: "Kerachole for mit+regen, Physis for regen+heal buff,
         // Ixochole for immediate burst, Pepsis to convert shields, Philosophia for sustained"
 
-        bool rwComingSoon = BmrActive && BmrRaidwideIn is > 1f and <= 8f;
+        bool rwComingSoon = BMRActive && BMRRaidwideIn is > 1f and <= 8f;
 
         // === Pepsis: convert existing shields to heals (best used POST-raidwide) ===
         // If we applied E.Prognosis shield before the RW and it's still up, Pepsis converts
@@ -413,7 +413,7 @@ public sealed class SezuraiSGE : SageRotation
         // === Philosophia: Dawntrail ability, party heal + GCD healing buff ===
         // BMR: if vuln window coming, hold Philosophia so the healing buff covers the
         // vuln phase where extra healing matters most.
-        if (PhilosophiaForVuln && BmrActive && BmrVulnerableIn is > 0 and <= 20f)
+        if (PhilosophiaForVuln && BMRActive && BMRVulnerableIn is > 0 and <= 20f)
         {
             // Hold Philosophia for the vuln window — skip it here
         }
@@ -470,8 +470,8 @@ public sealed class SezuraiSGE : SageRotation
         // Rhizomata: grants 1 Addersgall charge
         // Use when below max charges and not about to naturally gain one
         // BMR: more aggressive usage before raidwide/TB if we need charges for Kerachole/Taurochole
-        bool needChargesForMit = BmrActive
-            && ((BmrRaidwideIn is > 0 and <= 10f) || (BmrTankbusterIn is > 0 and <= 10f))
+        bool needChargesForMit = BMRActive
+            && ((BMRRaidwideIn is > 0 and <= 10f) || (BMRTankbusterIn is > 0 and <= 10f))
             && Addersgall == 0;
 
         if (needChargesForMit && RhizomataPvE.CanUse(out act))
@@ -496,13 +496,13 @@ public sealed class SezuraiSGE : SageRotation
         // If boss is about to become untargetable, spend all Phlegma charges now.
         // Charges ticking during downtime = wasted damage. Better to front-load them.
         bool downtimeApproaching = PhlegmaDumpBeforeDowntime
-            && BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+            && BMRActive && BMRDowntimeIn is > 0 and <= 8f;
 
         // === Psyche (Dawntrail oGCD, 60s CD) ===
         // Use on cooldown. SGE has no personal raid buff, so Psyche should not
         // drift. It naturally aligns with 120s windows every other use.
         // BMR: hold briefly if downtime is imminent (Psyche is wasted on invuln boss)
-        if (downtimeApproaching && BmrDowntimeIn <= 3f)
+        if (downtimeApproaching && BMRDowntimeIn <= 3f)
         {
             // Boss going away in <3s — hold Psyche
         }
@@ -662,7 +662,7 @@ public sealed class SezuraiSGE : SageRotation
         // === BMR: Skip DoT refresh if downtime is imminent ===
         // If the boss is going untargetable in <5s, don't waste a GCD applying a 30s DoT.
         // Use Phlegma/Toxikon/Dosis instead for immediate damage.
-        bool downtimeImminent = BmrActive && BmrDowntimeIn is > 0 and <= 5f;
+        bool downtimeImminent = BMRActive && BMRDowntimeIn is > 0 and <= 5f;
 
         // === Eukrasian Dosis DoT Snapshot ===
         // If raid buffs just went up, force-refresh DoT to snapshot buffed ticks.
@@ -907,29 +907,29 @@ public sealed class SezuraiSGE : SageRotation
         ImGui.Text($"Taurochole: {(TaurocholePvE.Cooldown.IsCoolingDown ? $"{TaurocholePvE.Cooldown.RecastTimeRemain:F1}s" : "Ready")}");
 
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
-            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BMRDamageIn < 9999f ? $"{BMRDamageIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 

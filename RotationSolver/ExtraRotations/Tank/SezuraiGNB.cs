@@ -135,28 +135,28 @@ public sealed class SezuraiGNB : GunbreakerRotation
 
         // BMR Timeline
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 
@@ -237,10 +237,10 @@ public sealed class SezuraiGNB : GunbreakerRotation
         // Spreading mits across separate raidwides is more efficient than stacking on one.
         // Use 1-2 mits per raidwide max. Heart of Light (10% magic / 5% phys) + Reprisal (10%)
         // should cover separate raidwides, not the same one.
-        bool rwSoon = BmrActive && BmrRaidwideIn is > 0 and <= 5f;
+        bool rwSoon = BMRActive && BMRRaidwideIn is > 0 and <= 5f;
 
         // BMR active but no raidwide coming: don't waste party mits
-        if (BmrActive && !rwSoon)
+        if (BMRActive && !rwSoon)
             return base.DefenseAreaAbility(nextGCD, out act);
 
         if (rwSoon)
@@ -263,7 +263,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
 
         // === NON-BMR FALLBACK ===
         // Without BMR: skip if NM burst is imminent (avoid clipping oGCD slots)
-        if (!BmrActive && NoMercySoon && !HasNoMercy)
+        if (!BMRActive && NoMercySoon && !HasNoMercy)
             return base.DefenseAreaAbility(nextGCD, out act);
 
         // Heart of Light: 10% MAGIC mitigation -- skip for physical damage
@@ -298,10 +298,10 @@ public sealed class SezuraiGNB : GunbreakerRotation
         // Strategy: Heart of Corundum first (short CD, every TB), then Aurora (HoT for recovery,
         // hold 1 charge), then ONE heavier CD. Never dump all CDs on a single TB.
         // Mitigation is multiplicative: spreading across TBs is more efficient.
-        bool tbSoon = BmrActive && BmrTankbusterIn is > 0 and <= 6f;
+        bool tbSoon = BMRActive && BMRTankbusterIn is > 0 and <= 6f;
 
         // BMR active but no TB coming soon: don't waste single-target mits
-        if (BmrActive && !tbSoon)
+        if (BMRActive && !tbSoon)
             return base.DefenseSingleAbility(nextGCD, out act);
 
         // --- Heart of Corundum / Heart of Stone: short CD, always first for every TB ---
@@ -377,7 +377,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
         // Aurora: 2 charges, 1800 total potency HoT over 18s
         // BMR-aware: if a TB is coming soon, save at least 1 charge for the TB mit path
         // Otherwise, use for self-healing when HP is below threshold
-        bool tbApproaching = BmrActive && BmrTankbusterIn is > 0 and <= 15f;
+        bool tbApproaching = BMRActive && BMRTankbusterIn is > 0 and <= 15f;
 
         if (Player?.GetHealthRatio() < AuroraHpThreshold && InCombat)
         {
@@ -430,17 +430,17 @@ public sealed class SezuraiGNB : GunbreakerRotation
         // Balance: "Reduces HP to 50% while granting 10 seconds of near-invulnerability"
         // BMR-aware: only Superbolide if TB is actually imminent AND HP is critical.
         // Without BMR: use the framework's health threshold as before.
-        bool tbImminent = BmrActive && BmrTankbusterIn is > 0 and <= 3f;
+        bool tbImminent = BMRActive && BMRTankbusterIn is > 0 and <= 3f;
         bool hpCritical = Player?.GetHealthRatio() <= Service.Config.HealthForDyingTanks;
 
         if (SuperbolidePvE.CanUse(out act))
         {
             // BMR path: only invuln if TB is about to hit and we're low
-            if (BmrActive && tbImminent && hpCritical)
+            if (BMRActive && tbImminent && hpCritical)
                 return true;
 
             // Non-BMR path: use framework HP threshold
-            if (!BmrActive && hpCritical)
+            if (!BMRActive && hpCritical)
                 return true;
         }
 
@@ -449,7 +449,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
         // BMR-aware: don't pot if downtime is imminent (waste of pot duration).
         if (BurstMed && InBurstWindow && InCombat)
         {
-            bool downtimeWastesPot = BmrActive && BmrDowntimeIn is > 0 and <= 10f;
+            bool downtimeWastesPot = BMRActive && BMRDowntimeIn is > 0 and <= 10f;
             if (!downtimeWastesPot && UseBurstMedicine(out act))
                 return true;
         }
@@ -464,9 +464,9 @@ public sealed class SezuraiGNB : GunbreakerRotation
     protected override bool AttackAbility(IAction nextGCD, out IAction? act)
     {
         // === BMR DOWNTIME / VULNERABILITY AWARENESS ===
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 15f;
-        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
-        bool vulnWindowSoon = BmrActive && BmrVulnerableIn is > 0 and <= 30f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 15f;
+        bool downtimeVeryClose = BMRActive && BMRDowntimeIn is > 0 and <= 8f;
+        bool vulnWindowSoon = BMRActive && BMRVulnerableIn is > 0 and <= 30f;
 
         // === BMR: DUMP BURST BEFORE DOWNTIME ===
         // If downtime is <=15s and No Mercy + Gnashing Fang are available, fire NOW
@@ -487,10 +487,10 @@ public sealed class SezuraiGNB : GunbreakerRotation
         if (CanBurst && InCombat && HasHostilesInRange)
         {
             // BMR: skip NM if downtime too close to get value from the 20s window
-            bool downtimeTooClose = BmrActive && BmrDowntimeIn is > 0 and < 8f;
+            bool downtimeTooClose = BMRActive && BMRDowntimeIn is > 0 and < 8f;
 
             // BMR: hold for vulnerability window if it's coming and NM won't be wasted
-            bool holdForVuln = vulnWindowSoon && BmrVulnerableIn > 5f
+            bool holdForVuln = vulnWindowSoon && BMRVulnerableIn > 5f
                 && !NoMercyPvE.Cooldown.WillHaveOneChargeGCD(4);
 
             if (!downtimeTooClose && !holdForVuln)
@@ -592,8 +592,8 @@ public sealed class SezuraiGNB : GunbreakerRotation
     protected override bool GeneralGCD(out IAction? act)
     {
         // === BMR DOWNTIME AWARENESS ===
-        bool downtimeVeryClose = BmrActive && BmrDowntimeIn is > 0 and <= 3f;
-        bool downtimeSoon = BmrActive && BmrDowntimeIn is > 0 and <= 8f;
+        bool downtimeVeryClose = BMRActive && BMRDowntimeIn is > 0 and <= 3f;
+        bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 8f;
 
         // =====================================================
         // PRIORITY 0: Overcap prevention before NM window
@@ -643,8 +643,8 @@ public sealed class SezuraiGNB : GunbreakerRotation
                 return true;
 
             // Gnashing Fang: only if enough time to complete the 3-hit combo (~6s)
-            // BmrDowntimeIn > 6f is guaranteed by downtimeSoon (<=8f) so we have 6-8s
-            if (BmrDowntimeIn > 6f && GnashingFangPvE.CanUse(out act, skipComboCheck: true))
+            // BMRDowntimeIn > 6f is guaranteed by downtimeSoon (<=8f) so we have 6-8s
+            if (BMRDowntimeIn > 6f && GnashingFangPvE.CanUse(out act, skipComboCheck: true))
                 return true;
 
             // Sonic Break: use if Ready to Break to avoid losing the buff
@@ -652,7 +652,7 @@ public sealed class SezuraiGNB : GunbreakerRotation
                 return true;
 
             // Reign of Beasts: use if Ready to Reign (needs ~4s for 3-hit combo)
-            if (HasReadyToReign && BmrDowntimeIn > 4f && ReignOfBeastsPvE.CanUse(out act, skipComboCheck: true))
+            if (HasReadyToReign && BMRDowntimeIn > 4f && ReignOfBeastsPvE.CanUse(out act, skipComboCheck: true))
                 return true;
 
             // Burst Strike: dump remaining cartridges

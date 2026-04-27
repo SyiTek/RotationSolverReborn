@@ -62,56 +62,56 @@ public sealed class SezuraiDRG : DragoonRotation
     /// True when BMR is active AND the user has enabled our BMR config toggle.
     /// All BMR checks go through this so there's a single kill-switch.
     /// </summary>
-    private bool BmrUsable => UseBmr && BmrActive;
+    private bool BmrUsable => UseBmr && BMRActive;
 
     /// <summary>
     /// BMR: downtime is coming within ~25s. Broad window for resource planning.
     /// Used for deciding whether to dump burst CDs early.
     /// </summary>
-    private bool BmrDowntimeSoon => BmrUsable && BmrDowntimeIn is > 0 and <= 25f;
+    private bool BmrDowntimeSoon => BmrUsable && BMRDowntimeIn is > 0 and <= 25f;
 
     /// <summary>
     /// BMR: downtime is imminent (~10s). Dump remaining oGCDs and jumps.
     /// </summary>
-    private bool BmrDowntimeImminent => BmrUsable && BmrDowntimeIn is > 0 and <= 10f;
+    private bool BmrDowntimeImminent => BmrUsable && BMRDowntimeIn is > 0 and <= 10f;
 
     /// <summary>
     /// BMR: downtime too close to enter Life of the Dragon (~12s).
     /// LOTD lasts 20s and we need time for Nastrond + Stardiver.
     /// </summary>
-    private bool BmrBlockLOTD => BmrUsable && BmrDowntimeIn is > 0 and <= 12f;
+    private bool BmrBlockLOTD => BmrUsable && BMRDowntimeIn is > 0 and <= 12f;
 
     /// <summary>
     /// BMR: downtime too close to start a new 5-GCD combo (~8s).
     /// A full combo is 5 GCDs at ~2.5s each = 12.5s, but partial combos waste potency.
     /// At 8s we can finish a combo already in progress but shouldn't start fresh.
     /// </summary>
-    private bool BmrBlockNewCombo => BmrUsable && BmrDowntimeIn is > 0 and <= 8f;
+    private bool BmrBlockNewCombo => BmrUsable && BMRDowntimeIn is > 0 and <= 8f;
 
     /// <summary>
     /// BMR: downtime too close to start Lance Charge (~6s).
     /// LC buff is 20s but no point starting if boss leaves in 6s.
     /// </summary>
-    private bool BmrBlockBurstStart => BmrUsable && BmrDowntimeIn is > 0 and <= 6f;
+    private bool BmrBlockBurstStart => BmrUsable && BMRDowntimeIn is > 0 and <= 6f;
 
     /// <summary>
     /// BMR: vulnerability window coming within 30s -- hold burst CDs.
     /// Per Balance intermediate: align burst with party buff / vuln windows.
     /// </summary>
     private bool BmrHoldBurstForVuln => BmrUsable
-        && BmrVulnerableIn is > 0 and <= 30f
+        && BMRVulnerableIn is > 0 and <= 30f
         && LanceChargePvE.Cooldown.HasOneCharge;
 
     /// <summary>
     /// BMR: raidwide damage incoming within Feint's application window (~5s).
     /// </summary>
-    private bool BmrFeintWindow => BmrUsable && BmrRaidwideIn is > 0 and <= 5f;
+    private bool BmrFeintWindow => BmrUsable && BMRRaidwideIn is > 0 and <= 5f;
 
     /// <summary>
     /// BMR: raidwide or generic damage incoming within ~3s. Use self-healing proactively.
     /// </summary>
     private bool BmrDamageSoon => BmrUsable
-        && ((BmrRaidwideIn is > 0 and <= 3f) || (BmrDamageIn is > 0 and <= 3f));
+        && ((BMRRaidwideIn is > 0 and <= 3f) || (BMRDamageIn is > 0 and <= 3f));
 
     #endregion
 
@@ -155,29 +155,29 @@ public sealed class SezuraiDRG : DragoonRotation
         ImGui.Text($"BlockBurstStart: {BmrBlockBurstStart} | HoldBurstForVuln: {BmrHoldBurstForVuln}");
         ImGui.Text($"FeintWindow: {BmrFeintWindow} | DamageSoon: {BmrDamageSoon}");
         ImGui.Text($"--- BMR Timeline ---");
-        ImGui.Text($"Active: {BmrActive}{(BmrActive ? $" ({DataCenter.BmrActiveModuleName})" : "")}");
+        ImGui.Text($"Active: {BMRActive}{(BMRActive ? $" ({DataCenter.BMRActiveModuleName})" : "")}");
         ImGui.Text($"UseBmrTimeline: {Service.Config.UseBmrTimeline}");
-        if (BmrActive)
+        if (BMRActive)
         {
             ImGui.Text($"-- Final Merged Values --");
-            ImGui.Text($"Raidwide In: {(BmrRaidwideIn < 9999f ? $"{BmrRaidwideIn:F1}s" : "None")}");
-            ImGui.Text($"Tankbuster In: {(BmrTankbusterIn < 9999f ? $"{BmrTankbusterIn:F1}s" : "None")}");
-            ImGui.Text($"Knockback In: {(BmrKnockbackIn < 9999f ? $"{BmrKnockbackIn:F1}s" : "None")}");
-            ImGui.Text($"Downtime In: {(BmrDowntimeIn < 9999f ? $"{BmrDowntimeIn:F1}s" : "None")}");
-            ImGui.Text($"Vulnerable In: {(BmrVulnerableIn < 9999f ? $"{BmrVulnerableIn:F1}s" : "None")}");
-            ImGui.Text($"Damage In: {(BmrDamageIn < 9999f ? $"{BmrDamageIn:F1}s" : "None")}");
+            ImGui.Text($"Raidwide In: {(BMRRaidwideIn < 9999f ? $"{BMRRaidwideIn:F1}s" : "None")}");
+            ImGui.Text($"Tankbuster In: {(BMRTankbusterIn < 9999f ? $"{BMRTankbusterIn:F1}s" : "None")}");
+            ImGui.Text($"Knockback In: {(BMRKnockbackIn < 9999f ? $"{BMRKnockbackIn:F1}s" : "None")}");
+            ImGui.Text($"Downtime In: {(BMRDowntimeIn < 9999f ? $"{BMRDowntimeIn:F1}s" : "None")}");
+            ImGui.Text($"Vulnerable In: {(BMRVulnerableIn < 9999f ? $"{BMRVulnerableIn:F1}s" : "None")}");
+            ImGui.Text($"Damage In: {(BMRDamageIn < 9999f ? $"{BMRDamageIn:F1}s" : "None")}");
             ImGui.Text($"-- IPC Func Binding --");
-            ImGui.Text($"TL.RW: {(DataCenter.BmrDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BmrDebugTimelineTbFunc ? "BOUND" : "NULL")}");
-            ImGui.Text($"Hints.RW: {(DataCenter.BmrDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BmrDebugHintsTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"TL.RW: {(DataCenter.BMRDebugTimelineRwFunc ? "BOUND" : "NULL")} | TL.TB: {(DataCenter.BMRDebugTimelineTbFunc ? "BOUND" : "NULL")}");
+            ImGui.Text($"Hints.RW: {(DataCenter.BMRDebugHintsRwFunc ? "BOUND" : "NULL")} | Hints.TB: {(DataCenter.BMRDebugHintsTbFunc ? "BOUND" : "NULL")}");
             ImGui.Text($"-- Raw Timeline (StateMachine) --");
-            ImGui.Text($"TL Raidwide: {(DataCenter.BmrDebugTimelineRaidwide < 9999f ? $"{DataCenter.BmrDebugTimelineRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"TL Tankbuster: {(DataCenter.BmrDebugTimelineTankbuster < 9999f ? $"{DataCenter.BmrDebugTimelineTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"TL Raidwide: {(DataCenter.BMRDebugTimelineRaidwide < 9999f ? $"{DataCenter.BMRDebugTimelineRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"TL Tankbuster: {(DataCenter.BMRDebugTimelineTankbuster < 9999f ? $"{DataCenter.BMRDebugTimelineTankbuster:F1}s" : "MAX")}");
             ImGui.Text($"-- Raw Hints (PredictedDamage) --");
-            ImGui.Text($"Hints RW: {(DataCenter.BmrDebugHintsRaidwide < 9999f ? $"{DataCenter.BmrDebugHintsRaidwide:F1}s" : "MAX")}");
-            ImGui.Text($"Hints TB: {(DataCenter.BmrDebugHintsTankbuster < 9999f ? $"{DataCenter.BmrDebugHintsTankbuster:F1}s" : "MAX")}");
-            ImGui.Text($"Generic Dmg: {(DataCenter.BmrDebugGenericDamageIn < 9999f ? $"{DataCenter.BmrDebugGenericDamageIn:F1}s type={DataCenter.BmrDebugGenericDamageType}" : "MAX")}");
+            ImGui.Text($"Hints RW: {(DataCenter.BMRDebugHintsRaidwide < 9999f ? $"{DataCenter.BMRDebugHintsRaidwide:F1}s" : "MAX")}");
+            ImGui.Text($"Hints TB: {(DataCenter.BMRDebugHintsTankbuster < 9999f ? $"{DataCenter.BMRDebugHintsTankbuster:F1}s" : "MAX")}");
+            ImGui.Text($"Generic Dmg: {(DataCenter.BMRDebugGenericDamageIn < 9999f ? $"{DataCenter.BMRDebugGenericDamageIn:F1}s type={DataCenter.BMRDebugGenericDamageType}" : "MAX")}");
             ImGui.Text($"-- State Machine Walk --");
-            ImGui.TextWrapped($"{DataCenter.BmrDebugTimelineWalk ?? "N/A"}");
+            ImGui.TextWrapped($"{DataCenter.BMRDebugTimelineWalk ?? "N/A"}");
         }
     }
 
