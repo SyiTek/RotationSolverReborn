@@ -74,9 +74,9 @@ public sealed class SezuraiBRD : BardRotation
 
     #region Song Helpers
 
-    private static bool InWanderers => Song == Song.Wanderer;
-    private static bool InMages => Song == Song.Mage;
-    private static bool InArmys => Song == Song.Army;
+    private static bool InWanderers => Song == Song.WanderersMinuet;
+    private static bool InMages => Song == Song.MagesBallad;
+    private static bool InArmys => Song == Song.ArmysPaeon;
     private static bool NoSong => Song == Song.None;
 
     /// <summary>

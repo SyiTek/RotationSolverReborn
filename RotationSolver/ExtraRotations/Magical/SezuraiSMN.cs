@@ -79,7 +79,7 @@ public sealed class SezuraiSMN : SummonerRotation
     /// True when no primal attunement or favor is active and no primals remain.
     /// Used to detect filler / transition states.
     /// </summary>
-    private bool InFillerPhase => !InDemiSummon && !InIfrit && !InGaruda && !InTitan
+    private bool InFillerPhase => !InDemiSummon && !IfritActive && !GarudaActive && !TitanActive
         && !HasIfritFavor && !HasGarudaFavor && !HasTitanFavor && !HasCrimsonStrike;
 
     /// <summary>
@@ -171,13 +171,13 @@ public sealed class SezuraiSMN : SummonerRotation
         ImGui.Text($"  InSolarBahamut: {InSolarBahamut}");
         ImGui.Text($"DemiGCDsRemaining: {DemiGCDsRemaining}");
         ImGui.Separator();
-        ImGui.Text($"InTitan: {InTitan}  InGaruda: {InGaruda}  InIfrit: {InIfrit}");
+        ImGui.Text($"TitanActive: {TitanActive}  GarudaActive: {GarudaActive}  IfritActive: {IfritActive}");
         ImGui.Text($"IsTitanReady: {IsTitanReady}  IsGarudaReady: {IsGarudaReady}  IsIfritReady: {IsIfritReady}");
         ImGui.Text($"AttunementCount: {AttunementCount}");
         ImGui.Text($"HasTitanFavor: {HasTitanFavor}  HasGarudaFavor: {HasGarudaFavor}  HasIfritFavor: {HasIfritFavor}");
         ImGui.Text($"HasCrimsonStrike: {HasCrimsonStrike}");
         ImGui.Separator();
-        ImGui.Text($"HasAetherflowStacks: {HasAetherflowStacks}  Stacks: {SMNAetherflowStacks}");
+        ImGui.Text($"HasAetherflowStacks: {HasAetherflowStacks}  Stacks: {AetherflowStacks}");
         ImGui.Text($"HasFurtherRuin: {HasFurtherRuin}");
         ImGui.Text($"HasSearingLight: {HasSearingLight}");
         ImGui.Text($"SummonTime: {SummonTime:F1}  AttunmentTime: {AttunmentTime:F1}");
@@ -699,7 +699,7 @@ public sealed class SezuraiSMN : SummonerRotation
 
         // === 4. Primal attunement GCDs (Gemshine / Precious Brilliance) ===
         // Spend attunement stacks before they expire.
-        if (AttunementCount > 0 && (InTitan || InGaruda || InIfrit))
+        if (AttunementCount > 0 && (TitanActive || GarudaActive || IfritActive))
         {
             if (TryPrimalAttunementGCD(out act))
                 return true;
@@ -944,7 +944,7 @@ public sealed class SezuraiSMN : SummonerRotation
     {
         act = null;
 
-        if (InTitan)
+        if (TitanActive)
         {
             // Titan: all instant casts, ideal for burst/movement
             if (TopazCatastrophePvE.CanUse(out act)) return true;
@@ -956,7 +956,7 @@ public sealed class SezuraiSMN : SummonerRotation
             if (TopazRuinPvE.CanUse(out act)) return true;
         }
 
-        if (InGaruda)
+        if (GarudaActive)
         {
             // Garuda: instant casts with 1.5s recast (fast but limited weave windows)
             if (EmeraldCatastrophePvE.CanUse(out act)) return true;
@@ -968,7 +968,7 @@ public sealed class SezuraiSMN : SummonerRotation
             if (EmeraldRuinPvE.CanUse(out act)) return true;
         }
 
-        if (InIfrit)
+        if (IfritActive)
         {
             // Ifrit: hardcast GCDs (Ruby Rite ~2.8s cast)
             if (RubyCatastrophePvE.CanUse(out act)) return true;
@@ -1065,11 +1065,11 @@ public sealed class SezuraiSMN : SummonerRotation
 
         // Swiftcast Slipstream (if configured)
         if (SwiftcastSlipstream && nextGCD.IsTheSameTo(false, SlipstreamPvE)
-            && ElementalMasteryTrait.EnoughLevel && InGaruda)
+            && ElementalMasteryTrait.EnoughLevel && GarudaActive)
             return true;
 
         // Swiftcast Ruby hardcasts while moving (mobility safety net)
-        if (IsMoving && InIfrit && AttunementCount > 0
+        if (IsMoving && IfritActive && AttunementCount > 0
             && nextGCD.IsTheSameTo(false, RubyRitePvE, RubyCatastrophePvE,
                 RubyRuinIiiPvE, RubyRuinIiPvE, RubyRuinPvE))
         {
@@ -1088,7 +1088,7 @@ public sealed class SezuraiSMN : SummonerRotation
         // BMR: Swiftcast Ruby hardcasts before downtime.
         // If downtime is within 3s and the next GCD is a Ruby hardcast (~2.8s),
         // Swiftcasting ensures we get one more damage GCD in before untargetable.
-        if (BmrDowntimeWithin(3f) && InIfrit && AttunementCount > 0
+        if (BmrDowntimeWithin(3f) && IfritActive && AttunementCount > 0
             && nextGCD.IsTheSameTo(false, RubyRitePvE, RubyCatastrophePvE,
                 RubyRuinIiiPvE, RubyRuinIiPvE, RubyRuinPvE))
             return true;
