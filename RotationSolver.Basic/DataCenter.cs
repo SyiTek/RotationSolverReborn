@@ -2393,6 +2393,8 @@ internal static class DataCenter
 	public static PredictedDamageType BMRNextDamageType { get; set; } = PredictedDamageType.None;
 	public static float BMRSpecialModeIn { get; set; } = float.MaxValue;
 	public static SpecialMode BMRSpecialModeType { get; set; } = SpecialMode.Normal;
+	public static bool BMRForceCancelCast { get; set; }
+	public static float BMRMaxCastTime { get; set; } = float.MaxValue;
 
 	// Debug diagnostics
 	public static float BMRDebugTimelineRaidwide { get; set; } = float.MaxValue;
@@ -2487,6 +2489,8 @@ internal static class DataCenter
 		BMRNextDamageType = 0;
 		BMRSpecialModeIn = float.MaxValue;
 		BMRSpecialModeType = 0;
+		BMRForceCancelCast = false;
+		BMRMaxCastTime = float.MaxValue;
 		BMRDebugTimelineRaidwide = float.MaxValue;
 		BMRDebugTimelineTankbuster = float.MaxValue;
 		BMRDebugHintsRaidwide = float.MaxValue;

@@ -1283,6 +1283,19 @@ public partial class CustomRotation
 		=> BMRActive && BMRSpecialModeType == SpecialMode.Pyretic && BMRSpecialModeIn is > 0f and < float.MaxValue && BMRSpecialModeIn <= seconds;
 
 	/// <summary>
+	/// True when BMR says the current cast should be force-cancelled (e.g. imminent un-interruptible mechanic).
+	/// </summary>
+	[Description("BMR force cancel cast")]
+	public static bool BMRForceCancelCast => DataCenter.BMRForceCancelCast;
+
+	/// <summary>
+	/// Maximum remaining cast time BMR allows before a dangerous mechanic resolves.
+	/// Returns float.MaxValue when no limit is active.
+	/// </summary>
+	[Description("BMR max cast time remaining")]
+	public static float BMRMaxCastTime => DataCenter.BMRMaxCastTime;
+
+	/// <summary>
 	/// Returns true if BMR considers the given world-space position safe from AoEs.
 	/// Falls back to true (safe) when BMR is inactive.
 	/// </summary>

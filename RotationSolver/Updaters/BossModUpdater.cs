@@ -103,9 +103,12 @@ internal static class BossModUpdater
 			DataCenter.BMRIsDashSafe = BMRTimeline_IPCSubscriber.IsDashSafe != null
 				? (from, to) => BMRTimeline_IPCSubscriber.IsDashSafe.Invoke(from, to)
 				: null;
-			DataCenter.BMRIsFixedDashSafe = BMRTimeline_IPCSubscriber.IsFixedDashSafe != null
-				? (from, to) => BMRTimeline_IPCSubscriber.IsFixedDashSafe.Invoke(from, to)
-				: null;
+			// IsFixedDashSafe IPC takes (range, backwards) not (from, to) — not wired up here.
+			// Use IsDashSafe with explicit positions for safety checks in rotations.
+			DataCenter.BMRIsFixedDashSafe = null;
+
+			DataCenter.BMRForceCancelCast = BMRTimeline_IPCSubscriber.ForceCancelCast?.Invoke() ?? false;
+			DataCenter.BMRMaxCastTime = BMRTimeline_IPCSubscriber.MaxCastTime?.Invoke() ?? float.MaxValue;
 		}
 		catch
 		{
