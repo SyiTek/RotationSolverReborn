@@ -95,61 +95,6 @@ internal static class RotationConfigWindowTabExtensions
 /// <summary>
 /// Struct representing an incompatible plugin.
 /// </summary>
-public readonly struct IncompatiblePlugin
-{
-	public string Name { get; init; }
-	public string Icon { get; init; }
-	public string Url { get; init; }
-	public string Features { get; init; }
-
-	/// <summary>
-	/// Checks if the plugin is enabled.
-	/// </summary>
-	[JsonIgnore]
-	public readonly bool IsEnabled
-	{
-		get
-		{
-			string name = Name;
-			IEnumerable<Dalamud.Plugin.IExposedPlugin> installedPlugins = Svc.PluginInterface.InstalledPlugins;
-			foreach (Dalamud.Plugin.IExposedPlugin x in installedPlugins)
-			{
-				if ((x.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || x.InternalName.Equals(name, StringComparison.OrdinalIgnoreCase)) && x.IsLoaded)
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-	}
-
-	/// <summary>
-	/// Checks if the plugin is installed.
-	/// </summary>
-	[JsonIgnore]
-	public readonly bool IsInstalled
-	{
-		get
-		{
-			string name = Name;
-			IEnumerable<Dalamud.Plugin.IExposedPlugin> installedPlugins = Svc.PluginInterface.InstalledPlugins;
-			foreach (Dalamud.Plugin.IExposedPlugin x in installedPlugins)
-			{
-				if (x.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || x.InternalName.Equals(name, StringComparison.OrdinalIgnoreCase))
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-	}
-
-	public CompatibleType Type { get; init; }
-}
-
-/// <summary>
-/// Struct representing an incompatible plugin.
-/// </summary>
 public readonly struct AutoDutyPlugin
 {
 	public string Name { get; init; }
@@ -165,9 +110,9 @@ public readonly struct AutoDutyPlugin
 	{
 		get
 		{
-			string name = Name;
-			IEnumerable<Dalamud.Plugin.IExposedPlugin> installedPlugins = Svc.PluginInterface.InstalledPlugins;
-			foreach (Dalamud.Plugin.IExposedPlugin x in installedPlugins)
+			var name = Name;
+			var installedPlugins = Svc.PluginInterface.InstalledPlugins;
+			foreach (var x in installedPlugins)
 			{
 				if ((x.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || x.InternalName.Equals(name, StringComparison.OrdinalIgnoreCase)) && x.IsLoaded)
 				{
@@ -186,9 +131,9 @@ public readonly struct AutoDutyPlugin
 	{
 		get
 		{
-			string name = Name;
-			IEnumerable<Dalamud.Plugin.IExposedPlugin> installedPlugins = Svc.PluginInterface.InstalledPlugins;
-			foreach (Dalamud.Plugin.IExposedPlugin x in installedPlugins)
+			var name = Name;
+			var installedPlugins = Svc.PluginInterface.InstalledPlugins;
+			foreach (var x in installedPlugins)
 			{
 				if (x.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || x.InternalName.Equals(name, StringComparison.OrdinalIgnoreCase))
 				{
@@ -198,16 +143,4 @@ public readonly struct AutoDutyPlugin
 			return false;
 		}
 	}
-}
-
-/// <summary>
-/// Enum representing different types of compatibility issues.
-/// </summary>
-[Flags]
-public enum CompatibleType : byte
-{
-	Skill_Usage = 1 << 0,
-	Skill_Selection = 1 << 1,
-	Crash = 1 << 2,
-	Broken = 1 << 3,
 }

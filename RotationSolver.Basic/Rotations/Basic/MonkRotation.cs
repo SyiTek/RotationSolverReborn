@@ -31,7 +31,7 @@ public partial class MonkRotation
 	/// <summary>
 	/// .
 	/// </summary>
-	public static bool NoNadi => JobGauge.Nadi.HasFlag(Nadi.None);
+	public static bool NoNadi => !JobGauge.Nadi.HasFlag(Nadi.Lunar) && !JobGauge.Nadi.HasFlag(Nadi.Solar);
 
 	/// <summary>
 	/// Gets the amount of available Opo-opo Fury stacks.
@@ -72,10 +72,12 @@ public partial class MonkRotation
 	public static bool BeastChakrasAllSame()
 	{
 		var first = BeastChakras[0];
-		for (int i = 1; i < BeastChakras.Length; i++)
+		for (var i = 1; i < BeastChakras.Length; i++)
 		{
 			if (!BeastChakras[i].Equals(first))
+			{
 				return false;
+			}
 		}
 		return true;
 	}
@@ -88,12 +90,14 @@ public partial class MonkRotation
 	/// </returns>
 	public static bool BeastChakrasAllDifferent()
 	{
-		for (int i = 0; i < BeastChakras.Length; i++)
+		for (var i = 0; i < BeastChakras.Length; i++)
 		{
-			for (int j = i + 1; j < BeastChakras.Length; j++)
+			for (var j = i + 1; j < BeastChakras.Length; j++)
 			{
 				if (BeastChakras[i].Equals(BeastChakras[j]))
+				{
 					return false;
+				}
 			}
 		}
 		return true;
@@ -108,10 +112,12 @@ public partial class MonkRotation
 	/// </returns>
 	public static bool BeastChakrasContains(BeastChakra value)
 	{
-		for (int i = 0; i < BeastChakras.Length; i++)
+		for (var i = 0; i < BeastChakras.Length; i++)
 		{
 			if (BeastChakras[i].Equals(value))
+			{
 				return true;
+			}
 		}
 		return false;
 	}
@@ -125,10 +131,12 @@ public partial class MonkRotation
 	/// </returns>
 	public static bool BeastChakrasAllNot(BeastChakra value)
 	{
-		for (int i = 0; i < BeastChakras.Length; i++)
+		for (var i = 0; i < BeastChakras.Length; i++)
 		{
 			if (BeastChakras[i].Equals(value))
+			{
 				return false;
+			}
 		}
 		return true;
 	}
@@ -648,7 +656,10 @@ public partial class MonkRotation
 
 	static partial void ModifyFiresReplyPvP(ref ActionSetting setting)
 	{
-
+		setting.CreateConfig = () => new ActionConfig()
+		{
+			AoeCount = 1,
+		};
 	}
 
 	static partial void ModifyEarthsReplyPvP(ref ActionSetting setting)

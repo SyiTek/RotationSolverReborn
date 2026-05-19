@@ -1,4 +1,3 @@
-using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ECommons.GameHelpers;
@@ -39,8 +38,8 @@ internal class ActionTimelineWindow : Window
 
 	public override void PreDraw()
 	{
-		Basic.Configuration.Configs config = Service.Config;
-		Vector4 bgColor = config.IsControlWindowLock
+		var config = Service.Config;
+		var bgColor = config.IsControlWindowLock
 			? config.ControlWindowLockBg
 			: config.ControlWindowUnlockBg;
 		ImGui.PushStyleColor(ImGuiCol.WindowBg, bgColor);
@@ -72,7 +71,7 @@ internal class ActionTimelineWindow : Window
 			return;
 		}
 
-		using ImRaii.Style selectableAlign = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.5f, 0.5f));
+		using var selectableAlign = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.5f, 0.5f));
 		using var framePad = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(4, 3));
 		using var childWinPad = ImRaii.PushStyle(ImGuiStyleVar.WindowPadding, new Vector2(12, 12));
 		using var frameCellPadding = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(4, 2));
@@ -127,7 +126,10 @@ internal class ActionTimelineWindow : Window
 		var endX = startX + itemDuration * SizePerSecond;
 
 		// Skip if completely outside visible area
-		if (endX < pos.X || startX > pos.X + timelineLength) return;
+		if (endX < pos.X || startX > pos.X + timelineLength)
+		{
+			return;
+		}
 
 		var iconSize = item.Type == TimelineItemType.GCD ? GCDIconSize : OGCDIconSize;
 		var yOffset = item.Type == TimelineItemType.GCD ? heightLength * GCDHeightLow : heightLength * (GCDHeightLow + 0.1f);
@@ -152,7 +154,7 @@ internal class ActionTimelineWindow : Window
 		}
 
 		// Draw action icon
-		if (IconSet.GetTexture(item.Icon, out IDalamudTextureWrap? texture) && texture != null)
+		if (IconSet.GetTexture(item.Icon, out var texture) && texture != null)
 		{
 			var iconPos = new Vector2(startX, pos.Y + yOffset + (itemHeight - iconSize) / 2);
 
@@ -193,11 +195,11 @@ internal class ActionTimelineWindow : Window
 		var gridColor = ImGui.ColorConvertFloat4ToU32(new Vector4(0.3f, 0.3f, 0.3f, 0.3f));
 
 		// Determine step so we don't draw too many lines/labels per frame.
-		float secondsVisible = MathF.Max(1f, timelineLength / SizePerSecond);
-		int maxLines = 24;
-		int stepSeconds = Math.Max(1, (int)MathF.Ceiling(secondsVisible / maxLines));
+		var secondsVisible = MathF.Max(1f, timelineLength / SizePerSecond);
+		var maxLines = 24;
+		var stepSeconds = Math.Max(1, (int)MathF.Ceiling(secondsVisible / maxLines));
 
-		for (int i = 0; i <= (int)secondsVisible; i += stepSeconds)
+		for (var i = 0; i <= (int)secondsVisible; i += stepSeconds)
 		{
 			var x = pos.X + timelineLength - (i * SizePerSecond);
 			if (x >= pos.X && x <= pos.X + timelineLength)

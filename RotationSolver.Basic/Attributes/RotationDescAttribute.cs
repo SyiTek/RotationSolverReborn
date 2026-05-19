@@ -43,7 +43,7 @@ public class RotationDescAttribute : Attribute
 	{
 		get
 		{
-			SpecialCommandType command = DataCenter.SpecialType;
+			var command = DataCenter.SpecialType;
 			return Type switch
 			{
 				DescType.BurstActions => command == SpecialCommandType.Burst,
@@ -98,7 +98,11 @@ public class RotationDescAttribute : Attribute
 		var dict = new Dictionary<DescType, List<RotationDescAttribute>>();
 		foreach (var r in rotationDescAttributes)
 		{
-			if (r == null) continue;
+			if (r == null)
+			{
+				continue;
+			}
+
 			if (!dict.TryGetValue(r.Type, out var list))
 			{
 				list = new List<RotationDescAttribute>();
@@ -119,7 +123,7 @@ public class RotationDescAttribute : Attribute
 	{
 		RotationDescAttribute result = new();
 		var actionSet = new HashSet<ActionID>();
-		foreach (RotationDescAttribute attr in rotationDescAttributes)
+		foreach (var attr in rotationDescAttributes)
 		{
 			if (attr == null)
 			{

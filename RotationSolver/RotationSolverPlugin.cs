@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.DutyState;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
@@ -11,8 +12,8 @@ using RotationSolver.ActionTimeline;
 using RotationSolver.Basic.Configuration;
 using RotationSolver.Commands;
 using RotationSolver.Data;
-using RotationSolver.Helpers;
 using RotationSolver.IPC;
+//using KamiToolKit;
 using RotationSolver.UI;
 using RotationSolver.UI.HighlightTeachingMode;
 using RotationSolver.UI.HighlightTeachingMode.ElementSpecial;
@@ -21,7 +22,7 @@ using Player = ECommons.GameHelpers.Player;
 
 namespace RotationSolver;
 
-public sealed class RotationSolverPlugin : IDalamudPlugin, IDisposable
+public sealed class RotationSolverPlugin : IAsyncDalamudPlugin
 {
 	private readonly WindowSystem windowSystem;
 
@@ -32,6 +33,7 @@ public sealed class RotationSolverPlugin : IDalamudPlugin, IDisposable
 	private static CooldownWindow? _cooldownWindow;
 	private static ActionTimelineWindow? _actionTimelineWindow;
 	private static OverlayWindow? _overlayWindow;
+	//private static NativeControlWindow? _nativeControlWindow;
 	private static EasterEggWindow? _easterEggWindow;
 	private static FirstStartTutorialWindow? _firstStartTutorialWindow;
 
@@ -47,40 +49,12 @@ public sealed class RotationSolverPlugin : IDalamudPlugin, IDisposable
 	public RotationSolverPlugin(IDalamudPluginInterface pluginInterface)
 	{
 		ECommonsMain.Init(pluginInterface, this, ECommons.Module.DalamudReflector, ECommons.Module.ObjectFunctions);
-		_ = Svc.Framework.RunOnTick(() =>
-		{
-			_ = ThreadLoadImageHandler.TryGetIconTextureWrap(0, true, out _);
-		});
+		//KamiToolKitLibrary.Initialize(pluginInterface);
 		IconSet.Init();
 
 		_dis.Add(new Service());
-		try
-		{
-			// Check if the config file exists before attempting to read and deserialize it
-			if (File.Exists(Svc.PluginInterface.ConfigFile.FullName))
-			{
-				Configs oldConfigs = JsonConvert.DeserializeObject<Configs>(
-					File.ReadAllText(Svc.PluginInterface.ConfigFile.FullName))
-					?? new Configs();
 
-				// Check version and migrate or reset if necessary
-				Configs newConfigs = Configs.Migrate(oldConfigs);
-				if (newConfigs.Version != Configs.CurrentVersion)
-				{
-					newConfigs = new Configs(); // Reset to default if versions do not match
-				}
-				Service.Config = newConfigs;
-			}
-			else
-			{
-				Service.Config = new Configs();
-			}
-		}
-		catch (Exception ex)
-		{
-			PluginLog.Warning($"Failed to load config: {ex.Message}");
-			Service.Config = new Configs();
-		}
+		ActionTracer.Init();
 
 		IPCProvider = new();
 
@@ -91,6 +65,7 @@ public sealed class RotationSolverPlugin : IDalamudPlugin, IDisposable
 		_cooldownWindow = new();
 		_actionTimelineWindow = new();
 		_overlayWindow = new();
+		//_nativeControlWindow = new();
 		_easterEggWindow = new();
 		_firstStartTutorialWindow = new();
 
@@ -124,113 +99,147 @@ public sealed class RotationSolverPlugin : IDalamudPlugin, IDisposable
 		Svc.PluginInterface.UiBuilder.OpenConfigUi += OnOpenConfigUi;
 		Svc.PluginInterface.UiBuilder.OpenMainUi += OnOpenConfigUi;
 		Svc.PluginInterface.UiBuilder.Draw += OnDraw;
+	}
 
-		//HotbarHighlightDrawerManager.Init();
-
-		MajorUpdater.Enable();
-		Watcher.Enable();
-		ActionQueueManager.Enable();
-		OtherConfiguration.Init();
-		ActionContextMenu.Init();
-		HotbarHighlightManager.Init();
-
-		Svc.DutyState.DutyStarted += DutyState_DutyStarted;
-		Svc.DutyState.DutyWiped += DutyState_DutyWiped;
-		Svc.DutyState.DutyCompleted += DutyState_DutyCompleted;
-		Svc.ClientState.TerritoryChanged += ClientState_TerritoryChanged;
-		ClientState_TerritoryChanged(Svc.ClientState.TerritoryType);
-
-		static void DutyState_DutyCompleted(object? sender, ushort e)
+	public async Task LoadAsync(CancellationToken cancellationToken)
+	{
+		// Warm up texture cache on framework thread
+		await Svc.Framework.Run(() =>
 		{
-			TimeSpan delay = TimeSpan.FromSeconds(_random.Next(4, 6));
-			_ = Svc.Framework.RunOnTick(() =>
-			{
-				_ = Service.Config.DutyEnd.AddMacro();
+			_ = ThreadLoadImageHandler.TryGetIconTextureWrap(0, true, out _);
+		}, cancellationToken);
 
-				if (Service.Config.AutoOffWhenDutyCompleted)
+		// Load main config asynchronously (off main thread)
+		try
+		{
+			if (File.Exists(Svc.PluginInterface.ConfigFile.FullName))
+			{
+				var json = await File.ReadAllTextAsync(Svc.PluginInterface.ConfigFile.FullName, cancellationToken);
+				var oldConfigs = JsonConvert.DeserializeObject<Configs>(json) ?? new Configs();
+
+				var newConfigs = Configs.Migrate(oldConfigs);
+				if (newConfigs.Version != Configs.CurrentVersion)
 				{
-					RSCommands.CancelState();
+					newConfigs = new Configs();
 				}
-			}, delay);
-		}
-
-		static void ClientState_TerritoryChanged(ushort id)
-		{
-			DataCenter.ResetAllRecords();
-
-			// Check if the id is valid before proceeding
-			if (id == 0)
-			{
-				PluginLog.Information("Invalid territory id: 0");
-				return;
+				Service.Config = newConfigs;
 			}
-
-			TerritoryType territory = Service.GetSheet<TerritoryType>().GetRow(id);
-
-			DataCenter.Territory = new TerritoryInfo(territory);
-
-			try
+			else
 			{
-				DataCenter.CurrentRotation?.OnTerritoryChanged();
-			}
-			catch (Exception ex)
-			{
-				PluginLog.Warning($"Failed on Territory changed: {ex.Message}");
+				Service.Config = new Configs();
 			}
 		}
-
-		static void DutyState_DutyStarted(object? sender, ushort e)
+		catch (Exception ex)
 		{
-			if (!Player.Available)
-			{
-				return;
-			}
-
-			if (!TargetFilter.PlayerJobCategory(JobRole.Tank) && !TargetFilter.PlayerJobCategory(JobRole.Healer))
-			{
-				return;
-			}
-
-			if (DataCenter.Territory?.IsHighEndDuty ?? false)
-			{
-				string warning = string.Format(UiString.HighEndWarning.GetDescription(), DataCenter.Territory.ContentFinderName);
-				BasicWarningHelper.AddSystemWarning(warning);
-			}
+			PluginLog.Warning($"Failed to load config: {ex.Message}");
+			Service.Config = new Configs();
 		}
 
-		static void DutyState_DutyWiped(object? sender, ushort e)
-		{
-			if (!Player.Available)
-			{
-				return;
-			}
+		// Load OtherConfiguration files
+		await OtherConfiguration.InitAsync(cancellationToken);
 
-			DataCenter.ResetAllRecords();
+		// The following must run on the main/framework thread
+		await Svc.Framework.Run(() =>
+		{
+			//HotbarHighlightDrawerManager.Init();
+
+			MajorUpdater.Enable();
+			AutoAttackUpdater.Enable();
+			Watcher.Enable();
+			ActionQueueManager.Enable();
+			ActionContextMenu.Init();
+			HotbarHighlightManager.Init();
+
+			Svc.DutyState.DutyStarted += DutyState_DutyStarted;
+			Svc.DutyState.DutyWiped += DutyState_DutyWiped;
+			Svc.DutyState.DutyCompleted += DutyState_DutyCompleted;
+			Svc.ClientState.TerritoryChanged += ClientState_TerritoryChanged;
+			ClientState_TerritoryChanged(Svc.ClientState.TerritoryType);
+
+			ChangeUITranslation();
+
+			OpenLinkPayload = Svc.Chat.AddChatLinkHandler(0, (guid, seString) =>
+			{
+				if (guid == 0)
+				{
+					OpenConfigWindow();
+				}
+			});
+			HideWarningLinkPayload = Svc.Chat.AddChatLinkHandler(1, (guid, seString) =>
+			{
+				if (guid == 0)
+				{
+					Service.Config.HideWarning.Value = true;
+					Svc.Chat.Print("Warning has been hidden.");
+				}
+			});
+		}, cancellationToken);
+	}
+
+	private static void DutyState_DutyCompleted(IDutyStateEventArgs e)
+	{
+		var delay = TimeSpan.FromSeconds(_random.Next(4, 6));
+		_ = Svc.Framework.RunOnTick(() =>
+		{
+			_ = Service.Config.DutyEnd.AddMacro();
+
+			if (Service.Config.AutoOffWhenDutyCompleted)
+			{
+				RSCommands.CancelState();
+			}
+		}, delay);
+	}
+
+	private static void ClientState_TerritoryChanged(uint id)
+	{
+		DataCenter.ResetAllRecords();
+
+		if (id == 0)
+		{
+			PluginLog.Information("Invalid territory id: 0");
+			return;
 		}
 
-		ChangeUITranslation();
+		var territory = Service.GetSheet<TerritoryType>().GetRow(id);
+		DataCenter.Territory = new TerritoryInfo(territory);
 
-		OpenLinkPayload = Svc.Chat.AddChatLinkHandler(0, (guid, seString) =>
+		try
 		{
-			if (guid == 0)
-			{
-				OpenConfigWindow();
-			}
-		});
-		HideWarningLinkPayload = Svc.Chat.AddChatLinkHandler(1, (guid, seString) =>
+			DataCenter.CurrentRotation?.OnTerritoryChanged();
+		}
+		catch (Exception ex)
 		{
-			if (guid == 0)
-			{
-				Service.Config.HideWarning.Value = true;
-				Svc.Chat.Print("Warning has been hidden.");
-			}
-		});
+			PluginLog.Warning($"Failed on Territory changed: {ex.Message}");
+		}
+	}
 
-		// Load rotations on startup
-		_ = Task.Run(async () =>
+	private static void DutyState_DutyStarted(IDutyStateEventArgs e)
+	{
+		if (!Player.Available)
 		{
-			await DownloadHelper.DownloadAsync();
-		});
+			return;
+		}
+
+		if (!TargetFilter.PlayerJobCategory(JobRole.Tank) && !TargetFilter.PlayerJobCategory(JobRole.Healer))
+		{
+			return;
+		}
+
+		if (DataCenter.Territory?.IsHighEndDuty ?? false)
+		{
+			var warning = string.Format(UiString.HighEndWarning.GetDescription(), DataCenter.Territory.ContentFinderName);
+			BasicWarningHelper.AddSystemWarning(warning);
+		}
+	}
+
+	private static void DutyState_DutyWiped(IDutyStateEventArgs e)
+	{
+		if (!Player.Available)
+		{
+			return;
+		}
+
+		DataCenter.ResetAllRecords();
 	}
 
 	private void OnDraw()
@@ -293,19 +302,28 @@ public sealed class RotationSolverPlugin : IDalamudPlugin, IDisposable
 
 	internal static void UpdateDisplayWindow()
 	{
-		bool isValid = MajorUpdater.IsValid && DataCenter.CurrentRotation != null;
+		var isValid = MajorUpdater.IsValid && DataCenter.CurrentRotation != null;
 
 		isValid &= !Service.Config.OnlyShowWithHostileOrInDuty
 				|| Svc.Condition[ConditionFlag.BoundByDuty]
 				|| AnyHostileTargetWithinDistance(25);
 
 		_controlWindow!.IsOpen = isValid && Service.Config.ShowControlWindow;
+		//if (isValid && Service.Config.ShowControlWindow)
+		//{
+		//	if (!(_nativeControlWindow?.IsOpen ?? false))
+		//		_nativeControlWindow?.Open();
+		//}
+		//else
+		//{
+		//	_nativeControlWindow?.Close();
+		//}
 		_cooldownWindow!.IsOpen = isValid && Service.Config.ShowCooldownWindow;
 		_nextActionWindow!.IsOpen = isValid && Service.Config.ShowNextActionWindow;
 		_interceptedActionWindow!.IsOpen = isValid && Service.Config.ShowInterceptedActionWindow;
 
 		// ActionTimeline window with additional checks
-		bool showActionTimeline = isValid && Service.Config.ShowActionTimelineWindow;
+		var showActionTimeline = isValid && Service.Config.ShowActionTimelineWindow;
 
 		if (Service.Config.ActionTimelineOnlyWhenActive)
 		{
@@ -329,7 +347,7 @@ public sealed class RotationSolverPlugin : IDalamudPlugin, IDisposable
 
 	private static bool AnyHostileTargetWithinDistance(float distance)
 	{
-		foreach (IBattleChara target in DataCenter.AllHostileTargets)
+		foreach (var target in DataCenter.AllHostileTargets)
 		{
 			if (target.DistanceToPlayer() < distance)
 			{
@@ -339,28 +357,28 @@ public sealed class RotationSolverPlugin : IDalamudPlugin, IDisposable
 		return false;
 	}
 
-	void IDisposable.Dispose()
+	public async ValueTask DisposeAsync()
 	{
-		Dispose().GetAwaiter().GetResult();
-	}
+		ActionTracer.Shutdown();
 
-	public async Task Dispose()
-	{
 		Service.Config.Save();
 		await OtherConfiguration.Save();
 
+		AutoAttackUpdater.Disable();
 		RSCommands.Disable();
 		Watcher.Disable();
 		ActionQueueManager.Disable();
 		Svc.PluginInterface.UiBuilder.OpenConfigUi -= OnOpenConfigUi;
 		Svc.PluginInterface.UiBuilder.Draw -= OnDraw;
 
-		foreach (IDisposable item in _dis)
+		foreach (var item in _dis)
 		{
 			item.Dispose();
 		}
 		_dis.Clear();
 
+		//_nativeControlWindow?.Close();
+		//KamiToolKitLibrary.Dispose();
 		MajorUpdater.Dispose();
 		MiscUpdater.Dispose();
 		HotbarHighlightManager.Dispose();

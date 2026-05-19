@@ -16,12 +16,27 @@ internal class PhoenixDownItem : BaseItem
 
 	private static bool AnyLivingRaiserInParty()
 	{
-		foreach (IBattleChara member in DataCenter.PartyMembers)
+		foreach (var member in DataCenter.PartyMembers)
 		{
-			if (member.IsDead) continue;
-			if (member.IsJobCategory(JobRole.Healer)) return true;
-			if (member.IsJobs(ECommons.ExcelServices.Job.SMN)) return true;
-			if (member.IsJobs(ECommons.ExcelServices.Job.RDM)) return true;
+			if (member.IsDead)
+			{
+				continue;
+			}
+
+			if (member.IsJobCategory(JobRole.Healer))
+			{
+				return true;
+			}
+
+			if (member.IsJobs(ECommons.ExcelServices.Job.SMN))
+			{
+				return true;
+			}
+
+			if (member.IsJobs(ECommons.ExcelServices.Job.RDM))
+			{
+				return true;
+			}
 		}
 		return false;
 	}

@@ -36,6 +36,11 @@ public interface IAction : ITexture, IEnoughLevel
 	float MinHPPercent { get; set; }
 
 	/// <summary>
+	/// When true, the BossModReborn position-safety check is skipped for this action.
+	/// </summary>
+	bool SkipPositionSafetyCheck { get; set; }
+
+	/// <summary>
 	/// Gets the cooldown information for this action.
 	/// </summary>
 	ICooldown Cooldown { get; }

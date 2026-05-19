@@ -365,7 +365,7 @@ public partial class PictomancerRotation
 	{
 		get
 		{
-			byte stacks = StatusHelper.PlayerStatusStack(true, StatusID.HammerTime);
+			var stacks = StatusHelper.PlayerStatusStack(true, StatusID.HammerTime);
 			return stacks == byte.MaxValue ? (byte)3 : stacks;
 		}
 	}
@@ -377,7 +377,7 @@ public partial class PictomancerRotation
 	{
 		get
 		{
-			byte stacks = StatusHelper.PlayerStatusStack(true, StatusID.SubtractivePalette);
+			var stacks = StatusHelper.PlayerStatusStack(true, StatusID.SubtractivePalette);
 			return stacks == byte.MaxValue ? (byte)3 : stacks;
 		}
 	}

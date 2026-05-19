@@ -124,4 +124,9 @@ public class ActionConfig()
 	/// One-time flag to indicate the AOE-count reset has been applied.
 	/// </summary>
 	public bool AoeResetDone { get; set; } = false;
+
+	/// <summary>
+	/// When true, skip the BossModReborn position-safety check for this action. Allows users to opt out per-action.
+	/// </summary>
+	public bool SkipPositionSafetyCheck { get; set; } = false;
 }

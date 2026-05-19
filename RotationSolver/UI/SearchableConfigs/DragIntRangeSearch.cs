@@ -11,7 +11,7 @@ internal class DragIntRangeSearch : Searchable
 	{
 		get
 		{
-			string baseDesc = base.Description;
+			var baseDesc = base.Description;
 			return !string.IsNullOrEmpty(baseDesc) ? baseDesc + "\n" + Unit.ToString() : Unit.ToString();
 		}
 	}
@@ -37,7 +37,7 @@ internal class DragIntRangeSearch : Searchable
 	public DragIntRangeSearch(PropertyInfo property) : base(property)
 	{
 		// Retrieve the RangeAttribute from the property
-		RangeAttribute? range = _property.GetCustomAttribute<RangeAttribute>();
+		var range = _property.GetCustomAttribute<RangeAttribute>();
 		Min = (int?)range?.MinValue ?? 0;
 		Max = (int?)range?.MaxValue ?? 1;
 		Speed = range?.Speed ?? 0.001f;
@@ -46,14 +46,14 @@ internal class DragIntRangeSearch : Searchable
 
 	protected override void DrawMain()
 	{
-		int minValue = MinValue;
-		int maxValue = MaxValue;
+		var minValue = MinValue;
+		var maxValue = MaxValue;
 
 		// Set the width of the drag control
 		ImGui.SetNextItemWidth(Scale * DRAG_WIDTH);
 
 		// Cache the hash code to avoid multiple calls
-		int hashCode = GetHashCode();
+		var hashCode = GetHashCode();
 
 		// Draw the integer range drag control
 		if (ImGui.DragIntRange2($"##Config_{ID}{hashCode}", ref minValue, ref maxValue, Speed, Min, Max))

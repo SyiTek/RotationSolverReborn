@@ -43,12 +43,12 @@ internal class Service : IDisposable
 	/// <summary>
 	/// Gets or sets a value indicating whether the player can move.
 	/// </summary>
-	internal static unsafe bool CanMove
+	internal static bool CanMove
 	{
 		get => ForceDisableMovement == 0;
 		set
 		{
-			bool realCanMove = value || DataCenter.NoPoslock;
+			var realCanMove = value || DataCenter.NoPoslock;
 			if (_canMove == realCanMove)
 			{
 				return;
@@ -71,7 +71,7 @@ internal class Service : IDisposable
 	{
 		try
 		{
-			string path = Dalamud.Memory.MemoryHelper.ReadString(new nint(a1), Encoding.ASCII, 256);
+			var path = Dalamud.Memory.MemoryHelper.ReadString(new nint(a1), Encoding.ASCII, 256);
 			if (Svc.Objects.CreateObjectReference(a2) is not IBattleChara battleChara || string.IsNullOrEmpty(path))
 			{
 				return actorVfxCreateHook!.Original(a1, a2, a3, a4, a5, a6, a7);
@@ -141,14 +141,14 @@ internal class Service : IDisposable
 	/// <returns>A collection of addon pointers.</returns>
 	public static IEnumerable<IntPtr> GetAddons<T>() where T : struct
 	{
-		AddonAttribute? addon = AddonCache.GetOrAdd(typeof(T), t => t.GetCustomAttribute<AddonAttribute>());
+		var addon = AddonCache.GetOrAdd(typeof(T), t => t.GetCustomAttribute<AddonAttribute>());
 
 		if (addon is null)
 		{
 			return [];
 		}
 
-		int identifierCount = 0;
+		var identifierCount = 0;
 		foreach (var _ in addon.AddonIdentifiers)
 		{
 			identifierCount++;
@@ -161,11 +161,11 @@ internal class Service : IDisposable
 		// Use ArrayPool to minimize allocations
 		var pool = ArrayPool<nint>.Shared;
 		var buffer = pool.Rent(identifierCount);
-		int count = 0;
+		var count = 0;
 
 		try
 		{
-			foreach (string str in addon.AddonIdentifiers)
+			foreach (var str in addon.AddonIdentifiers)
 			{
 				nint ptr = Svc.GameGui.GetAddonByName(str, 1);
 				if (ptr != IntPtr.Zero)
@@ -175,7 +175,7 @@ internal class Service : IDisposable
 			}
 
 			var result = new nint[count];
-			for (int i = 0; i < count; i++)
+			for (var i = 0; i < count; i++)
 			{
 				result[i] = buffer[i];
 			}

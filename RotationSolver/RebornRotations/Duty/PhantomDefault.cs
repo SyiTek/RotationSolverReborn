@@ -240,19 +240,25 @@ public sealed class PhantomDefault : PhantomRotation
 			if (!OccultEtherSelf)
 			{
 				if (OccultEtherPvE.Target.Target.CurrentMp < OccultEtherThreshold)
+				{
 					return true;
+				}
 			}
 			else
 			{
 				if (OccultEtherPvE.Target.Target == Player && (Player?.CurrentMp < OccultEtherThreshold))
+				{
 					return true;
+				}
 			}
 		}
 
 		if (OccultChakraPvE.CanUse(out act) && InCombat)
 		{
 			if (Player?.CurrentMp < OccultChakraMPThreshold)
+			{
 				return true;
+			}
 		}
 
 		return base.GeneralAbility(nextGCD, out act);
@@ -444,19 +450,25 @@ public sealed class PhantomDefault : PhantomRotation
 			if (!OccultPotionSelf)
 			{
 				if (OccultPotionPvE.Target.Target.GetHealthRatio() < OccultPotionThreshold)
+				{
 					return true;
+				}
 			}
 			else
 			{
 				if (OccultPotionPvE.Target.Target == Player && Player?.GetHealthRatio() < OccultPotionThreshold)
+				{
 					return true;
+				}
 			}
 		}
 
 		if (OccultChakraPvE.CanUse(out act) && InCombat)
 		{
 			if (Player?.GetHealthRatio() < OccultChakraHPThreshold)
+			{
 				return true;
+			}
 		}
 
 		return base.HealSingleAbility(nextGCD, out act);
@@ -926,7 +938,7 @@ public sealed class PhantomDefault : PhantomRotation
 
 		if (_remainingCards.Count == 2) // We have a little time but need to think it through
 		{
-			bool hasStarfall = false;
+			var hasStarfall = false;
 			foreach (var card in _remainingCards)
 			{
 				if (card == StarfallPvE)

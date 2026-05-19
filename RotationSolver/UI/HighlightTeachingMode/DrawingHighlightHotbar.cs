@@ -35,16 +35,16 @@ public class DrawingHighlightHotbar : DrawingHighlightHotbarBase
 			return;
 		}
 
-		TexFile? tex = Svc.Data?.GetFile<TexFile>("ui/uld/icona_frame_hr1.tex");
+		var tex = Svc.Data?.GetFile<TexFile>("ui/uld/icona_frame_hr1.tex");
 		if (tex == null)
 		{
 			return;
 		}
 
-		byte[] imageData = tex.ImageData;
-		byte[] array = new byte[imageData.Length];
+		var imageData = tex.ImageData;
+		var array = new byte[imageData.Length];
 
-		for (int i = 0; i < imageData.Length; i += 4)
+		for (var i = 0; i < imageData.Length; i += 4)
 		{
 			array[i] = array[i + 1] = array[i + 2] = byte.MaxValue;
 			array[i + 3] = imageData[i + 3];
@@ -68,44 +68,44 @@ public class DrawingHighlightHotbar : DrawingHighlightHotbarBase
 
 		List<IDrawing2D> result = [];
 
-		int hotBarIndex = 0;
-		foreach (nint intPtr in EnumerateHotbarAddons())
+		var hotBarIndex = 0;
+		foreach (var intPtr in EnumerateHotbarAddons())
 		{
-			AddonActionBarBase* actionBar = (AddonActionBarBase*)intPtr;
+			var actionBar = (AddonActionBarBase*)intPtr;
 			if (actionBar != null && IsVisible(actionBar->AtkUnitBase))
 			{
-				float s = actionBar->AtkUnitBase.Scale;
+				var s = actionBar->AtkUnitBase.Scale;
 
-				bool isCrossBar = hotBarIndex > 9;
+				var isCrossBar = hotBarIndex > 9;
 				if (isCrossBar)
 				{
 					if (hotBarIndex == 10)
 					{
-						AddonActionCross* actBar = (AddonActionCross*)intPtr;
+						var actBar = (AddonActionCross*)intPtr;
 						hotBarIndex = actBar->RaptureHotbarId;
 					}
 					else
 					{
-						AddonActionDoubleCrossBase* actBar = (AddonActionDoubleCrossBase*)intPtr;
+						var actBar = (AddonActionDoubleCrossBase*)intPtr;
 						hotBarIndex = actBar->BarTarget;
 					}
 				}
-				Hotbar hotBar = Framework.Instance()->GetUIModule()->GetRaptureHotbarModule()->Hotbars[hotBarIndex];
+				var hotBar = Framework.Instance()->GetUIModule()->GetRaptureHotbarModule()->Hotbars[hotBarIndex];
 
-				int slotIndex = 0;
-				foreach (ActionBarSlot slot in actionBar->ActionBarSlotVector.AsSpan())
+				var slotIndex = 0;
+				foreach (var slot in actionBar->ActionBarSlotVector.AsSpan())
 				{
-					AtkComponentNode* iconAddon = slot.Icon;
+					var iconAddon = slot.Icon;
 					if ((nint)iconAddon != nint.Zero && IsVisible(&iconAddon->AtkResNode))
 					{
 						AtkResNode node = default;
-						HotbarSlot bar = hotBar.Slots[slotIndex];
+						var bar = hotBar.Slots[slotIndex];
 
 						if (isCrossBar)
 						{
-							AtkUldManager manager = slot.Icon->AtkResNode.ParentNode->GetAsAtkComponentNode()->Component->UldManager.NodeList[2]->GetAsAtkComponentNode()->Component->UldManager;
+							var manager = slot.Icon->AtkResNode.ParentNode->GetAsAtkComponentNode()->Component->UldManager.NodeList[2]->GetAsAtkComponentNode()->Component->UldManager;
 
-							for (int i = 0; i < manager.NodeListCount; i++)
+							for (var i = 0; i < manager.NodeListCount; i++)
 							{
 								node = *manager.NodeList[i];
 								if (node.Width == 72)
@@ -122,7 +122,7 @@ public class DrawingHighlightHotbar : DrawingHighlightHotbarBase
 						if (IsActionSlotRight(slot, bar))
 						{
 							Vector2 pt1 = new(node.ScreenX, node.ScreenY);
-							Vector2 pt2 = pt1 + new Vector2(node.Width * s, node.Height * s);
+							var pt2 = pt1 + new Vector2(node.Width * s, node.Height * s);
 
 							result.Add(new ImageDrawing(_texture, pt1, pt2, _uv1, _uv2, ImGui.ColorConvertFloat4ToU32(Color)));
 						}
@@ -153,7 +153,9 @@ public class DrawingHighlightHotbar : DrawingHighlightHotbarBase
 	{
 		var attr = typeof(T).GetCustomAttribute<AddonAttribute>();
 		if (attr is not AddonAttribute on)
+		{
 			return [];
+		}
 
 		List<nint> result = [];
 		foreach (var str in on.AddonIdentifiers)
@@ -179,10 +181,25 @@ public class DrawingHighlightHotbar : DrawingHighlightHotbarBase
 
 	private static IEnumerable<nint> EnumerateHotbarAddons()
 	{
-		foreach (var a in GetAddons<AddonActionBar>()) yield return a;
-		foreach (var a in GetAddons<AddonActionBarX>()) yield return a;
-		foreach (var a in GetAddons<AddonActionCross>()) yield return a;
-		foreach (var a in GetAddons<AddonActionDoubleCrossBase>()) yield return a;
+		foreach (var a in GetAddons<AddonActionBar>())
+		{
+			yield return a;
+		}
+
+		foreach (var a in GetAddons<AddonActionBarX>())
+		{
+			yield return a;
+		}
+
+		foreach (var a in GetAddons<AddonActionCross>())
+		{
+			yield return a;
+		}
+
+		foreach (var a in GetAddons<AddonActionDoubleCrossBase>())
+		{
+			yield return a;
+		}
 	}
 
 	private static unsafe bool IsVisible(AtkResNode* node)
@@ -202,8 +219,8 @@ public class DrawingHighlightHotbar : DrawingHighlightHotbarBase
 
 	private unsafe bool IsActionSlotRight(ActionBarSlot slot, HotbarSlot hot)
 	{
-		uint actionId = ActionManager.Instance()->GetAdjustedActionId((uint)slot.ActionId);
-		foreach (HotbarID hotbarId in HotbarIDs)
+		var actionId = ActionManager.Instance()->GetAdjustedActionId((uint)slot.ActionId);
+		foreach (var hotbarId in HotbarIDs)
 		{
 			if (hot.OriginalApparentSlotType != hotbarId.SlotType)
 			{
@@ -254,7 +271,7 @@ public readonly struct PolylineDrawing(Vector2[] pts, uint color, float thicknes
 			return;
 		}
 
-		foreach (Vector2 pt in _pts)
+		foreach (var pt in _pts)
 		{
 			ImGui.GetWindowDrawList().PathLineTo(pt);
 		}

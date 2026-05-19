@@ -30,7 +30,10 @@ public partial class CustomRotation
 			{
 				uint gcdId = 0;
 				if (gcdAction is IBaseAction ib)
+				{
 					gcdId = ib.AdjustedID;
+				}
+
 				if (gcdId != _lastNextGCDId)
 				{
 					_lastNextGCDId = gcdId;
@@ -89,7 +92,7 @@ public partial class CustomRotation
 
 	private void UpdateActions(JobRole role)
 	{
-		ActionMoveForwardGCD = MoveForwardGCD(out IAction? act) ? act : null;
+		ActionMoveForwardGCD = MoveForwardGCD(out var act) ? act : null;
 
 		UpdateHealingActions(role, out _);
 		UpdateDefenseActions(out _);
@@ -191,7 +194,7 @@ public partial class CustomRotation
 	private void UpdateMovementActions(out IAction? act)
 	{
 		IBaseAction.TargetOverride = TargetType.Move;
-		bool movingTarget = MoveForwardAbility(AddlePvE, out act);
+		var movingTarget = MoveForwardAbility(AddlePvE, out act);
 		IBaseAction.TargetOverride = null;
 		ActionMoveForwardAbility = movingTarget ? act : null;
 
@@ -211,7 +214,7 @@ public partial class CustomRotation
 		try
 		{
 			// Check for countdown and return the appropriate action if not in combat
-			float countDown = Service.CountDownTime;
+			var countDown = Service.CountDownTime;
 			if (countDown > 0 && !DataCenter.InCombat)
 			{
 				return CountDownAction(countDown);
@@ -227,13 +230,13 @@ public partial class CustomRotation
 			// If a GCD action is available, determine if it can be used or if an ability should be used instead
 			if (gcdAction != null)
 			{
-				return ActionHelper.CanUseGCD ? gcdAction : Ability(gcdAction, out IAction? ability) ? ability : gcdAction;
+				return ActionHelper.CanUseGCD ? gcdAction : Ability(gcdAction, out var ability) ? ability : gcdAction;
 			}
 			else
 			{
 				// If no GCD action is available, attempt to use an ability
 				IBaseAction.IgnoreClipping = true;
-				if (Ability(AddlePvE, out IAction? ability))
+				if (Ability(AddlePvE, out var ability))
 				{
 					return ability;
 				}

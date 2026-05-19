@@ -54,7 +54,10 @@ public class ConditionBoolGenerator : IIncrementalGenerator
 
 			var propertyCodes = GeneratePropertyCodes(kv.Value, context, nameSpace, className);
 
-			if (propertyCodes.Count == 0) continue;
+			if (propertyCodes.Count == 0)
+			{
+				continue;
+			}
 
 			var code = GenerateClassCode(nameSpace, classType, className, propertyCodes);
 			context.AddSource($"{nameSpace}_{className}.g.cs", code);
@@ -73,7 +76,7 @@ public class ConditionBoolGenerator : IIncrementalGenerator
 	{
 		var propertyCodes = new List<string>();
 
-		foreach (var (variableInfo, model) in group)
+		foreach ((var variableInfo, var model) in group)
 		{
 			var field = (FieldDeclarationSyntax)variableInfo.Parent!.Parent!;
 			var variableName = variableInfo.Identifier.ToString();
@@ -146,7 +149,10 @@ public class ConditionBoolGenerator : IIncrementalGenerator
 
 		foreach (var attrSet in field.AttributeLists)
 		{
-			if (attrSet == null) continue;
+			if (attrSet == null)
+			{
+				continue;
+			}
 
 			foreach (var attr in attrSet.Attributes)
 			{

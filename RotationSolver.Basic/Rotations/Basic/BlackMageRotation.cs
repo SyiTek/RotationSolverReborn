@@ -378,7 +378,8 @@ public partial class BlackMageRotation
 
 	static partial void ModifyBetweenTheLinesPvE(ref ActionSetting setting)
 	{
-		setting.SpecialType = SpecialActionType.MovingBackward;
+		setting.SpecialType = SpecialActionType.ObjectBasedMovement;
+		setting.ObjectBasedMovementObjectOID = 0x179; // Ley Lines
 		setting.IsFriendly = true;
 		setting.CreateConfig = () => new ActionConfig()
 		{

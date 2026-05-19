@@ -42,11 +42,15 @@ namespace RotationSolver.GameData.Getters
 		{
 			var items = _gameData.GetExcelSheet<T>();
 
-			if (items == null) return string.Empty;
+			if (items == null)
+			{
+				return string.Empty;
+			}
+
 			BeforeCreating();
 
 			List<string> codes = [];
-			int cnt = 0;
+			var cnt = 0;
 			foreach (var it in items)
 			{
 				if (AddToList(it))

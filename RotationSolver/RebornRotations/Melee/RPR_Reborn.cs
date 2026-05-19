@@ -1,6 +1,6 @@
 ﻿namespace RotationSolver.RebornRotations.Melee;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Melee/RPR_Reborn.cs")]
 
 public sealed class RPR_Reborn : ReaperRotation
@@ -21,7 +21,7 @@ public sealed class RPR_Reborn : ReaperRotation
 	protected override IAction? CountDownAction(float remainTime)
 	{
 		if (remainTime < HarpePvE.Info.CastTime + CountDownAhead
-			&& HarpePvE.CanUse(out IAction? act))
+			&& HarpePvE.CanUse(out var act))
 		{
 			return act;
 		}
@@ -115,11 +115,11 @@ public sealed class RPR_Reborn : ReaperRotation
 
 	protected override bool AttackAbility(IAction nextGCD, out IAction? act)
 	{
-		bool IsTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
-		bool IsTargetDying = CurrentTarget?.IsDying() ?? false;
-		bool NoEnshroudPooling = !EnshroudPooling && Shroud >= 50;
-		bool YesEnshroudPooling = EnshroudPooling && Shroud >= 50 && (!PlentifulHarvestPvE.EnoughLevel || HasArcaneCircle || ArcaneCirclePvE.Cooldown.WillHaveOneCharge(8) || (!HasArcaneCircle && ArcaneCirclePvE.Cooldown.WillHaveOneCharge(65) && !ArcaneCirclePvE.Cooldown.WillHaveOneCharge(50)) || (!HasArcaneCircle && Shroud >= 90));
-		bool HasIdealHostBool = HasIdealHost;
+		var IsTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
+		var IsTargetDying = CurrentTarget?.IsDying() ?? false;
+		var NoEnshroudPooling = !EnshroudPooling && Shroud >= 50;
+		var YesEnshroudPooling = EnshroudPooling && Shroud >= 50 && (!PlentifulHarvestPvE.EnoughLevel || HasArcaneCircle || ArcaneCirclePvE.Cooldown.WillHaveOneCharge(8) || (!HasArcaneCircle && ArcaneCirclePvE.Cooldown.WillHaveOneCharge(65) && !ArcaneCirclePvE.Cooldown.WillHaveOneCharge(50)) || (!HasArcaneCircle && Shroud >= 90));
+		var HasIdealHostBool = HasIdealHost;
 
 		if (IsBurst)
 		{
@@ -220,31 +220,61 @@ public sealed class RPR_Reborn : ReaperRotation
 				{
 					case (true, true):
 						if (ExecutionersGallowsPvE.CanUse(out act, skipComboCheck: true) && ExecutionersGallowsPvE.Target.Target != null && CanHitPositional(EnemyPositional.Rear, ExecutionersGallowsPvE.Target.Target))
+						{
 							return true;
+						}
+
 						if (ExecutionersGibbetPvE.CanUse(out act, skipComboCheck: true) && ExecutionersGibbetPvE.Target.Target != null && CanHitPositional(EnemyPositional.Flank, ExecutionersGibbetPvE.Target.Target))
+						{
 							return true;
+						}
+
 						if (ExecutionersGallowsPvE.CanUse(out act, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						if (ExecutionersGibbetPvE.CanUse(out act, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 					case (true, false):
 						if (ExecutionersGallowsPvE.CanUse(out act, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 					case (false, true):
 						if (ExecutionersGibbetPvE.CanUse(out act, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 					case (false, false):
 						if (ExecutionersGallowsPvE.CanUse(out act, skipComboCheck: true) && ExecutionersGallowsPvE.Target.Target != null && CanHitPositional(EnemyPositional.Rear, ExecutionersGallowsPvE.Target.Target))
+						{
 							return true;
+						}
+
 						if (ExecutionersGibbetPvE.CanUse(out act, skipComboCheck: true) && ExecutionersGibbetPvE.Target.Target != null && CanHitPositional(EnemyPositional.Flank, ExecutionersGibbetPvE.Target.Target))
+						{
 							return true;
+						}
+
 						if (ExecutionersGallowsPvE.CanUse(out act, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						if (ExecutionersGibbetPvE.CanUse(out act, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 				}
 			}
@@ -264,7 +294,7 @@ public sealed class RPR_Reborn : ReaperRotation
 		}
 
 		// If at least 2 targets in a best Whorl of Death AoE lack Death's Design, allow refreshing via AoE
-		int ddNeeds = 0;
+		var ddNeeds = 0;
 		if (WhorlOfDeathPvE.CanUse(out _, skipAoeCheck: true) && WhorlOfDeathPvE.PreviewTarget.HasValue)
 		{
 			ddNeeds = WhorlOfDeathPvE.PreviewTarget.Value.AffectedTargets?.Length ?? 0;
@@ -324,17 +354,29 @@ public sealed class RPR_Reborn : ReaperRotation
 				{
 					case (true, _):
 						if (CrossReapingPvE.CanUse(out act))
+						{
 							return true;
+						}
+
 						break;
 					case (_, true):
 						if (VoidReapingPvE.CanUse(out act))
+						{
 							return true;
+						}
+
 						break;
 					case (false, false):
 						if (CrossReapingPvE.CanUse(out act))
+						{
 							return true;
+						}
+
 						if (VoidReapingPvE.CanUse(out act))
+						{
 							return true;
+						}
+
 						break;
 				}
 			}
@@ -365,17 +407,29 @@ public sealed class RPR_Reborn : ReaperRotation
 					{
 						case (true, _):
 							if (CrossReapingPvE.CanUse(out act))
+							{
 								return true;
+							}
+
 							break;
 						case (_, true):
 							if (VoidReapingPvE.CanUse(out act))
+							{
 								return true;
+							}
+
 							break;
 						case (false, false):
 							if (CrossReapingPvE.CanUse(out act))
+							{
 								return true;
+							}
+
 							if (VoidReapingPvE.CanUse(out act))
+							{
 								return true;
+							}
+
 							break;
 					}
 				}
@@ -393,31 +447,61 @@ public sealed class RPR_Reborn : ReaperRotation
 			{
 				case (true, true):
 					if (GallowsPvE.CanUse(out act, skipComboCheck: true) && GallowsPvE.Target.Target != null && CanHitPositional(EnemyPositional.Rear, GallowsPvE.Target.Target))
+					{
 						return true;
+					}
+
 					if (GibbetPvE.CanUse(out act, skipComboCheck: true) && GibbetPvE.Target.Target != null && CanHitPositional(EnemyPositional.Flank, GibbetPvE.Target.Target))
+					{
 						return true;
+					}
+
 					if (GallowsPvE.CanUse(out act, skipComboCheck: true))
+					{
 						return true;
+					}
+
 					if (GibbetPvE.CanUse(out act, skipComboCheck: true))
+					{
 						return true;
+					}
+
 					break;
 				case (true, _):
 					if (GallowsPvE.CanUse(out act, skipComboCheck: true))
+					{
 						return true;
+					}
+
 					break;
 				case (_, true):
 					if (GibbetPvE.CanUse(out act, skipComboCheck: true))
+					{
 						return true;
+					}
+
 					break;
 				case (false, false):
 					if (GallowsPvE.CanUse(out act, skipComboCheck: true) && GallowsPvE.Target.Target != null && CanHitPositional(EnemyPositional.Rear, GallowsPvE.Target.Target))
+					{
 						return true;
+					}
+
 					if (GibbetPvE.CanUse(out act, skipComboCheck: true) && GibbetPvE.Target.Target != null && CanHitPositional(EnemyPositional.Flank, GibbetPvE.Target.Target))
+					{
 						return true;
+					}
+
 					if (GallowsPvE.CanUse(out act, skipComboCheck: true))
+					{
 						return true;
+					}
+
 					if (GibbetPvE.CanUse(out act, skipComboCheck: true))
+					{
 						return true;
+					}
+
 					break;
 			}
 		}

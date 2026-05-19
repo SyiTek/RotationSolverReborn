@@ -10,7 +10,7 @@ namespace RotationSolver.UI
 		public static unsafe ImFontPtr GetFont(float size)
 		{
 			// Round to a stable integer key to avoid excessive variants.
-			int key = Math.Max(1, (int)MathF.Round(size));
+			var key = Math.Max(1, (int)MathF.Round(size));
 
 			Dalamud.Interface.ManagedFontAtlas.IFontHandle? handle;
 			lock (_lock)

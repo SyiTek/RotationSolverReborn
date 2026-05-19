@@ -26,15 +26,15 @@ public class RotationConfigSet : IRotationConfigSet
 			throw new ArgumentNullException(nameof(rotation));
 		}
 
-		foreach (PropertyInfo prop in rotation.GetType().GetRuntimeProperties())
+		foreach (var prop in rotation.GetType().GetRuntimeProperties())
 		{
-			RotationConfigAttribute? attr = prop.GetCustomAttribute<RotationConfigAttribute>();
+			var attr = prop.GetCustomAttribute<RotationConfigAttribute>();
 			if (attr == null)
 			{
 				continue;
 			}
 
-			Type type = prop.PropertyType;
+			var type = prop.PropertyType;
 			if (type == null)
 			{
 				continue;
@@ -79,15 +79,15 @@ public class RotationConfigSet : IRotationConfigSet
 			throw new ArgumentNullException(nameof(rotation));
 		}
 
-		foreach (PropertyInfo prop in rotation.GetType().GetRuntimeProperties())
+		foreach (var prop in rotation.GetType().GetRuntimeProperties())
 		{
-			RotationConfigAttribute? attr = prop.GetCustomAttribute<RotationConfigAttribute>();
+			var attr = prop.GetCustomAttribute<RotationConfigAttribute>();
 			if (attr == null)
 			{
 				continue;
 			}
 
-			Type type = prop.PropertyType;
+			var type = prop.PropertyType;
 			if (type == null)
 			{
 				continue;

@@ -39,7 +39,7 @@ public struct OffsetDelay
 			_changeTimes.Enqueue(DateTime.Now + TimeSpan.FromSeconds(GetDelay()));
 		}
 
-		if (_changeTimes.TryPeek(out DateTime time) && time < DateTime.Now)
+		if (_changeTimes.TryPeek(out var time) && time < DateTime.Now)
 		{
 			_ = _changeTimes.Dequeue();
 			_nowValue = !_nowValue;

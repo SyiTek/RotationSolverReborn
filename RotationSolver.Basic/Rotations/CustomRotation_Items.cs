@@ -45,7 +45,7 @@ public partial class CustomRotation
 		IBaseAction.TargetOverride = TargetType.Death;
 		try
 		{
-			foreach (PhoenixDownItem phoenixdown in PhoenixDowns)
+			foreach (var phoenixdown in PhoenixDowns)
 			{
 				// Ensure we propagate the action outward if needed by upstream code
 				if (phoenixdown.CanUse(out act, true))
@@ -95,9 +95,9 @@ public partial class CustomRotation
 			}
 		}
 		// Reverse the list
-		int n = list.Count;
+		var n = list.Count;
 		var arr = new MedicineItem[n];
-		for (int i = 0; i < n; i++)
+		for (var i = 0; i < n; i++)
 		{
 			arr[i] = list[n - i - 1];
 		}
@@ -114,8 +114,8 @@ public partial class CustomRotation
 	{
 		act = null;
 
-		bool isHostileTargetDummy = HostileTarget?.IsDummy() ?? false;
-		bool isInHighEndDuty = DataCenter.Territory?.IsHighEndDuty ?? false;
+		var isHostileTargetDummy = HostileTarget?.IsDummy() ?? false;
+		var isInHighEndDuty = DataCenter.Territory?.IsHighEndDuty ?? false;
 
 		if (!isHostileTargetDummy && !isInHighEndDuty && DataCenter.CurrentTinctureUseType == TinctureUseType.InHighEndDuty)
 		{
@@ -127,7 +127,7 @@ public partial class CustomRotation
 			return false;
 		}
 
-		foreach (MedicineItem medicine in Medicines)
+		foreach (var medicine in Medicines)
 		{
 			if (medicine.Type != MedicineType)
 			{
@@ -163,9 +163,9 @@ public partial class CustomRotation
 			}
 		}
 		// Reverse the list
-		int n = list.Count;
+		var n = list.Count;
 		var arr = new MpPotionItem[n];
-		for (int i = 0; i < n; i++)
+		for (var i = 0; i < n; i++)
 		{
 			arr[i] = list[n - i - 1];
 		}
@@ -215,9 +215,9 @@ public partial class CustomRotation
 			}
 		}
 		// Reverse the list
-		int n = list.Count;
+		var n = list.Count;
 		var arr = new HpPotionItem[n];
-		for (int i = 0; i < n; i++)
+		for (var i = 0; i < n; i++)
 		{
 			arr[i] = list[n - i - 1];
 		}
@@ -235,8 +235,31 @@ public partial class CustomRotation
 		HpPotionItem? best = null;
 		foreach (var a in HpPotions)
 		{
-			bool isDeepDungeons = DataCenter.Territory?.ContentType == TerritoryContentType.DeepDungeons;
-			if (a.CanUse(out _, true) && (a.ID != 47102 || (a.ID == 47102 && isDeepDungeons) || (a.ID == 20309 && isDeepDungeons && !StatusHelper.PlayerHasStatus(false, StatusID.Rehabilitation_648))))
+			if (a.ID != 47102 && a.ID != 22306 && a.ID != 20309 && a.CanUse(out _, true))
+			{
+				if (best == null || a.MaxHp >= best.MaxHp)
+				{
+					best = a;
+				}
+			}
+
+			if ((DataCenter.IsInPilgrimsTraverse || DataCenter.IsInTheFinalVerse) && a.ID == 47102 && a.CanUse(out _, true) && !StatusHelper.PlayerHasStatus(false, StatusID.Rehabilitation_4191))
+			{
+				if (best == null || a.MaxHp >= best.MaxHp)
+				{
+					best = a;
+				}
+			}
+
+			if (DataCenter.IsInEurekaFieldOp && a.ID == 22306 && !StatusHelper.PlayerHasStatus(false, StatusID.Rehabilitation_648) && a.CanUse(out _, true))
+			{
+				if (best == null || a.MaxHp >= best.MaxHp)
+				{
+					best = a;
+				}
+			}
+
+			if (DataCenter.IsInPalaceOfTheDead && a.ID == 20309 && !StatusHelper.PlayerHasStatus(false, StatusID.Rehabilitation_648) && a.CanUse(out _, true))
 			{
 				if (best == null || a.MaxHp >= best.MaxHp)
 				{

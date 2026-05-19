@@ -29,11 +29,13 @@ public partial class CustomRotation
 	{
 		get
 		{
-			int count = 0;
-			foreach (IBattleChara member in PartyMembers)
+			var count = 0;
+			foreach (var member in PartyMembers)
 			{
 				if (!member.IsDead && member.ObjectId != Player?.ObjectId)
+				{
 					count++;
+				}
 			}
 
 			return count;
@@ -121,7 +123,7 @@ public partial class CustomRotation
 			return false;
 		}
 
-		int minutes = (int)Math.Floor(CombatTime / 60f);
+		var minutes = (int)Math.Floor(CombatTime / 60f);
 		return minutes % 2 == 0;
 	}
 
@@ -166,19 +168,25 @@ public partial class CustomRotation
 		{
 			StatusList();
 
-			if (Buffs.Count == 0) return false;
+			if (Buffs.Count == 0)
+			{
+				return false;
+			}
 
-			bool playerHasBuffs = true;
+			var playerHasBuffs = true;
 			if (Player == null)
 			{
 				playerHasBuffs = false;
 			}
 			else
 			{
-				for (int i = 0; i < Buffs.Count; i++)
+				for (var i = 0; i < Buffs.Count; i++)
 				{
 					var buff = Buffs[i];
-					if (buff.Type != StatusType.Buff) continue;
+					if (buff.Type != StatusType.Buff)
+					{
+						continue;
+					}
 
 					if (!StatusHelper.PlayerHasStatus(false, buff.Ids) || StatusHelper.PlayerWillStatusEnd(0, false, buff.Ids))
 					{
@@ -188,14 +196,17 @@ public partial class CustomRotation
 				}
 			}
 
-			bool targetHasDebuffs = HostileTarget != null;
+			var targetHasDebuffs = HostileTarget != null;
 			if (targetHasDebuffs)
 			{
 				var target = HostileTarget!;
-				for (int i = 0; i < Buffs.Count; i++)
+				for (var i = 0; i < Buffs.Count; i++)
 				{
 					var buff = Buffs[i];
-					if (buff.Type != StatusType.Debuff) continue;
+					if (buff.Type != StatusType.Debuff)
+					{
+						continue;
+					}
 
 					if (!target.HasStatus(false, buff.Ids) || target.WillStatusEnd(0, false, buff.Ids))
 					{
@@ -218,26 +229,49 @@ public partial class CustomRotation
 		{
 			StatusList();
 
-			if (Buffs.Count == 0) return 0;
+			if (Buffs.Count == 0)
+			{
+				return 0;
+			}
 
 			float maxDuration = 0;
 			foreach (var buff in Buffs)
 			{
 				if (buff.Type == StatusType.Buff)
 				{
-					if (Player == null) continue;
-					if (!StatusHelper.PlayerHasStatus(false, buff.Ids)) continue;
+					if (Player == null)
+					{
+						continue;
+					}
 
-					float remaining = StatusHelper.PlayerStatusTime(true, buff.Ids[0]);
-					if (remaining > maxDuration) maxDuration = remaining;
+					if (!StatusHelper.PlayerHasStatus(false, buff.Ids))
+					{
+						continue;
+					}
+
+					var remaining = StatusHelper.PlayerStatusTime(true, buff.Ids[0]);
+					if (remaining > maxDuration)
+					{
+						maxDuration = remaining;
+					}
 				}
 				else if (buff.Type == StatusType.Debuff)
 				{
-					if (HostileTarget == null) continue;
-					if (!HostileTarget.HasStatus(false, buff.Ids)) continue;
+					if (HostileTarget == null)
+					{
+						continue;
+					}
 
-					float remaining = HostileTarget.StatusTime(true, buff.Ids[0]);
-					if (remaining > maxDuration) maxDuration = remaining;
+					if (!HostileTarget.HasStatus(false, buff.Ids))
+					{
+						continue;
+					}
+
+					var remaining = HostileTarget.StatusTime(true, buff.Ids[0]);
+					if (remaining > maxDuration)
+					{
+						maxDuration = remaining;
+					}
 				}
 			}
 
@@ -303,7 +337,10 @@ public partial class CustomRotation
 
 	private static void AddJobBuffs(string abbr, HashSet<string> processedJobs)
 	{
-		if (!processedJobs.Add(abbr)) return;
+		if (!processedJobs.Add(abbr))
+		{
+			return;
+		}
 
 		if (JobBuffs.TryGetValue(abbr, out var buffs))
 		{
@@ -365,8 +402,8 @@ public partial class CustomRotation
 			return false;
 		}
 
-		int minutes = (int)Math.Floor(CombatTime / 60f);
-		int secondsInCurrentMinute = (int)Math.Floor(CombatTime % 60f);
+		var minutes = (int)Math.Floor(CombatTime / 60f);
+		var secondsInCurrentMinute = (int)Math.Floor(CombatTime % 60f);
 
 		return minutes % 2 == 0 && secondsInCurrentMinute < 15;
 	}
@@ -409,14 +446,17 @@ public partial class CustomRotation
 	{
 		get
 		{
-			int count = 0;
+			var count = 0;
 			var members = PartyMembers;
 			if (members != null)
 			{
 				foreach (var _ in members)
 				{
 					count++;
-					if (count > 9) break;
+					if (count > 9)
+					{
+						break;
+					}
 				}
 			}
 			return count == 8 || count == 9;
@@ -447,13 +487,21 @@ public partial class CustomRotation
 	{
 		get
 		{
-			if (Player == null) return null;
+			if (Player == null)
+			{
+				return null;
+			}
+
 			IBattleChara lowest = Player;
 			var lowestHp = Player?.GetHealthRatio();
 
 			foreach (var member in PartyMembers)
 			{
-				if (member == null || member.IsDead) continue;
+				if (member == null || member.IsDead)
+				{
+					continue;
+				}
+
 				var memberHpRatio = member.GetHealthRatio();
 				if (memberHpRatio < lowestHp)
 				{
@@ -485,54 +533,78 @@ public partial class CustomRotation
 	/// </remarks>
 	public static float GetCurrentMitigationPercent()
 	{
-		float damageFactor = 1.0f;
+		var damageFactor = 1.0f;
 
 		var partyEnum = PartyMembers;
 		var hostileEnum = AllHostileTargets;
 
 		// Determine (heuristically) if the imminent AoE is magical.
-		bool incomingMagical = IsMagicalDamageIncoming;
+		var incomingMagical = IsMagicalDamageIncoming;
 
 		// Enemy debuffs (scan once).
-		bool addle = false;
-		bool feint = false;
-		bool dismantle = false;
-		bool reprisal = false;
+		var addle = false;
+		var feint = false;
+		var dismantle = false;
+		var reprisal = false;
 
 		if (hostileEnum != null)
 		{
 			foreach (var e in hostileEnum)
 			{
-				if (e == null) continue;
+				if (e == null)
+				{
+					continue;
+				}
 
 				// Addle: -10% magical / -5% physical
 				if (!addle && e.HasStatus(false, StatusID.Addle))
+				{
 					addle = true;
+				}
 
 				// Feint: -10% physical / -5% magical
 				if (!feint && e.HasStatus(false, StatusID.Feint))
+				{
 					feint = true;
+				}
 
 				if (!dismantle && e.HasStatus(false, StatusID.Dismantled))
+				{
 					dismantle = true;
+				}
 
 				// Reprisal: -10% all damage (missing previously)
 				if (!reprisal && e.HasStatus(false, StatusID.Reprisal))
+				{
 					reprisal = true;
+				}
 
 				if (addle && feint && dismantle && reprisal)
+				{
 					break;
+				}
 			}
 		}
 
 		if (addle)
+		{
 			damageFactor *= incomingMagical ? 0.90f : 0.95f;
+		}
+
 		if (feint)
+		{
 			damageFactor *= incomingMagical ? 0.95f : 0.90f;
+		}
+
 		if (dismantle)
+		{
 			damageFactor *= 0.90f;
+		}
+
 		if (reprisal)
+		{
 			damageFactor *= 0.90f;
+		}
 
 		// Collect party statuses once into a hash set for O(1) lookups.
 		HashSet<StatusID> partyStatuses = [];
@@ -540,7 +612,10 @@ public partial class CustomRotation
 		{
 			foreach (var m in partyEnum)
 			{
-				if (m == null) continue;
+				if (m == null)
+				{
+					continue;
+				}
 				// Here we just probe the relevant IDs.
 				// To avoid N*M calls, we gather by probing only needed IDs below if not already present.
 			}
@@ -549,7 +624,7 @@ public partial class CustomRotation
 		// Helper to lazily test & cache a status.
 		bool HasPartyStatus(StatusID id)
 		{
-			bool haspartyStatuses = false;
+			var haspartyStatuses = false;
 			foreach (var status in partyStatuses)
 			{
 				if (status == id)
@@ -558,13 +633,20 @@ public partial class CustomRotation
 					break;
 				}
 			}
-			if (haspartyStatuses) return true;
+			if (haspartyStatuses)
+			{
+				return true;
+			}
 
 			if (partyEnum != null)
 			{
 				foreach (var m in partyEnum)
 				{
-					if (m == null) continue;
+					if (m == null)
+					{
+						continue;
+					}
+
 					if (m.HasStatus(false, id))
 					{
 						partyStatuses.Add(id);
@@ -580,41 +662,73 @@ public partial class CustomRotation
 			|| HasPartyStatus(StatusID.DarkForce)
 			|| HasPartyStatus(StatusID.GunmetalSoul)
 			|| HasPartyStatus(StatusID.LandWaker))
+		{
 			damageFactor *= 0.2f;
+		}
 
 		if (HasPartyStatus(StatusID.SacredSoil))
+		{
 			damageFactor *= 0.90f;
+		}
+
 		if (incomingMagical && HasPartyStatus(StatusID.FeyIllumination))
+		{
 			damageFactor *= 0.95f;
+		}
+
 		if (HasPartyStatus(StatusID.DesperateMeasures)) // Expedient mitigation component
+		{
 			damageFactor *= 0.90f;
+		}
+
 		if (HasPartyStatus(StatusID.Temperance_1873))
+		{
 			damageFactor *= 0.90f;
+		}
+
 		if (HasPartyStatus(StatusID.Holos))
+		{
 			damageFactor *= 0.90f;
+		}
+
 		if (HasPartyStatus(StatusID.Kerachole))
+		{
 			damageFactor *= 0.90f;
+		}
+
 		if (HasPartyStatus(StatusID.CollectiveUnconscious_849))
+		{
 			damageFactor *= 0.90f;
+		}
 
 		if (HasPartyStatus(StatusID.Troubadour)
 			|| HasPartyStatus(StatusID.ShieldSamba)
 			|| HasPartyStatus(StatusID.Tactician_1951))
+		{
 			damageFactor *= 0.90f;
+		}
 
 		if (HasPartyStatus(StatusID.DarkMissionary))
+		{
 			damageFactor *= incomingMagical ? 0.90f : 0.95f;
+		}
 
 		if (HasPartyStatus(StatusID.HeartOfLight))
+		{
 			damageFactor *= incomingMagical ? 0.90f : 0.95f;
+		}
 
 		if (incomingMagical && HasPartyStatus(StatusID.MagickBarrier))
+		{
 			damageFactor *= 0.90f;
+		}
 
 		if (HasPartyStatus(StatusID.PassageOfArms))
+		{
 			damageFactor *= 0.85f;
+		}
 
-		float mitigated = 1.0f - damageFactor;
+		var mitigated = 1.0f - damageFactor;
 		return Math.Clamp(mitigated, 0f, 0.95f);
 	}
 
@@ -673,7 +787,7 @@ public partial class CustomRotation
 			return true;
 		}
 
-		EnemyPositional enemy_positional = enemy.FindEnemyPositional();
+		var enemy_positional = enemy.FindEnemyPositional();
 
 		return enemy_positional == positional;
 	}
@@ -749,8 +863,8 @@ public partial class CustomRotation
 	{
 		get
 		{
-			LimitBreakController controller = UIState.Instance()->LimitBreakController;
-			ushort barValue = *(ushort*)&controller.BarCount;
+			var controller = UIState.Instance()->LimitBreakController;
+			var barValue = *(ushort*)&controller.BarCount;
 			return barValue == 0 ? (byte)0 : (byte)(controller.BarCount / barValue);
 		}
 	}
@@ -893,24 +1007,36 @@ public partial class CustomRotation
 		/// </summary>
 		/// <param name="rotation">The custom rotation instance</param>
 		/// <param name="act">The action to use if potion usage is recommended</param>
+		/// <param name="clippingCheck">Whether to perform a clipping check when using the potion</param>
 		/// <returns>True if both conditions and timing are met for potion usage</returns>
-		public bool ShouldUsePotion(CustomRotation rotation, out IAction? act)
+		public bool ShouldUsePotion(CustomRotation rotation, out IAction? act, bool clippingCheck = true)
 		{
 			act = null;
 
-			if (!Enabled)
+			if (!Enabled || StatusHelper.PlayerHasStatus(true, StatusID.Medicated))
+			{
 				return false;
+			}
 
 			// Check if conditions are met for potion usage
 			if (!IsConditionMet())
+			{
 				return false;
+			}
 
 			// Check if current time aligns with strategy timing
 			if (!CanUseAtTime())
+			{
 				return false;
+			}
 
 			// Finally, attempt to use the burst medicine
-			return IsConditionMet() && CanUseAtTime() && rotation.UseBurstMedicine(out act);
+			if (IsConditionMet() && CanUseAtTime())
+			{
+				return rotation.UseBurstMedicine(out act, clippingCheck);
+			}
+
+			return false;
 		}
 
 		/// <summary>
@@ -921,17 +1047,20 @@ public partial class CustomRotation
 		public virtual bool CanUseAtTime()
 		{
 			if (!Enabled)
+			{
 				return false;
+			}
 
-			// Null-safe check for custom timings: ensure array exists and has non-zero values (no LINQ)
 			if (Strategy == PotionStrategy.Custom)
 			{
 				var timingsArr = CustomTimings.Timings;
 				if (timingsArr == null || timingsArr.Length == 0)
+				{
 					return false;
+				}
 
-				bool allZero = true;
-				for (int i = 0; i < timingsArr.Length; i++)
+				var allZero = true;
+				for (var i = 0; i < timingsArr.Length; i++)
 				{
 					if (timingsArr[i] != 0f)
 					{
@@ -940,14 +1069,16 @@ public partial class CustomRotation
 					}
 				}
 				if (allZero)
+				{
 					return false;
+				}
 			}
 
 			// Get timing array based on strategy using extracted method
-			float[] timings = GetTimingsArray();
+			var timings = GetTimingsArray();
 
 			// Check if current time aligns with any timing window
-			foreach (float timing in timings)
+			foreach (var timing in timings)
 			{
 				if (IsTimingValid(timing))
 				{
@@ -965,7 +1096,9 @@ public partial class CustomRotation
 		public virtual bool IsConditionMet()
 		{
 			if (!Enabled)
+			{
 				return false;
+			}
 
 			// Basic condition checks - override in derived classes for job-specific logic
 			return true;
@@ -1014,7 +1147,7 @@ public partial class CustomRotation
 			}
 
 			// Check opener timing: if it's an opener potion and countdown is within configured time
-			float countDown = Service.CountDownTime;
+			var countDown = Service.CountDownTime;
 			if (IsOpenerPotion(timing) && countDown <= OpenerPotionTime && !InCombat)
 			{
 				return true;
@@ -1068,7 +1201,7 @@ public partial class CustomRotation
 	/// The type of the next predicted damage event (0=None, 1=Tankbuster, 2=Raidwide, 3=Shared).
 	/// </summary>
 	[Description("Next predicted damage type")]
-	public static int BMRDamageType => DataCenter.BMRNextDamageType;
+	public static PredictedDamageType BMRDamageType => DataCenter.BMRNextDamageType;
 
 	/// <summary>
 	/// Seconds until the boss becomes untargetable (downtime starts).
@@ -1123,32 +1256,71 @@ public partial class CustomRotation
 	/// </summary>
 	public static bool BMRTankbusterWithin(float seconds)
 		=> BMRActive && BMRTankbusterIn is > 0f and < float.MaxValue && BMRTankbusterIn <= seconds;
+
+	/// <summary>
+	/// True when BMR reports a knockback within the specified seconds.
+	/// </summary>
+	public static bool BMRKnockbackWithin(float seconds)
+		=> BMRActive && BMRKnockbackIn is > 0f and < float.MaxValue && BMRKnockbackIn <= seconds;
+
+	/// <summary>
+	/// Seconds until the special mechanic mode triggers (Pyretic, NoMovement, Freezing, Misdirection).
+	/// Returns float.MaxValue if no special mode is predicted.
+	/// </summary>
+	[Description("Seconds until special mechanic mode")]
+	public static float BMRSpecialModeIn => DataCenter.BMRSpecialModeIn;
+
+	/// <summary>
+	/// The type of incoming special mechanic (Pyretic, NoMovement, Freezing, Misdirection).
+	/// </summary>
+	[Description("Special mechanic mode type")]
+	public static SpecialMode BMRSpecialModeType => DataCenter.BMRSpecialModeType;
+
+	/// <summary>
+	/// True when a Pyretic (stop all actions) mechanic is incoming within the specified seconds.
+	/// </summary>
+	public static bool BMRPyreticWithin(float seconds)
+		=> BMRActive && BMRSpecialModeType == SpecialMode.Pyretic && BMRSpecialModeIn is > 0f and < float.MaxValue && BMRSpecialModeIn <= seconds;
+
+	/// <summary>
+	/// Returns true if BMR considers the given world-space position safe from AoEs.
+	/// Falls back to true (safe) when BMR is inactive.
+	/// </summary>
+	public static bool BMRCheckPositionSafe(System.Numerics.Vector3 pos)
+		=> DataCenter.IsMovementDestinationSafe(pos);
+
+	/// <summary>
+	/// Returns true if BMR considers a dash from->to safe from AoEs.
+	/// Falls back to true (safe) when BMR is inactive.
+	/// </summary>
+	public static bool BMRCheckDashSafe(System.Numerics.Vector3 from, System.Numerics.Vector3 to)
+		=> DataCenter.IsDashSafe(from, to);
 	#endregion
 
 	/// <summary>
-	/// 
+	/// The threshold (in seconds) that defines the start of a late weave window.
 	/// </summary>
 	public static float LateWeaveWindow => WeaponTotal * 0.45f;
 
 	/// <summary>
-	/// 
+	/// Checks if there is enough remaining time in the current GCD to execute an off-global action without clipping.
 	/// </summary>
-	public static bool EnoughWeaveTime => WeaponRemain > DataCenter.CalculatedActionAhead && WeaponRemain < WeaponTotal;
+	public static bool EnoughWeaveTime => WeaponRemain < WeaponTotal && WeaponRemain > Math.Max(DataCenter.CalculatedActionAhead, AnimationLock);
 
 	/// <summary>
-	/// 
+	/// Indicates whether the player can currently execute a late weave.
 	/// </summary>
-	public static bool CanLateWeave => WeaponRemain <= LateWeaveWindow && EnoughWeaveTime && CanWeave;
+	public static bool CanLateWeave => WeaponRemain <= LateWeaveWindow && CanWeave;
 
 	/// <summary>
-	/// 
+	/// Indicates whether the player can currently execute an early weave.
 	/// </summary>
 	public static bool CanEarlyWeave => (!HasWeaved() || WeaponRemain > LateWeaveWindow) && CanWeave;
 
 	/// <summary>
-	/// 
+	/// Safely verifies that the player is in the middle of a GCD and has enough time to weave an oGCD.
 	/// </summary>
-	public static bool CanWeave => WeaponRemain >= DataCenter.CalculatedActionAhead && DataCenter.DefaultGCDElapsed > 0 && DataCenter.DefaultGCDElapsed >= DataCenter.CalculatedActionAhead;
+	public static bool CanWeave => EnoughWeaveTime && AnimationLock <= 0f;
 
 	/// <summary>
 	/// Counts how many party members (alive and not full HP) are within range of the pet.
@@ -1160,7 +1332,7 @@ public partial class CustomRotation
 			return 0;
 		}
 
-		int count = 0;
+		var count = 0;
 
 		foreach (var target in PartyMembers)
 		{
@@ -1213,7 +1385,7 @@ public partial class CustomRotation
 	public virtual bool CanHealSingleSpell => true;
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public static int RaiseMPMinimum => Service.Config.LessMPNoRaise;
 

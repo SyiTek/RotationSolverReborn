@@ -48,7 +48,10 @@ public sealed unsafe class ActionManagerEx : IDisposable
 	/// </summary>
 	public void UpdateTweaks()
 	{
-		if (_actionManager == null) return;
+		if (_actionManager == null)
+		{
+			return;
+		}
 
 		var dt = (float)_stopwatch.Elapsed.TotalSeconds;
 		_frameDeltaSec = Math.Clamp(dt, 0f, 0.25f);
@@ -68,7 +71,10 @@ public sealed unsafe class ActionManagerEx : IDisposable
 	/// <returns>True if the action was successfully used</returns>
 	public bool UseActionWithTweaks(ActionType actionType, uint actionId, ulong targetId)
 	{
-		if (_actionManager == null) return false;
+		if (_actionManager == null)
+		{
+			return false;
+		}
 
 		// Record current state for tweaks
 		var prevAnimLock = Player.AnimationLock;
@@ -119,7 +125,10 @@ public sealed unsafe class ActionManagerEx : IDisposable
 	/// <returns>True if the action was successfully used</returns>
 	public bool UseActionLocationWithTweaks(ActionType actionType, uint actionId, ulong targetId, Vector3* location)
 	{
-		if (_actionManager == null || location == null) return false;
+		if (_actionManager == null || location == null)
+		{
+			return false;
+		}
 
 		// Record current state for tweaks
 		var prevAnimLock = Player.AnimationLock;
@@ -165,7 +174,10 @@ public sealed unsafe class ActionManagerEx : IDisposable
 	/// </summary>
 	private void ApplyPostActionTweaks(uint expectedSequence, float prevAnimLock, float prevCooldown)
 	{
-		if (_actionManager == null) return;
+		if (_actionManager == null)
+		{
+			return;
+		}
 
 		// Apply animation lock reduction
 		if (Service.Config.RemoveAnimationLockDelay && prevAnimLock > 0)
@@ -202,7 +214,10 @@ public sealed unsafe class ActionManagerEx : IDisposable
 	/// </summary>
 	private float GetRemainingCooldown(ActionType actionType, uint actionId)
 	{
-		if (_actionManager == null) return 0;
+		if (_actionManager == null)
+		{
+			return 0;
+		}
 
 		var recastTime = _actionManager->GetRecastTime(actionType, actionId);
 		var elapsedTime = _actionManager->GetRecastTimeElapsed(actionType, actionId);

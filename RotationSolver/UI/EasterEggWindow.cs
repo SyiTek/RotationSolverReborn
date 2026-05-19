@@ -42,20 +42,20 @@ internal class EasterEggWindow : Window
 
 	public override void Draw()
 	{
-		float scale = ImGui.GetIO().FontGlobalScale;
-		float size = _cellSize * scale;
+		var scale = ImGui.GetIO().FontGlobalScale;
+		var size = _cellSize * scale;
 
 		using var _ = ImRaii.Group();
 		// Board 3x3
-		for (int r = 0; r < 3; r++)
+		for (var r = 0; r < 3; r++)
 		{
-			for (int c = 0; c < 3; c++)
+			for (var c = 0; c < 3; c++)
 			{
-				int i = r * 3 + c;
+				var i = r * 3 + c;
 				ImGui.PushID(i);
 
 				Vector2 buttonSize = new(size, size);
-				bool clicked = ImGui.Button(RenderCell(_board[i]), buttonSize);
+				var clicked = ImGui.Button(RenderCell(_board[i]), buttonSize);
 				if (ImGui.IsItemHovered())
 				{
 					ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
@@ -88,7 +88,10 @@ internal class EasterEggWindow : Window
 				}
 
 				ImGui.PopID();
-				if (c < 2) ImGui.SameLine();
+				if (c < 2)
+				{
+					ImGui.SameLine();
+				}
 			}
 		}
 
@@ -193,13 +196,17 @@ internal class EasterEggWindow : Window
 	// Minimax with alpha-beta pruning (AI is O and maximizes)
 	private int FindBestMoveMinimax()
 	{
-		int bestScore = int.MinValue;
-		int bestMove = -1;
-		for (int i = 0; i < 9; i++)
+		var bestScore = int.MinValue;
+		var bestMove = -1;
+		for (var i = 0; i < 9; i++)
 		{
-			if (_board[i] != Cell.Empty) continue;
+			if (_board[i] != Cell.Empty)
+			{
+				continue;
+			}
+
 			_board[i] = Cell.O;
-			int score = Minimax(_board, aiTurn: false, depth: 0, alpha: int.MinValue + 1, beta: int.MaxValue - 1);
+			var score = Minimax(_board, aiTurn: false, depth: 0, alpha: int.MinValue + 1, beta: int.MaxValue - 1);
 			_board[i] = Cell.Empty;
 			if (score > bestScore)
 			{
@@ -212,13 +219,17 @@ internal class EasterEggWindow : Window
 
 	private int FindWorstMoveMinimax()
 	{
-		int worstScore = int.MaxValue;
-		int worstMove = -1;
-		for (int i = 0; i < 9; i++)
+		var worstScore = int.MaxValue;
+		var worstMove = -1;
+		for (var i = 0; i < 9; i++)
 		{
-			if (_board[i] != Cell.Empty) continue;
+			if (_board[i] != Cell.Empty)
+			{
+				continue;
+			}
+
 			_board[i] = Cell.O;
-			int score = Minimax(_board, aiTurn: false, depth: 0, alpha: int.MinValue + 1, beta: int.MaxValue - 1);
+			var score = Minimax(_board, aiTurn: false, depth: 0, alpha: int.MinValue + 1, beta: int.MaxValue - 1);
 			_board[i] = Cell.Empty;
 			if (score < worstScore)
 			{
@@ -231,34 +242,51 @@ internal class EasterEggWindow : Window
 
 	private static int Minimax(Cell[] board, bool aiTurn, int depth, int alpha, int beta)
 	{
-		var (terminal, score) = EvaluateTerminal(board, depth);
-		if (terminal) return score;
+		(var terminal, var score) = EvaluateTerminal(board, depth);
+		if (terminal)
+		{
+			return score;
+		}
 
 		if (aiTurn)
 		{
-			int best = int.MinValue;
-			for (int i = 0; i < 9; i++)
+			var best = int.MinValue;
+			for (var i = 0; i < 9; i++)
 			{
-				if (board[i] != Cell.Empty) continue;
+				if (board[i] != Cell.Empty)
+				{
+					continue;
+				}
+
 				board[i] = Cell.O;
 				best = Math.Max(best, Minimax(board, false, depth + 1, alpha, beta));
 				board[i] = Cell.Empty;
 				alpha = Math.Max(alpha, best);
-				if (beta <= alpha) break;
+				if (beta <= alpha)
+				{
+					break;
+				}
 			}
 			return best;
 		}
 		else
 		{
-			int best = int.MaxValue;
-			for (int i = 0; i < 9; i++)
+			var best = int.MaxValue;
+			for (var i = 0; i < 9; i++)
 			{
-				if (board[i] != Cell.Empty) continue;
+				if (board[i] != Cell.Empty)
+				{
+					continue;
+				}
+
 				board[i] = Cell.X;
 				best = Math.Min(best, Minimax(board, true, depth + 1, alpha, beta));
 				board[i] = Cell.Empty;
 				beta = Math.Min(beta, best);
-				if (beta <= alpha) break;
+				if (beta <= alpha)
+				{
+					break;
+				}
 			}
 			return best;
 		}
@@ -266,26 +294,44 @@ internal class EasterEggWindow : Window
 
 	private static (bool terminal, int score) EvaluateTerminal(Cell[] board, int depth)
 	{
-		if (CheckWin(board, Cell.O)) return (true, 10 - depth);
-		if (CheckWin(board, Cell.X)) return (true, depth - 10);
-		if (IsDraw(board)) return (true, 0);
+		if (CheckWin(board, Cell.O))
+		{
+			return (true, 10 - depth);
+		}
+
+		if (CheckWin(board, Cell.X))
+		{
+			return (true, depth - 10);
+		}
+
+		if (IsDraw(board))
+		{
+			return (true, 0);
+		}
+
 		return (false, 0);
 	}
 
 	private static bool IsDraw(Cell[] board)
 	{
-		for (int i = 0; i < board.Length; i++)
+		for (var i = 0; i < board.Length; i++)
 		{
-			if (board[i] == Cell.Empty) return false;
+			if (board[i] == Cell.Empty)
+			{
+				return false;
+			}
 		}
 		return true;
 	}
 
 	private static bool CheckWin(Cell[] board, Cell who)
 	{
-		foreach (var (a, b, c) in Lines())
+		foreach ((var a, var b, var c) in Lines())
 		{
-			if (board[a] == who && board[b] == who && board[c] == who) return true;
+			if (board[a] == who && board[b] == who && board[c] == who)
+			{
+				return true;
+			}
 		}
 		return false;
 	}

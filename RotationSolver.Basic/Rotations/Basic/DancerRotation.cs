@@ -42,7 +42,9 @@ public partial class DancerRotation
 				foreach (var member in PartyMembers)
 				{
 					if (member.HasStatus(true, StatusID.DancePartner))
+					{
 						return member;
+					}
 				}
 			}
 			return null;
@@ -413,7 +415,7 @@ public partial class DancerRotation
 	static partial void ModifyTechnicalFinishPvE(ref ActionSetting setting)
 	{
 		setting.StatusProvide = [StatusID.StandardStep, StatusID.TechnicalFinish, StatusID.DanceOfTheDawnReady];
-		setting.StatusFromSelf = false;
+		setting.StatusFromSelf = true;
 		setting.TargetType = TargetType.Self;
 		setting.ActionCheck = () => HasTechnicalStep && IsDancing && CompletedSteps == 0 && Service.GetAdjustedActionId(ActionID.TechnicalStepPvE) == ActionID.TechnicalFinishPvE;
 		setting.CreateConfig = () => new ActionConfig()
@@ -426,7 +428,7 @@ public partial class DancerRotation
 	static partial void ModifySingleTechnicalFinishPvE(ref ActionSetting setting)
 	{
 		setting.StatusProvide = [StatusID.StandardStep, StatusID.TechnicalFinish, StatusID.DanceOfTheDawnReady];
-		setting.StatusFromSelf = false;
+		setting.StatusFromSelf = true;
 		setting.TargetType = TargetType.Self;
 		setting.ActionCheck = () => HasTechnicalStep && IsDancing && CompletedSteps == 1 && Service.GetAdjustedActionId(ActionID.TechnicalStepPvE) == ActionID.SingleTechnicalFinishPvE;
 		setting.CreateConfig = () => new ActionConfig()
@@ -439,7 +441,7 @@ public partial class DancerRotation
 	static partial void ModifyDoubleTechnicalFinishPvE(ref ActionSetting setting)
 	{
 		setting.StatusProvide = [StatusID.StandardStep, StatusID.TechnicalStep, StatusID.DanceOfTheDawnReady];
-		setting.StatusFromSelf = false;
+		setting.StatusFromSelf = true;
 		setting.ActionCheck = () => HasTechnicalStep && IsDancing && CompletedSteps == 2 && Service.GetAdjustedActionId(ActionID.TechnicalStepPvE) == ActionID.DoubleTechnicalFinishPvE;
 		setting.CreateConfig = () => new ActionConfig()
 		{
@@ -451,7 +453,7 @@ public partial class DancerRotation
 	static partial void ModifyTripleTechnicalFinishPvE(ref ActionSetting setting)
 	{
 		setting.StatusProvide = [StatusID.StandardStep, StatusID.TechnicalFinish, StatusID.DanceOfTheDawnReady];
-		setting.StatusFromSelf = false;
+		setting.StatusFromSelf = true;
 		setting.ActionCheck = () => HasTechnicalStep && IsDancing && CompletedSteps == 3 && Service.GetAdjustedActionId(ActionID.TechnicalStepPvE) == ActionID.TripleTechnicalFinishPvE;
 		setting.CreateConfig = () => new ActionConfig()
 		{
@@ -463,7 +465,7 @@ public partial class DancerRotation
 	static partial void ModifyQuadrupleTechnicalFinishPvE(ref ActionSetting setting)
 	{
 		setting.StatusProvide = [StatusID.StandardStep, StatusID.TechnicalFinish, StatusID.DanceOfTheDawnReady];
-		setting.StatusFromSelf = false;
+		setting.StatusFromSelf = true;
 		setting.ActionCheck = () => HasTechnicalStep && IsDancing && CompletedSteps == 4 && Service.GetAdjustedActionId(ActionID.TechnicalStepPvE) == ActionID.QuadrupleTechnicalFinishPvE;
 		setting.CreateConfig = () => new ActionConfig()
 		{

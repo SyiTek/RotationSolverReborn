@@ -40,7 +40,7 @@ public partial class CustomRotation : ICustomRotation
 				return _name;
 			}
 
-			ClassJob classJob = Svc.Data.GetExcelSheet<ClassJob>().GetRow((uint)Job)!;
+			var classJob = Svc.Data.GetExcelSheet<ClassJob>().GetRow((uint)Job)!;
 			return _name = $"{classJob.Abbreviation} - {classJob.Name}";
 		}
 	}
@@ -71,7 +71,7 @@ public partial class CustomRotation : ICustomRotation
 			else
 			{
 				// disable -> add only if not already present (avoid LINQ)
-				bool exists = false;
+				var exists = false;
 				foreach (var j in disabled)
 				{
 					if (j == Job)

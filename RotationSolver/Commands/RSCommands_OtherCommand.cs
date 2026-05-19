@@ -68,7 +68,7 @@ public static partial class RSCommands
 
 	private static void ExecuteRotationCommand(string str)
 	{
-		ICustomRotation? customCombo = DataCenter.CurrentRotation;
+		var customCombo = DataCenter.CurrentRotation;
 		if (customCombo == null)
 		{
 			return;
@@ -79,7 +79,7 @@ public static partial class RSCommands
 
 	private static void ExecuteDutyRotationCommand(string str)
 	{
-		DutyRotation? dutyRotation = DataCenter.CurrentDutyRotation;
+		var dutyRotation = DataCenter.CurrentDutyRotation;
 		if (dutyRotation == null)
 		{
 			return;
@@ -90,19 +90,19 @@ public static partial class RSCommands
 
 	private static void DoSettingCommand(string str)
 	{
-		string[] strs = str.Split(' ', 3);
+		var strs = str.Split(' ', 3);
 		if (strs.Length < 2)
 		{
 			Svc.Chat.PrintError("Invalid setting command format.");
 			return;
 		}
 
-		string settingName = strs[0];
+		var settingName = strs[0];
 		string? command = null;
 		if (strs.Length > 1)
 		{
 			// Equivalent to string.Join(' ', strs.Skip(1))
-			string[] arr = new string[strs.Length - 1];
+			var arr = new string[strs.Length - 1];
 			Array.Copy(strs, 1, arr, 0, strs.Length - 1);
 			command = string.Join(' ', arr);
 		}
@@ -125,10 +125,10 @@ public static partial class RSCommands
 	private static void UpdateSetting(string settingName, string? command)
 	{
 		PropertyInfo[] properties = [.. typeof(Configs).GetRuntimeProperties()];
-		for (int i = 0; i < properties.Length; i++)
+		for (var i = 0; i < properties.Length; i++)
 		{
-			PropertyInfo property = properties[i];
-			MethodInfo? getMethod = property.GetMethod;
+			var property = properties[i];
+			var getMethod = property.GetMethod;
 			if (getMethod == null || !getMethod.IsPublic)
 			{
 				continue;
@@ -139,8 +139,8 @@ public static partial class RSCommands
 				continue;
 			}
 
-			Type type = property.PropertyType == typeof(ConditionBoolean) ? typeof(bool) : property.PropertyType;
-			if (!TryConvertValue(type, command, out object? convertedValue))
+			var type = property.PropertyType == typeof(ConditionBoolean) ? typeof(bool) : property.PropertyType;
+			if (!TryConvertValue(type, command, out var convertedValue))
 			{
 				if (property.GetValue(Service.Config) is ConditionBoolean config)
 				{
@@ -158,7 +158,7 @@ public static partial class RSCommands
 			{
 				if (convertedValue is bool boolValue)
 				{
-					ConditionBoolean relay = (ConditionBoolean)property.GetValue(Service.Config)!;
+					var relay = (ConditionBoolean)property.GetValue(Service.Config)!;
 					relay.Value = boolValue;
 					convertedValue = relay;
 				}
@@ -210,15 +210,15 @@ public static partial class RSCommands
 			return;
 		}
 
-		string[] commandParts = command.Split(' ', 2);
+		var commandParts = command.Split(' ', 2);
 		if (commandParts.Length < 1)
 		{
 			Svc.Chat.PrintError("Invalid command format for TargetingTypes.");
 			return;
 		}
 
-		string action = commandParts[0];
-		string? value = commandParts.Length > 1 ? commandParts[1] : null;
+		var action = commandParts[0];
+		var value = commandParts.Length > 1 ? commandParts[1] : null;
 
 		switch (action.ToLower())
 		{
@@ -252,13 +252,13 @@ public static partial class RSCommands
 
 	private static void AddTargetingType(string? value)
 	{
-		if (string.IsNullOrEmpty(value) || !Enum.TryParse(typeof(TargetingType), value, true, out object? parsedEnumAdd))
+		if (string.IsNullOrEmpty(value) || !Enum.TryParse(typeof(TargetingType), value, true, out var parsedEnumAdd))
 		{
 			Svc.Chat.PrintError("Invalid TargetingType value.");
 			return;
 		}
 
-		TargetingType targetingTypeAdd = (TargetingType)parsedEnumAdd;
+		var targetingTypeAdd = (TargetingType)parsedEnumAdd;
 		if (!Service.Config.TargetingTypes.Contains(targetingTypeAdd))
 		{
 			Service.Config.TargetingTypes.Add(targetingTypeAdd);
@@ -272,13 +272,13 @@ public static partial class RSCommands
 
 	private static void RemoveTargetingType(string? value)
 	{
-		if (string.IsNullOrEmpty(value) || !Enum.TryParse(typeof(TargetingType), value, true, out object? parsedEnumRemove))
+		if (string.IsNullOrEmpty(value) || !Enum.TryParse(typeof(TargetingType), value, true, out var parsedEnumRemove))
 		{
 			Svc.Chat.PrintError("Invalid TargetingType value.");
 			return;
 		}
 
-		TargetingType targetingTypeRemove = (TargetingType)parsedEnumRemove;
+		var targetingTypeRemove = (TargetingType)parsedEnumRemove;
 		if (Service.Config.TargetingTypes.Contains(targetingTypeRemove))
 		{
 			_ = Service.Config.TargetingTypes.Remove(targetingTypeRemove);
@@ -292,46 +292,50 @@ public static partial class RSCommands
 
 	private static Enum GetNextEnumValue(Enum currentEnumValue)
 	{
-		Array values = Enum.GetValues(currentEnumValue.GetType());
-		Enum[] enumValues = new Enum[values.Length];
-		for (int i = 0; i < values.Length; i++)
+		var values = Enum.GetValues(currentEnumValue.GetType());
+		var enumValues = new Enum[values.Length];
+		for (var i = 0; i < values.Length; i++)
 		{
 			enumValues[i] = (Enum)values.GetValue(i)!;
 		}
-		int nextIndex = Array.IndexOf(enumValues, currentEnumValue) + 1;
+		var nextIndex = Array.IndexOf(enumValues, currentEnumValue) + 1;
 
 		return enumValues.Length == nextIndex ? enumValues[0] : enumValues[nextIndex];
 	}
 
 	private static void ToggleActionCommand(string str)
 	{
-		string trimStr = str.Trim();
+		var trimStr = str.Trim();
 
 		var rotationActions = RotationUpdater.CurrentRotationActions ?? [];
 		var dutyActions = DataCenter.CurrentDutyRotation?.AllActions ?? [];
 
-		int totalLength = rotationActions.Length + dutyActions.Length;
+		var totalLength = rotationActions.Length + dutyActions.Length;
 		List<IAction> allActionsList = new(totalLength);
 		HashSet<IAction> seen = [];
-		for (int i = 0; i < rotationActions.Length; i++)
+		for (var i = 0; i < rotationActions.Length; i++)
 		{
 			if (seen.Add(rotationActions[i]))
+			{
 				allActionsList.Add(rotationActions[i]);
+			}
 		}
-		for (int i = 0; i < dutyActions.Length; i++)
+		for (var i = 0; i < dutyActions.Length; i++)
 		{
 			if (seen.Add(dutyActions[i]))
+			{
 				allActionsList.Add(dutyActions[i]);
+			}
 		}
 		IAction[] allActions = [.. allActionsList];
 
 		// Sort by Name.Length descending (bubble sort)
-		int n = allActions.Length;
-		IAction[] sortedActions = new IAction[n];
+		var n = allActions.Length;
+		var sortedActions = new IAction[n];
 		Array.Copy(allActions, sortedActions, n);
-		for (int i = 0; i < n - 1; i++)
+		for (var i = 0; i < n - 1; i++)
 		{
-			for (int j = 0; j < n - i - 1; j++)
+			for (var j = 0; j < n - i - 1; j++)
 			{
 				if (sortedActions[j].Name.Length < sortedActions[j + 1].Name.Length)
 				{
@@ -340,9 +344,9 @@ public static partial class RSCommands
 			}
 		}
 
-		for (int i = 0; i < n; i++)
+		for (var i = 0; i < n; i++)
 		{
-			IAction? act = sortedActions[i];
+			var act = sortedActions[i];
 			if (trimStr.Equals(act.Name, StringComparison.OrdinalIgnoreCase))
 			{
 				act.IsEnabled = !act.IsEnabled;
@@ -354,8 +358,8 @@ public static partial class RSCommands
 			}
 			if (trimStr.StartsWith(act.Name + " ", StringComparison.OrdinalIgnoreCase))
 			{
-				string flag = trimStr[act.Name.Length..].Trim();
-				act.IsEnabled = bool.TryParse(flag, out bool parse) ? parse : !act.IsEnabled;
+				var flag = trimStr[act.Name.Length..].Trim();
+				act.IsEnabled = bool.TryParse(flag, out var parse) ? parse : !act.IsEnabled;
 				if (Service.Config.ShowToggledSettingInChat)
 				{
 					Svc.Chat.Print($"Toggled {act.Name} : {act.IsEnabled}");
@@ -367,39 +371,43 @@ public static partial class RSCommands
 
 	public static void DoActionCommand(string str)
 	{
-		int lastHyphenIndex = str.LastIndexOf('-');
+		var lastHyphenIndex = str.LastIndexOf('-');
 		if (lastHyphenIndex == -1 || lastHyphenIndex == str.Length - 1)
 		{
 			Svc.Chat.PrintError(UiString.CommandsInsertActionFailure.GetDescription());
 			return;
 		}
 
-		string actName = str[..lastHyphenIndex].Trim();
-		string timeStr = str[(lastHyphenIndex + 1)..].Trim();
+		var actName = str[..lastHyphenIndex].Trim();
+		var timeStr = str[(lastHyphenIndex + 1)..].Trim();
 
-		if (double.TryParse(timeStr, out double time))
+		if (double.TryParse(timeStr, out var time))
 		{
 			var rotationActions = RotationUpdater.CurrentRotationActions ?? [];
 			var dutyActions = DataCenter.CurrentDutyRotation?.AllActions ?? [];
 
-			int totalLength = rotationActions.Length + dutyActions.Length;
+			var totalLength = rotationActions.Length + dutyActions.Length;
 			List<IAction> allActionsList = new(totalLength);
 			HashSet<IAction> seen = [];
-			for (int i = 0; i < rotationActions.Length; i++)
+			for (var i = 0; i < rotationActions.Length; i++)
 			{
 				if (seen.Add(rotationActions[i]))
+				{
 					allActionsList.Add(rotationActions[i]);
+				}
 			}
-			for (int i = 0; i < dutyActions.Length; i++)
+			for (var i = 0; i < dutyActions.Length; i++)
 			{
 				if (seen.Add(dutyActions[i]))
+				{
 					allActionsList.Add(dutyActions[i]);
+				}
 			}
 			IAction[] allActions = [.. allActionsList];
 
-			for (int i = 0; i < allActions.Length; i++)
+			for (var i = 0; i < allActions.Length; i++)
 			{
-				IAction iAct = allActions[i];
+				var iAct = allActions[i];
 				if (actName.Equals(iAct.Name, StringComparison.OrdinalIgnoreCase))
 				{
 					DataCenter.AddCommandAction(iAct, time);
@@ -423,10 +431,10 @@ public static partial class RSCommands
 
 	private static void DoRotationCommand(ICustomRotation customCombo, string str)
 	{
-		IRotationConfigSet configs = customCombo.Configs;
-		foreach (IRotationConfig config in configs)
+		var configs = customCombo.Configs;
+		foreach (var config in configs)
 		{
-			bool result = config.DoCommand(configs, str);
+			var result = config.DoCommand(configs, str);
 			if (result)
 			{
 				if (Service.Config.ShowToggledSettingInChat)
@@ -443,8 +451,8 @@ public static partial class RSCommands
 
 	private static void DoDutyRotationCommand(DutyRotation dutyRotation, string str)
 	{
-		IRotationConfigSet configs = dutyRotation.Configs;
-		foreach (IRotationConfig config in configs)
+		var configs = dutyRotation.Configs;
+		foreach (var config in configs)
 		{
 			if (config.DoCommand(configs, str))
 			{

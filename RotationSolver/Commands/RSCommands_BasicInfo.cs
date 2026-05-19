@@ -1,5 +1,6 @@
 ﻿using Dalamud.Game.Command;
 using ECommons.DalamudServices;
+using ECommons.GameHelpers;
 using RotationSolver.Data;
 
 namespace RotationSolver.Commands
@@ -8,6 +9,12 @@ namespace RotationSolver.Commands
 	{
 		internal static void Enable()
 		{
+			DataCenter.OnSpecialTypeChanged = specialType =>
+			{
+				var role = Player.Object?.ClassJob.Value.GetJobRole() ?? JobRole.None;
+				_specialString = specialType.ToSpecialString(role);
+			};
+
 			_ = Svc.Commands.AddHandler(Service.COMMAND, new CommandInfo(OnCommand)
 			{
 				HelpMessage = UiString.Commands_Rotation.GetDescription(),
@@ -59,20 +66,20 @@ namespace RotationSolver.Commands
 				command = "off";
 			}
 
-			if (TryGetOneEnum<StateCommandType>(command, out StateCommandType stateType))
+			if (TryGetOneEnum<StateCommandType>(command, out var stateType))
 			{
 				// Split command into parts
 				var parts = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-				int index = -1;
+				var index = -1;
 
 				// Try to parse the second argument as TargetingType if present
 				if (parts.Length > 1)
 				{
-					string value = parts[1];
-					if (Enum.TryParse(typeof(TargetingType), value, true, out object? parsedEnumSet))
+					var value = parts[1];
+					if (Enum.TryParse(typeof(TargetingType), value, true, out var parsedEnumSet))
 					{
-						TargetingType targetingTypeSet = (TargetingType)parsedEnumSet;
-						int idx = Service.Config.TargetingTypes.IndexOf(targetingTypeSet);
+						var targetingTypeSet = (TargetingType)parsedEnumSet;
+						var idx = Service.Config.TargetingTypes.IndexOf(targetingTypeSet);
 						if (idx >= 0)
 						{
 							Service.Config.TargetingIndex = idx;
@@ -96,13 +103,13 @@ namespace RotationSolver.Commands
 
 				DoStateCommandType(stateType, index);
 			}
-			else if (TryGetOneEnum<SpecialCommandType>(command, out SpecialCommandType specialType))
+			else if (TryGetOneEnum<SpecialCommandType>(command, out var specialType))
 			{
 				DoSpecialCommandType(specialType);
 			}
-			else if (TryGetOneEnum<OtherCommandType>(command, out OtherCommandType otherType))
+			else if (TryGetOneEnum<OtherCommandType>(command, out var otherType))
 			{
-				string extraCommand = command[otherType.ToString().Length..].Trim();
+				var extraCommand = command[otherType.ToString().Length..].Trim();
 				DoOtherCommand(otherType, extraCommand);
 			}
 			else
@@ -121,15 +128,15 @@ namespace RotationSolver.Commands
 			}
 
 			// Parse only the first token (case-insensitive).
-			int spaceIdx = command.IndexOf(' ');
-			string token = spaceIdx >= 0 ? command[..spaceIdx] : command;
+			var spaceIdx = command.IndexOf(' ');
+			var token = spaceIdx >= 0 ? command[..spaceIdx] : command;
 
 			return Enum.TryParse(token, ignoreCase: true, out type);
 		}
 
 		internal static string GetCommandStr(this Enum command, string extraCommand = "")
 		{
-			string cmdStr = $"{Service.COMMAND} {command}";
+			var cmdStr = $"{Service.COMMAND} {command}";
 			if (!string.IsNullOrEmpty(extraCommand))
 			{
 				cmdStr += $" {extraCommand}";

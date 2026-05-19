@@ -54,7 +54,7 @@ public class JobConfigGenerator : IIncrementalGenerator
 			var className = type.Identifier.Text;
 
 			var propertyCodes = new List<string>();
-			foreach (var (variableInfo, model) in kv.Value)
+			foreach ((var variableInfo, var model) in kv.Value)
 			{
 				var typeSymbol = model.GetDeclaredSymbol(type) as ITypeSymbol;
 				var field = (FieldDeclarationSyntax)variableInfo.Parent!.Parent!;
@@ -81,7 +81,11 @@ public class JobConfigGenerator : IIncrementalGenerator
 				var attributeNames = new List<string>();
 				foreach (var attrSet in field.AttributeLists)
 				{
-					if (attrSet == null) continue;
+					if (attrSet == null)
+					{
+						continue;
+					}
+
 					foreach (var attr in attrSet.Attributes)
 					{
 						var attrSymbol = model.GetSymbolInfo(attr).Symbol?.GetFullMetadataName();
@@ -120,7 +124,10 @@ public class JobConfigGenerator : IIncrementalGenerator
 				propertyCodes.Add(propertyCode);
 			}
 
-			if (propertyCodes.Count == 0) continue;
+			if (propertyCodes.Count == 0)
+			{
+				continue;
+			}
 
 			var code = $$"""
                 using ECommons.ExcelServices;

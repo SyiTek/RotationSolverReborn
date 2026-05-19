@@ -11,24 +11,24 @@ internal class CooldownWindow() : CtrlWindow(nameof(CooldownWindow))
 			return;
 		}
 
-		Basic.Configuration.Configs config = Service.Config;
-		float width = config.CooldownWindowIconSize;
+		var config = Service.Config;
+		var width = config.CooldownWindowIconSize;
 		const float IconSpacingFactor = 6f / 82f;
-		ImGuiStylePtr style = ImGui.GetStyle();
-		float columnWidth = ImGui.GetColumnWidth();
-		int count = Math.Max(1, (int)MathF.Floor(columnWidth / ((width * (1 + IconSpacingFactor)) + style.ItemSpacing.X)));
+		var style = ImGui.GetStyle();
+		var columnWidth = ImGui.GetColumnWidth();
+		var count = Math.Max(1, (int)MathF.Floor(columnWidth / ((width * (1 + IconSpacingFactor)) + style.ItemSpacing.X)));
 
-		IEnumerable<IGrouping<string, IAction>>? allGroupedActions = RotationUpdater.AllGroupedActions;
+		var allGroupedActions = RotationUpdater.AllGroupedActions;
 		if (allGroupedActions == null)
 		{
 			return;
 		}
 
-		foreach (IGrouping<string, IAction> pair in allGroupedActions)
+		foreach (var pair in allGroupedActions)
 		{
 			// Manual filtering
 			List<IAction> showItems = [];
-			foreach (IAction a in pair)
+			foreach (var a in pair)
 			{
 				if (!a.IsOnCooldownWindow)
 				{
@@ -75,7 +75,7 @@ internal class CooldownWindow() : CtrlWindow(nameof(CooldownWindow))
 
 			ImGui.Columns(count, string.Empty, false);
 			uint itemIndex = 0;
-			foreach (IAction item in showItems)
+			foreach (var item in showItems)
 			{
 				try
 				{

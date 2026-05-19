@@ -41,16 +41,32 @@ internal class TraitRotationGetter : ExcelRowGetter<Trait>
 	/// <returns>True if the item should be added; otherwise, false.</returns>
 	protected override bool AddToList(Trait item)
 	{
-		if (item.ClassJob.RowId == 0) return false;
-		var name = item.Name.ToString();
-		if (string.IsNullOrEmpty(name)) return false;
-		bool allAscii = true;
-		foreach (char c in name)
+		if (item.ClassJob.RowId == 0)
 		{
-			if (!char.IsAscii(c)) { allAscii = false; break; }
+			return false;
 		}
-		if (!allAscii) return false;
-		if (item.Icon == 0) return false;
+
+		var name = item.Name.ToString();
+		if (string.IsNullOrEmpty(name))
+		{
+			return false;
+		}
+
+		var allAscii = true;
+		foreach (var c in name)
+		{
+			if (!char.IsAscii(c))
+			{ allAscii = false; break; }
+		}
+		if (!allAscii)
+		{
+			return false;
+		}
+
+		if (item.Icon == 0)
+		{
+			return false;
+		}
 
 		var category = item.ClassJob.Value;
 		var jobName = _job.Abbreviation.ToString();

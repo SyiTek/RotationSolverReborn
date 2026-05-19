@@ -73,15 +73,28 @@ public partial class RedMageRotation
 	/// </summary>
 	public int ManaNeededNoPooling()
 	{
-		if (!ZwerchhauPvE.EnoughLevel) return 20;
+		if (!ZwerchhauPvE.EnoughLevel)
+		{
+			return 20;
+		}
 
-		if (ZwerchhauPvE.EnoughLevel && !RedoublementPvE.EnoughLevel) return 35;
+		if (ZwerchhauPvE.EnoughLevel && !RedoublementPvE.EnoughLevel)
+		{
+			return 35;
+		}
 
-		if (RedoublementPvE.EnoughLevel && !EmboldenPvE.EnoughLevel) return 50;
+		if (RedoublementPvE.EnoughLevel && !EmboldenPvE.EnoughLevel)
+		{
+			return 50;
+		}
 
 		if (EmboldenPvE.EnoughLevel)
 		{
-			if (HasEmbolden) return 50;
+			if (HasEmbolden)
+			{
+				return 50;
+			}
+
 			switch (EmboldenPvE.Cooldown.RecastTimeElapsed)
 			{
 				case > 80:
@@ -104,15 +117,29 @@ public partial class RedMageRotation
 	/// </summary>
 	public int ManaNeededWhite()
 	{
-		if (!ZwerchhauPvE.EnoughLevel) return 20;
-		if (ZwerchhauPvE.EnoughLevel && !RedoublementPvE.EnoughLevel) return 35;
-		if (RedoublementPvE.EnoughLevel && !EmboldenPvE.EnoughLevel) return 50;
+		if (!ZwerchhauPvE.EnoughLevel)
+		{
+			return 20;
+		}
+
+		if (ZwerchhauPvE.EnoughLevel && !RedoublementPvE.EnoughLevel)
+		{
+			return 35;
+		}
+
+		if (RedoublementPvE.EnoughLevel && !EmboldenPvE.EnoughLevel)
+		{
+			return 50;
+		}
 
 		// With Embolden unlocked:
 		if (EmboldenPvE.EnoughLevel)
 		{
 			// If Embolden is currently active, use standard 50 requirement
-			if (HasEmbolden) return 50;
+			if (HasEmbolden)
+			{
+				return 50;
+			}
 
 			// Pooling window: when Embolden’s recast is close, prefer pooling targets
 			switch (EmboldenPvE.Cooldown.RecastTimeRemain)
@@ -137,13 +164,27 @@ public partial class RedMageRotation
 	/// </summary>
 	public int ManaNeededBlack()
 	{
-		if (!ZwerchhauPvE.EnoughLevel) return 20;
-		if (ZwerchhauPvE.EnoughLevel && !RedoublementPvE.EnoughLevel) return 35;
-		if (RedoublementPvE.EnoughLevel && !EmboldenPvE.EnoughLevel) return 50;
+		if (!ZwerchhauPvE.EnoughLevel)
+		{
+			return 20;
+		}
+
+		if (ZwerchhauPvE.EnoughLevel && !RedoublementPvE.EnoughLevel)
+		{
+			return 35;
+		}
+
+		if (RedoublementPvE.EnoughLevel && !EmboldenPvE.EnoughLevel)
+		{
+			return 50;
+		}
 
 		if (EmboldenPvE.EnoughLevel)
 		{
-			if (HasEmbolden) return 50;
+			if (HasEmbolden)
+			{
+				return 50;
+			}
 
 			switch (EmboldenPvE.Cooldown.RecastTimeRemain)
 			{
@@ -190,13 +231,25 @@ public partial class RedMageRotation
 		get
 		{
 			if (!CanVerBoth)
+			{
 				return null;
+			}
+
 			if (VerStoneTime == null || VerFireTime == null)
+			{
 				return null;
+			}
+
 			if (VerStoneTime < VerFireTime)
+			{
 				return "VerStone";
+			}
+
 			if (VerFireTime < VerStoneTime)
+			{
 				return "VerFire";
+			}
+
 			return "Equal";
 		}
 	}
@@ -209,9 +262,15 @@ public partial class RedMageRotation
 		get
 		{
 			if (IsLastComboAction(ActionID.RipostePvE, ActionID.EnchantedRipostePvE, ActionID.EnchantedRipostePvE_45960) && ZwerchhauPvE.EnoughLevel && (HasEnoughManaFor23Combo || CanMagickedSwordplay))
+			{
 				return true;
+			}
+
 			if (IsLastComboAction(ActionID.ZwerchhauPvE, ActionID.EnchantedZwerchhauPvE, ActionID.EnchantedZwerchhauPvE_45961) && RedoublementPvE.EnoughLevel && (HasEnoughManaFor23Combo || CanMagickedSwordplay))
+			{
 				return true;
+			}
+
 			return false;
 		}
 	}
@@ -340,6 +399,8 @@ public partial class RedMageRotation
 	static partial void ModifyCorpsacorpsPvE(ref ActionSetting setting)
 	{
 		setting.SpecialType = SpecialActionType.HostileMovingForward;
+		setting.IsFriendly = false;
+		setting.TargetType = TargetType.Nearest;
 	}
 
 	static partial void ModifyVeraeroPvE(ref ActionSetting setting)

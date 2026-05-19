@@ -11,7 +11,7 @@ internal class MpPotionItem : BaseItem
 
 	public MpPotionItem(Item item) : base(item)
 	{
-		Lumina.Excel.Collection<ushort> data = _item.ItemAction.Value!.DataHQ;
+		var data = _item.ItemAction.Value!.DataHQ;
 		MaxMp = data[1];
 	}
 

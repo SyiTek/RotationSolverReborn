@@ -27,7 +27,7 @@ namespace RotationSolver.Basic.Helpers
 		/// <returns>The recast time for the specified action.</returns>
 		public static unsafe float GetRecastTime(ActionType type, uint id)
 		{
-			ActionManager* actionManager = GetActionManager();
+			var actionManager = GetActionManager();
 			return actionManager == null ? 0 : actionManager->GetRecastTime(type, id);
 		}
 
@@ -48,7 +48,7 @@ namespace RotationSolver.Basic.Helpers
 		/// <returns>The elapsed recast time for the specified action.</returns>
 		public static unsafe float GetRecastTimeElapsed(ActionType type, uint id)
 		{
-			ActionManager* actionManager = GetActionManager();
+			var actionManager = GetActionManager();
 			return actionManager == null ? 0 : actionManager->GetRecastTimeElapsed(type, id);
 		}
 

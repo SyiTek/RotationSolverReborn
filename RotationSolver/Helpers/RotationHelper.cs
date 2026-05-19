@@ -29,19 +29,19 @@ internal static class RotationHelper
 
 	public static bool IsExtra(this ICustomRotation rotation)
 	{
-		if (_extraRotation.TryGetValue(rotation, out bool isExtra))
+		if (_extraRotation.TryGetValue(rotation, out var isExtra))
 		{
 			return isExtra;
 		}
 
-		ExtraRotationAttribute? extraRotationAttribute = rotation.GetType().GetCustomAttribute<ExtraRotationAttribute>();
+		var extraRotationAttribute = rotation.GetType().GetCustomAttribute<ExtraRotationAttribute>();
 		_extraRotation[rotation] = extraRotationAttribute != null;
 		return _extraRotation[rotation];
 	}
 
 	public static RotationAttribute? GetAttributes(this ICustomRotation rotation)
 	{
-		if (_rotationAttributes.TryGetValue(rotation, out RotationAttribute? attributes))
+		if (_rotationAttributes.TryGetValue(rotation, out var attributes))
 		{
 			return attributes;
 		}

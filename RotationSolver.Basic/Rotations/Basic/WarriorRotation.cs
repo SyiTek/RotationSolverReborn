@@ -25,7 +25,7 @@ public partial class WarriorRotation
 	{
 		get
 		{
-			byte stacks = StatusHelper.PlayerStatusStack(true, StatusID.InnerRelease);
+			var stacks = StatusHelper.PlayerStatusStack(true, StatusID.InnerRelease);
 			return stacks == byte.MaxValue ? (byte)3 : stacks;
 		}
 	}
@@ -37,7 +37,7 @@ public partial class WarriorRotation
 	{
 		get
 		{
-			byte stacks = StatusHelper.PlayerStatusStack(true, StatusID.Berserk);
+			var stacks = StatusHelper.PlayerStatusStack(true, StatusID.Berserk);
 			return stacks == byte.MaxValue ? (byte)3 : stacks;
 		}
 	}
@@ -126,7 +126,7 @@ public partial class WarriorRotation
 
 	static partial void ModifyTomahawkPvE(ref ActionSetting setting)
 	{
-		setting.SpecialType = SpecialActionType.MeleeRange;
+		setting.SpecialType = SpecialActionType.MeleeRangedAttack;
 		setting.UnlockedByQuestID = 65852;
 	}
 
@@ -296,7 +296,7 @@ public partial class WarriorRotation
 
 	static partial void ModifyPrimalRendPvE(ref ActionSetting setting)
 	{
-		//setting.SpecialType = SpecialActionType.HostileMovingForward;
+		setting.SpecialType = SpecialActionType.HostileMovingAttack;
 		setting.StatusNeed = [StatusID.PrimalRendReady];
 		setting.StatusProvide = [StatusID.PrimalRuinationReady];
 		setting.MPOverride = () => 0;
@@ -308,7 +308,7 @@ public partial class WarriorRotation
 
 	static partial void ModifyDamnationPvE(ref ActionSetting setting)
 	{
-		setting.StatusProvide = [StatusID.PrimevalImpulse];
+		setting.StatusProvide = StatusHelper.RampartStatus;
 		setting.CreateConfig = () => new ActionConfig()
 		{
 			AoeCount = 1,

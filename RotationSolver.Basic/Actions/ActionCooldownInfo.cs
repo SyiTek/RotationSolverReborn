@@ -185,7 +185,7 @@ public readonly struct ActionCooldownInfo : ICooldown
 			return true;
 		}
 
-		float requiredTime = (charges - CurrentCharges - 1) * RecastTimeOneChargeRaw;
+		var requiredTime = (charges - CurrentCharges - 1) * RecastTimeOneChargeRaw;
 		return RecastTimeRemainOneCharge <= remain - requiredTime;
 	}
 
@@ -196,7 +196,7 @@ public readonly struct ActionCooldownInfo : ICooldown
 	/// <returns>True if the action was just used; otherwise, false.</returns>
 	public bool JustUsedAfter(float time)
 	{
-		float elapsed = RecastTimeElapsedRaw % RecastTimeOneChargeRaw;
+		var elapsed = RecastTimeElapsedRaw % RecastTimeOneChargeRaw;
 		return elapsed + DataCenter.DefaultGCDRemain < time;
 	}
 

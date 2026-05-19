@@ -17,8 +17,16 @@ namespace RotationSolver.SourceGenerators
 		/// <returns>The parent node of the specified type, or null if not found.</returns>
 		public static TS? GetParent<TS>(this SyntaxNode? node) where TS : SyntaxNode
 		{
-			if (node == null) return null;
-			if (node is TS result) return result;
+			if (node == null)
+			{
+				return null;
+			}
+
+			if (node is TS result)
+			{
+				return result;
+			}
+
 			return GetParent<TS>(node.Parent);
 		}
 
@@ -85,13 +93,21 @@ namespace RotationSolver.SourceGenerators
 			if (symbol is INamedTypeSymbol symbolType) // Generic
 			{
 				var strs = str.Split('`');
-				if (strs.Length < 2) return str;
+				if (strs.Length < 2)
+				{
+					return str;
+				}
+
 				str = strs[0];
 
 				var sb2 = new StringBuilder();
-				for (int i = 0; i < symbolType.TypeArguments.Length; i++)
+				for (var i = 0; i < symbolType.TypeArguments.Length; i++)
 				{
-					if (i > 0) sb2.Append(", ");
+					if (i > 0)
+					{
+						sb2.Append(", ");
+					}
+
 					sb2.Append(symbolType.TypeArguments[i].GetFullMetadataName());
 				}
 				str += "<" + sb2.ToString() + ">";
@@ -114,7 +130,7 @@ namespace RotationSolver.SourceGenerators
 		public static string ToPascalCase(this string input)
 		{
 			var parts = input.Split('.');
-			for (int i = 0; i < parts.Length; i++)
+			for (var i = 0; i < parts.Length; i++)
 			{
 				parts[i] = ConvertToPascalCase(parts[i]);
 			}
@@ -129,12 +145,12 @@ namespace RotationSolver.SourceGenerators
 				Regex lowerCaseNextToNumber = new("(?<=[0-9])[a-z]");
 				Regex upperCaseInside = new("(?<=[A-Z])[A-Z]+?((?=[A-Z][a-z])|(?=[0-9]))");
 
-				string cleaned = invalidCharsRgx.Replace(whiteSpace.Replace(input, "_"), string.Empty);
-				string[] parts = cleaned.Split(new char[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+				var cleaned = invalidCharsRgx.Replace(whiteSpace.Replace(input, "_"), string.Empty);
+				var parts = cleaned.Split(new char[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
 				var sb = new StringBuilder();
 				foreach (var w0 in parts)
 				{
-					string w = startsWithLowerCaseChar.Replace(w0, m => m.Value.ToUpper());
+					var w = startsWithLowerCaseChar.Replace(w0, m => m.Value.ToUpper());
 					w = firstCharFollowedByUpperCasesOnly.Replace(w, m => m.Value.ToLower());
 					w = lowerCaseNextToNumber.Replace(w, m => m.Value.ToUpper());
 					w = upperCaseInside.Replace(w, m => m.Value.ToLower());

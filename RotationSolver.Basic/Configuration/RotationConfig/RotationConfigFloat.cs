@@ -35,7 +35,7 @@ internal class RotationConfigFloat : RotationConfigBase
 	public RotationConfigFloat(ICustomRotation rotation, PropertyInfo property)
 		: base(rotation, property)
 	{
-		RangeAttribute? attr = property.GetCustomAttribute<RangeAttribute>();
+		var attr = property.GetCustomAttribute<RangeAttribute>();
 		if (attr != null)
 		{
 			Min = attr.MinValue;
@@ -60,7 +60,7 @@ internal class RotationConfigFloat : RotationConfigBase
 	public RotationConfigFloat(DutyRotation rotation, PropertyInfo property)
 		: base(rotation, property)
 	{
-		RangeAttribute? attr = property.GetCustomAttribute<RangeAttribute>();
+		var attr = property.GetCustomAttribute<RangeAttribute>();
 		if (attr != null)
 		{
 			Min = attr.MinValue;
@@ -90,9 +90,9 @@ internal class RotationConfigFloat : RotationConfigBase
 			return false;
 		}
 
-		string numStr = str[Name.Length..].Trim();
+		var numStr = str[Name.Length..].Trim();
 
-		if (float.TryParse(numStr, out float parsedValue))
+		if (float.TryParse(numStr, out var parsedValue))
 		{
 			if (UnitType == ConfigUnitType.Percent)
 			{

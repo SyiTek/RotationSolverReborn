@@ -11,7 +11,7 @@ internal class DragFloatRangeSearch : Searchable
 	{
 		get
 		{
-			string baseDesc = base.Description;
+			var baseDesc = base.Description;
 			return !string.IsNullOrEmpty(baseDesc) ? $"{baseDesc}\n{Unit}" : Unit.ToString();
 		}
 	}
@@ -27,7 +27,7 @@ internal class DragFloatRangeSearch : Searchable
 		get => Value.X;
 		set
 		{
-			Vector2 v = Value;
+			var v = Value;
 			v.X = value;
 			Value = v;
 		}
@@ -38,7 +38,7 @@ internal class DragFloatRangeSearch : Searchable
 		get => Value.Y;
 		set
 		{
-			Vector2 v = Value;
+			var v = Value;
 			v.Y = value;
 			Value = v;
 		}
@@ -46,7 +46,7 @@ internal class DragFloatRangeSearch : Searchable
 
 	public DragFloatRangeSearch(PropertyInfo property) : base(property)
 	{
-		RangeAttribute? range = _property.GetCustomAttribute<RangeAttribute>();
+		var range = _property.GetCustomAttribute<RangeAttribute>();
 		Min = range?.MinValue ?? 0f;
 		Max = range?.MaxValue ?? 1f;
 		Speed = range?.Speed ?? 0.001f;
@@ -55,12 +55,12 @@ internal class DragFloatRangeSearch : Searchable
 
 	protected override void DrawMain()
 	{
-		float minValue = MinValue;
-		float maxValue = MaxValue;
+		var minValue = MinValue;
+		var maxValue = MaxValue;
 		ImGui.SetNextItemWidth(Scale * DRAG_WIDTH);
 
 		// Cache the hash code to avoid multiple calls
-		int hashCode = GetHashCode();
+		var hashCode = GetHashCode();
 
 		// Draw the drag float range control
 		if (ImGui.DragFloatRange2(

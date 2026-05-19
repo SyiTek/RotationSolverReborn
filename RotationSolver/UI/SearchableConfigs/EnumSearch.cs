@@ -13,7 +13,7 @@ internal class EnumSearch(PropertyInfo property) : Searchable(property)
 
 	protected override void DrawMain()
 	{
-		int currentValue = Value;
+		var currentValue = Value;
 
 		// Create a map of enum values to their descriptions
 		Dictionary<int, string> enumValueToNameMap = [];
@@ -25,34 +25,37 @@ internal class EnumSearch(PropertyInfo property) : Searchable(property)
 		string[] displayNames;
 		{
 			displayNames = new string[enumValueToNameMap.Count];
-			int idx = 0;
+			var idx = 0;
 			foreach (var kv in enumValueToNameMap)
 			{
 				displayNames[idx++] = kv.Value;
 			}
 		}
 
-		string name = Name;
-		bool drawLabelAbove = false;
+		var name = Name;
+		var drawLabelAbove = false;
 
 		if (displayNames.Length > 0)
 		{
 			// Set the width of the combo box
-			float maxText = 0f;
-			for (int i = 0; i < displayNames.Length; i++)
+			var maxText = 0f;
+			for (var i = 0; i < displayNames.Length; i++)
 			{
-				float w = ImGui.CalcTextSize(displayNames[i]).X;
-				if (w > maxText) maxText = w;
+				var w = ImGui.CalcTextSize(displayNames[i]).X;
+				if (w > maxText)
+				{
+					maxText = w;
+				}
 			}
 
-			float comboWidth = Math.Max(maxText + 30, DRAG_WIDTH) * Scale;
+			var comboWidth = Math.Max(maxText + 30, DRAG_WIDTH) * Scale;
 
 			if (!string.IsNullOrEmpty(name))
 			{
-				float availableWidth = ImGui.GetContentRegionAvail().X;
-				float spacing = ImGui.GetStyle().ItemSpacing.X;
-				float iconWidth = IsJob ? (24 * ImGuiHelpers.GlobalScale + spacing) : 0f;
-				float labelWidth = ImGui.CalcTextSize(name).X;
+				var availableWidth = ImGui.GetContentRegionAvail().X;
+				var spacing = ImGui.GetStyle().ItemSpacing.X;
+				var iconWidth = IsJob ? (24 * ImGuiHelpers.GlobalScale + spacing) : 0f;
+				var labelWidth = ImGui.CalcTextSize(name).X;
 
 				drawLabelAbove = comboWidth + spacing + iconWidth + labelWidth > availableWidth;
 				if (drawLabelAbove)
@@ -68,9 +71,9 @@ internal class EnumSearch(PropertyInfo property) : Searchable(property)
 			ImGui.SetNextItemWidth(comboWidth);
 
 			// Find the current index of the selected value
-			int currentIndex = 0;
-			int tmpIdx = 0;
-			bool found = false;
+			var currentIndex = 0;
+			var tmpIdx = 0;
+			var found = false;
 			foreach (var kv in enumValueToNameMap)
 			{
 				if (kv.Key == currentValue)
@@ -87,13 +90,13 @@ internal class EnumSearch(PropertyInfo property) : Searchable(property)
 			}
 
 			// Cache the hash code to avoid multiple calls
-			int hashCode = GetHashCode();
+			var hashCode = GetHashCode();
 
 			// Draw the combo box
 			if (ImGui.Combo($"##Config_{ID}{hashCode}", ref currentIndex, displayNames, displayNames.Length))
 			{
-				int i = 0;
-				int selectedKey = currentValue;
+				var i = 0;
+				var selectedKey = currentValue;
 				foreach (var kv in enumValueToNameMap)
 				{
 					if (i == currentIndex)

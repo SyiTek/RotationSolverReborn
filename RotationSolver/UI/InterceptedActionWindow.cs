@@ -43,13 +43,13 @@ internal class InterceptedActionWindow : Window
 	public override unsafe void Draw()
 	{
 		// Keep consistent sizing with Control/NextAction windows
-		Basic.Configuration.Configs config = Service.Config;
-		float gcdWidth = config.ControlWindowGCDSize * config.ControlWindowNextSizeRatio;
-		float abilityWidth = config.ControlWindow0GCDSize * config.ControlWindowNextSizeRatio;
-		float totalWidth = gcdWidth + abilityWidth + ImGui.GetStyle().ItemSpacing.X;
+		var config = Service.Config;
+		var gcdWidth = config.ControlWindowGCDSize * config.ControlWindowNextSizeRatio;
+		var abilityWidth = config.ControlWindow0GCDSize * config.ControlWindowNextSizeRatio;
+		var totalWidth = gcdWidth + abilityWidth + ImGui.GetStyle().ItemSpacing.X;
 
 		// Title
-		string title = "Intercept System";
+		var title = "Intercept System";
 		ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (totalWidth / 2) - (ImGui.CalcTextSize(title).X / 2));
 		ImGui.TextColored(ImGuiColors.DalamudYellow, title);
 

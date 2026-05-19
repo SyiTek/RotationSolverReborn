@@ -36,6 +36,7 @@ public class StaticCodeGenerator : IIncrementalGenerator
 			GenerateActionID(context);
 			GenerateContentType(context);
 			GenerateActionCate(context);
+			GenerateBNpcNameID(context);
 			GenerateBaseRotation(context);
 			GenerateRotations(context);
 			GenerateOpCode(context);
@@ -134,22 +135,47 @@ public class StaticCodeGenerator : IIncrementalGenerator
 	private static void GenerateActionCate(SourceProductionContext context)
 	{
 		var code = $$"""
-            namespace RotationSolver.Basic.Data;
+			namespace RotationSolver.Basic.Data;
 
-            /// <summary>
-            /// 
-            /// </summary>
-            public enum ActionCate : byte
-            {
-                /// <summary>
-                /// 
-                /// </summary>
-                None = 0,
-            {{Properties.Resources.ActionCategory.Table()}}
-            }
-            """;
+			/// <summary>
+			/// 
+			/// </summary>
+			public enum ActionCate : byte
+			{
+				/// <summary>
+				/// 
+				/// </summary>
+				None = 0,
+			{{Properties.Resources.ActionCategory.Table()}}
+			}
+			""";
 
 		context.AddSource("ActionCate.g.cs", code);
+	}
+
+	/// <summary>
+	/// Generates the BNpcNameID enum source code.
+	/// </summary>
+	/// <param name="context">The source production context.</param>
+	private static void GenerateBNpcNameID(SourceProductionContext context)
+	{
+		var code = $$"""
+			namespace RotationSolver.Basic.Data;
+
+			/// <summary>
+			/// The id of the BNpc name.
+			/// </summary>
+			public enum NPCName : uint
+			{
+				/// <summary>
+				/// 
+				/// </summary>
+				None = 0,
+			{{Properties.Resources.BNpcNameId.Table()}}
+			}
+			""";
+
+		context.AddSource("BNpcNameID.g.cs", code);
 	}
 
 	/// <summary>

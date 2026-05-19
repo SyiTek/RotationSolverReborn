@@ -13,18 +13,19 @@ internal partial class Configs : IPluginConfiguration
 	public const string
 		BasicTimer = "BasicTimer",
 		BasicAutoSwitch = "BasicAutoSwitch",
-		DutySpecifcCrucibleOfTheUnbroken = "DutySpecifcCrucibleOfTheUnbroken",
-		DutySpecifcTheMaskedCarnivale = "DutySpecifcTheMaskedCarnivale",
-		DutySpecifcPvP = "DutySpecifcPvP",
-		DutySpecifcFieldOps = "DutySpecifcFieldOps",
-		DutySpecifcAlliance = "DutySpecifcAlliance",
-		DutySpecifcDeepDungeon = "DutySpecifcDeepDungeon",
-		DutySpecifcVariantDungeon = "DutySpecifcVariantDungeon",
-		DutySpecifcChaoticAlliance = "DutySpecifcChaoticAlliance",
-		DutySpecifcDungeon = "DutySpecifcDungeon",
-		DutySpecifcUltimate = "DutySpecifcUltimate",
-		DutySpecifcExtreme = "DutySpecifcExtreme",
-		DutySpecifcSavage = "DutySpecifcSavage",
+		DutySpecificCrucibleOfTheUnbroken = "DutySpecificCrucibleOfTheUnbroken",
+		DutySpecificTheMaskedCarnivale = "DutySpecificTheMaskedCarnivale",
+		DutySpecificPvP = "DutySpecificPvP",
+		DutySpecificFieldOps = "DutySpecificFieldOps",
+		DutySpecificAlliance = "DutySpecificAlliance",
+		DutySpecificDeepDungeon = "DutySpecificDeepDungeon",
+		DutySpecificVariantDungeon = "DutySpecificVariantDungeon",
+		DutySpecificTreasureDungeon = "DutySpecificTreasureDungeon",
+		DutySpecificChaoticAlliance = "DutySpecificChaoticAlliance",
+		DutySpecificDungeon = "DutySpecificDungeon",
+		DutySpecificUltimate = "DutySpecificUltimate",
+		DutySpecificExtreme = "DutySpecificExtreme",
+		DutySpecificSavage = "DutySpecificSavage",
 		BasicParams = "BasicParams",
 		UiInformation = "UiInformation",
 		UiWindows = "UiWindows",
@@ -56,237 +57,269 @@ internal partial class Configs : IPluginConfiguration
 	public MacroInfo DutyEnd { get; set; } = new MacroInfo();
 
 	#region Duty Specific
-	[ConditionBool, UI("Prevent specific Flat Damage/Death actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Flat Damage/Death actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockflatdamagedeathimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific Slow actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Slow actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockslowimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific Petrification actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Petrification actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockpetrificationimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific Paralysis actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Paralysis actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockparalysisimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific Interrupt actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Interrupt actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockinterruptimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific Blind actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Blind actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockblindimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific Stun actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Stun actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockstunimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific Sleep actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Sleep actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blocksleepimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific Bind actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Bind actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockbindimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific Heavy actions from being used against mobs that are immune to those effects.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific Heavy actions from being used against mobs that are immune to those effects.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockheavyimmuneBLU = false;
 
-	[ConditionBool, UI("Prevent specific aspected actions from being used against mobs that are immune to that aspect.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("Prevent specific aspected actions from being used against mobs that are immune to that aspect.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blockimmuneBLU = true;
 
-	[ConditionBool, UI("If a mob is weak to a specific aspect, only use actions of that aspect.", Filter = DutySpecifcTheMaskedCarnivale)]
+	[ConditionBool, UI("If a mob is weak to a specific aspect, only use actions of that aspect.", Filter = DutySpecificTheMaskedCarnivale)]
 	private static readonly bool _blocknonweakBLU = false;
 
-	[ConditionBool, UI("Still allow unaspected actions.", Filter = DutySpecifcTheMaskedCarnivale, Parent = nameof(BlocknonweakBlu))]
+	[ConditionBool, UI("Still allow unaspected actions.", Filter = DutySpecificTheMaskedCarnivale, Parent = nameof(BlocknonweakBlu))]
 	private static readonly bool _allowunaspectedBLU = true;
 
 	[ConditionBool, UI("O12S - Packet Filter logic.",
 	Description = "Treat OmegaM/OmegaF as immune if you have their corresponding Packet Filter status (also applies to Normal).",
-	Filter = DutySpecifcSavage)]
+	Filter = DutySpecificSavage)]
 	private static readonly bool _o12sOmegaMF = true;
 
 	[ConditionBool, UI("M8S - Wolf Pack/Stone Pack logic.",
 	Description = "Treat Wolf of Wind/Wolf of Stone as immune if you don't have the corresponding status for it.",
-	Filter = DutySpecifcSavage)]
+	Filter = DutySpecificSavage)]
 	private static readonly bool _m8sWindStone = true;
 
 	[ConditionBool, UI("M9S - Only use cleave logic.",
 	Description = "This should clear up any targeting issues when a nail, the boss, and a flail are near each other at the same time.",
-	Filter = DutySpecifcSavage)]
+	Filter = DutySpecificSavage)]
 	private static readonly bool _m9sCleaveOnly = true;
 
 	[ConditionBool, UI("M9S - Cell Targeting logic.",
 	Description = "Treat Cells as immune if you don't have the corresponding status for it.",
-	Filter = DutySpecifcSavage)]
+	Filter = DutySpecificSavage)]
 	private static readonly bool _m9sCellTargeting = true;
 
 	[ConditionBool, UI("M9S - Ads Targeting logic.",
 	Description = "Prioritize Doornail or Flail based on role and distance to target.",
-	Filter = DutySpecifcSavage)]
+	Filter = DutySpecificSavage)]
 	private static readonly bool _m9sAdsTargeting = true;
 
 	[ConditionBool, UI("M10S - Firesnaking/Watersnaking targeting logic.",
 	Description = "Priotize Red Hot if you have firesnaking buff, and Deep Blue if you have watersnaking buff (also applies to Normal).",
-	Filter = DutySpecifcSavage)]
+	Filter = DutySpecificSavage)]
 	private static readonly bool _m10sBroTargeting = true;
 
 	[ConditionBool, UI("Limitless Blue Extreme - Whaleback logic.",
 	Description = "Treat Bismark Shell/Bismark Corona as immune if you don't have the Whaleback status",
-	Filter = DutySpecifcExtreme)]
+	Filter = DutySpecificExtreme)]
 	private static readonly bool _limitlessBlueTargeting = true;
 
 	[ConditionBool, UI("Cinder Drift Extreme - Pall Targeting logic.",
 	Description = "Treat Pall of Rage/Pall of Grief as immune if you don't have the corresponding status for it.",
-	Filter = DutySpecifcExtreme)]
+	Filter = DutySpecificExtreme)]
 	private static readonly bool _cinderDriftPallTargeting = true;
+
+	[ConditionBool, UI("The Unmaking Extreme - Shadow logic.",
+	Description = "Treat Shadow as immune if you don't have the corresponding status",
+	Filter = DutySpecificExtreme)]
+	private static readonly bool _theUnmakingShadow = true;
 
 	[ConditionBool, UI("The Epic of Alexander (Ultimate) - Jagd Doll logic.",
 	Description = "Treat Jagd Doll ads as immune when HP is less than 25%.",
-	Filter = DutySpecifcUltimate)]
+	Filter = DutySpecificUltimate)]
 	private static readonly bool _teaJagdDoll = true;
 
 	[ConditionBool, UI("The Epic of Alexander (Ultimate) - True Heart logic.",
 	Description = "Treat True Heart ad as immune.",
-	Filter = DutySpecifcUltimate)]
+	Filter = DutySpecificUltimate)]
 	private static readonly bool _teaTrueHeart = true;
 
 	[ConditionBool, UI("The Omega Protocol (Ultimate) - Packet Filter logic.",
 	Description = "Treat OmegaM/OmegaF as immune if you have their corresponding Packet Filter status.",
-	Filter = DutySpecifcUltimate)]
+	Filter = DutySpecificUltimate)]
 	private static readonly bool _topOmegaMF = true;
 
 	[ConditionBool, UI("Futures Rewritten (Ultimate) - Crystal Of Darkness logic.",
 	Description = "Treat Crystal Of Darkness ad as immune.",
-	Filter = DutySpecifcUltimate)]
+	Filter = DutySpecificUltimate)]
 	private static readonly bool _fruCrystalOfDarkness = true;
 
 	[ConditionBool, UI("The Ghimlyt Dark - Colossus Rubricatus ad.",
 	Description = "Treat Colossus Rubricatus as immune while its casting scripted action which leads to its death.",
-	Filter = DutySpecifcDungeon)]
+	Filter = DutySpecificDungeon)]
 	private static readonly bool _colossusRubricatusImmune = true;
 
 	[ConditionBool, UI("Dohn Mheg - Liars Lyre mechancic.",
 	Description = "Treat Liars Lyre as immune if you don't have the Unfooled status.",
-	Filter = DutySpecifcDungeon)]
+	Filter = DutySpecificDungeon)]
 	private static readonly bool _dohnMhegLyre = true;
 
 	[ConditionBool, UI("The Meso Terminal - Thanatos logic.",
 	Description = "Treat Jailers in second boss fight as immune if you don't have corresponding buff.",
-	Filter = DutySpecifcDungeon)]
+	Filter = DutySpecificDungeon)]
 	private static readonly bool _jailerImmune = true;
 
 	[ConditionBool, UI("Forked Tower - Dead Star logic.",
 	Description = "Treat Triton/Nereid/Phobos as immune if you don't have the corresponding status for it.",
-	Filter = DutySpecifcFieldOps)]
+	Filter = DutySpecificFieldOps)]
 	private static readonly bool _forkedtowerDeadStar = true;
 
 	[ConditionBool, UI("Pilgrim's Traverse - Eminent Grief logic.",
 	Description = "Treat Eminent Grief as immune if you don't have Light Vengeance buff, and treat Devoured Eater as immune if you don't have Dark Vengeance buff.",
-	Filter = DutySpecifcDeepDungeon)]
+	Filter = DutySpecificDeepDungeon)]
 	private static readonly bool _eminent = true;
 
 	[ConditionBool, UI("The Labyrinth of the Ancients - Thanatos logic.",
 	Description = "Treat Thanatos as immune if you don't have Astral Realignment buff.",
-	Filter = DutySpecifcAlliance)]
+	Filter = DutySpecificAlliance)]
 	private static readonly bool _thanatosImmune = true;
 
 	[ConditionBool, UI("The Void Ark - Irminsul and Sawtooth logic.",
 	Description = "Treat Irminsul and Sawtooth as immune if you don't have corresponding buff.",
-	Filter = DutySpecifcAlliance)]
+	Filter = DutySpecificAlliance)]
 	private static readonly bool _irminsulSawtoothImmune = true;
 
 	[ConditionBool, UI("The Puppets' Bunker - Superior Flight Unit logic.",
 	Description = "Treat each Superior Flight Unit as immune if you don't have corresponding buff.",
-	Filter = DutySpecifcAlliance)]
+	Filter = DutySpecificAlliance)]
 	private static readonly bool _superiorFlightUnitImmune = true;
 
 	[ConditionBool, UI("The Tower at Paradigm's Breach - Hansel and Gretel logic.",
 	Description = "Treat each Hansel/Gretel as immune if you are at an angle that would cause you to take rebound damage from the shield mechanic.",
-	Filter = DutySpecifcAlliance)]
+	Filter = DutySpecificAlliance)]
 	private static readonly bool _hanselorGretelShieldedImmune = true;
 
 	[ConditionBool, UI("Jeuno: The First Walk - The Ark Angels logic.",
 	Description = "Treat each Ark Angel as immune if you don't have corresponding buff.",
-	Filter = DutySpecifcAlliance)]
+	Filter = DutySpecificAlliance)]
 	private static readonly bool _jeunoBossImmune = true;
+
+	[ConditionBool, UI("Windurst: The Third Walk - Alexander Resurrected logic.",
+	Description = "Treat Alexander and/or Gordius Systems as immune if they have Perfect Defense.",
+	Filter = DutySpecificAlliance)]
+	private static readonly bool _alexanderImmune = true;
 
 	[ConditionBool, UI("Cloud of Darkness - Ads phase logic.",
 	Description = "Treat Cloud of Darkness/Stygian as immune if you don't have corresponding buff.",
-	Filter = DutySpecifcChaoticAlliance)]
+	Filter = DutySpecificChaoticAlliance)]
 	private static readonly bool _codImmune = true;
 
 	[ConditionBool, UI("The Sil'dihn Subterrane - Drakefamily ads logic.",
 	Description = "Custom logic to treat certain drakes as immune to kill them in a specific order for the purposes Variant path 12.",
-	Filter = DutySpecifcVariantDungeon)]
+	Filter = DutySpecificVariantDungeon)]
 	private static readonly bool _drakeImmune = true;
+
+	[ConditionBool, UI("Treasure Dungeons - Timed mob logic.",
+	Description = "Priotizes limited time mobs in treasure dungeons to resolve extra loot mechanic.",
+	Filter = DutySpecificTreasureDungeon)]
+	private static readonly bool _treasuredungeontimed = true;
+
+	[ConditionBool, UI("Treasure Dungeons - Numbered mob logic.",
+	Description = "Sets mobs with number plates as top priority in order from lowest to highest to resolve extra loot mechanic.",
+	Filter = DutySpecificTreasureDungeon)]
+	private static readonly bool _treasuredungeonnumbered = true;
 	#endregion
 
 	#region PvP
 	[JobConfig, UI("The HP for using Guard.",
-		Filter = DutySpecifcPvP)]
+		Filter = DutySpecificPvP)]
 	[Range(0, 1, ConfigUnitType.Percent, 0.02f)]
 	public float HealthForGuard { get; set; } = 0.15f;
 
-	[ConditionBool, UI("Ignore TTK for PvP purposes.", Filter = DutySpecifcPvP)]
+	[ConditionBool, UI("Ignore TTK for PvP purposes.", Filter = DutySpecificPvP)]
 	private static readonly bool _ignorePvPTTK = true;
 
-	[ConditionBool, UI("Prioritize A tier tomeliths in Shatter.", Filter = DutySpecifcPvP)]
+	[ConditionBool, UI("Prioritize A tier tomeliths in Shatter.", Filter = DutySpecificPvP)]
 	private static readonly bool _prioAtomelith = false;
 
-	[ConditionBool, UI("Prioritize B tier tomeliths in Shatter.", Filter = DutySpecifcPvP)]
+	[ConditionBool, UI("Prioritize B tier tomeliths in Shatter.", Filter = DutySpecificPvP)]
 	private static readonly bool _prioBtomelith = false;
 
-	[JobConfig, UI("Ignore Invincibility for PvP purposes.", Filter = DutySpecifcPvP)]
+	[JobConfig, UI("Ignore Invincibility for PvP purposes.", Filter = DutySpecificPvP)]
 	private static readonly bool _ignorePvPInvincibility = false;
 
 	[ConditionBool, UI("Auto turn off when dead in PvP.",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _autoOffWhenDeadPvP = true;
 
 	[ConditionBool, UI("Auto turn off when PvP match ends.",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _autoOffPvPMatchEnd = true;
 
 	[ConditionBool, UI("Auto turn on when PvP match starts.",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _autoOnPvPMatchStart = true;
 
 	[ConditionBool, UI("Set RSR to PvP specific state when enabled in PvP zone.",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpStateControl = false;
 
 	[ConditionBool, UI("Don't use any actions while in Guard.",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpGuardControl = true;
 
+	[ConditionBool, UI("Cancel cast in PvP if the target gains Guard and the action does not ignore Guard.",
+		 Filter = DutySpecificPvP)]
+	private static readonly bool _pvpGuardCancel = false;
+
 	[ConditionBool, UI("Use Purify to remove Stun debuff",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpPurifyStun = true;
 
 	[ConditionBool, UI("Use Purify to remove Silence debuff",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpPurifySilence = true;
 
 	[ConditionBool, UI("Use Purify to remove Deep Freeze debuff",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpPurifyDeepFreeze = true;
 
 	[ConditionBool, UI("Use Purify to remove Miracle of Nature debuff",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpPurifyMiracleOfNature = true;
 
 	[ConditionBool, UI("Use Purify to remove Heavy debuff",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpPurifyHeavy = false;
 
 	[ConditionBool, UI("Use Purify to remove Bind debuff",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpPurifyBind = false;
 
 	[ConditionBool, UI("Lock out GCD cycle if you are below 50% HP and have over 2000 MP for heals (Experimental).",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpGCDLockControl = true;
 
 	[ConditionBool, UI("Allow Sprint when no target is set even if youre in range of hostiles (Experimental).",
-		 Filter = DutySpecifcPvP)]
+		 Filter = DutySpecificPvP)]
 	private static readonly bool _pvpAllowSprintWithoutTarget = true;
 
 	#endregion
+
+	[ConditionBool, UI("Use BMR intergration to verify safety of movement actions/actions that cause movement for automatic usage. (Experimental)",
+	Filter = AutoActionUsage, Section = 5)]
+	private static readonly bool _bmrSafetyCheckAuto = false;
+
+	[ConditionBool, UI("Use BMR intergration to verify safety of movement actions/actions that cause movement for intercepted usage. (Experimental)",
+	Filter = AutoActionUsage, Section = 5)]
+	private static readonly bool _bmrSafetyCheckIntercept = false;
 
 	[ConditionBool, UI("Intercept player input and queue it for RSR to execute the action. (PvE only)",
 	Filter = AutoActionUsage, Section = 5)]
@@ -395,6 +428,18 @@ internal partial class Configs : IPluginConfiguration
 
 	[UI("", Action = ActionID.ImprovisationPvE, Parent = nameof(PoslockCasting))]
 	public bool PosImprovisation { get; set; } = false;
+
+	[ConditionBool, UI("Lock actions when casting Passage Of Arms during AOE mitigations.",
+	Filter = Extra)]
+	private static readonly bool _pldlockCasting = false;
+
+	[ConditionBool, UI("Lock actions when casting Collective Unconscious during AOE mitigations.",
+	Filter = Extra)]
+	private static readonly bool _astlockCasting = false;
+
+	[ConditionBool, UI("Lock actions when casting Phantom Flurry.",
+	Filter = Extra)]
+	private static readonly bool _blulockCasting = true;
 
 	/// <markdown file="Auto" name="Gemdraughts/Tinctures/Pots Usage" section="Action Usage and Control">
 	/// Sets whether to use damage-boosting potions and in which duty. You also need to enable the specific
@@ -523,6 +568,13 @@ internal partial class Configs : IPluginConfiguration
 
 	[ConditionBool, UI("Debug Mode", Filter = Debug)]
 	private static readonly bool _inDebug = false;
+
+	[ConditionBool, UI("Enable Action Tracer (ONLY toggle this at dev request)", Filter = Debug)]
+	private static readonly bool _enableActionTracer = false;
+
+	[ConditionBool, UI("Mirror tracer output to Dalamud plugin log",
+		Parent = nameof(EnableActionTracer))]
+	private static readonly bool _traceMirrorToPluginLog = false;
 
 	[ConditionBool, UI("Make /rotation Manual a toggle command.",
 		Filter = BasicParams)]
@@ -784,11 +836,11 @@ internal partial class Configs : IPluginConfiguration
 	/// This setting exists to leave you time to approach and enter in melee range of the enemy without wasting
 	/// a GCD.
 	/// </markdown>
-	[UI("Melee Range action using offset",
+	[UI("Melee Ranged action usage offset",
 		Filter = AutoActionUsage, Section = 3,
 		PvEFilter = JobFilterType.Melee, PvPFilter = JobFilterType.Melee)]
 	[Range(0, 5, ConfigUnitType.Yalms, 0.02f)]
-	public float MeleeRangeOffset { get; set; } = 1;
+	public float MeleeRangedOffset { get; set; } = 1;
 
 	[UI("When their minimum HP is lower than this.", Parent = nameof(HealWhenNothingTodo))]
 	[Range(0, 1, ConfigUnitType.Percent, 0.002f)]
@@ -1083,7 +1135,7 @@ internal partial class Configs : IPluginConfiguration
 	[ConditionBool, UI("Never attack targets with stop markers.",
 	Description = "Targets with stop markers will not be attacked.",
 	Filter = TargetConfig)]
-	private static readonly bool _filterStopMark = true;
+	private static readonly bool _filterStopMark2 = false;
 
 	[ConditionBool, UI("Treat 1hp targets as invincible.",
 	Description = "Targets with only 1 HP will be treated as invincible and ignored; for rare cases where target is invincible but is not given a status for it.",
@@ -1103,7 +1155,7 @@ internal partial class Configs : IPluginConfiguration
 		Filter = TargetConfig, Section = 3)]
 	private static readonly bool _switchTargetFriendly2 = false;
 
-	[ConditionBool, UI("Set target to closest targetable enemy if no valid action target nearby and target not set (This works in Manual mode as well)",
+	[ConditionBool, UI("Set target to closest targetable enemy if no valid action target nearby and target not set while in combat (This works in Manual mode as well)",
 		Filter = TargetConfig, Section = 3)]
 	private static readonly bool _targetFreely = false;
 
@@ -1123,11 +1175,11 @@ internal partial class Configs : IPluginConfiguration
 		Filter = TargetConfig, Section = 1)]
 	private static readonly bool _targetQuestPriority = true;
 
-	[ConditionBool, UI("Block targeting quest mobs belonging to other players (Experimental).",
+	[ConditionBool, UI("Block targeting quest mobs belonging to other players.",
 		Filter = TargetConfig, Section = 1)]
-	private static readonly bool targetQuestThings2 = false;
+	private static readonly bool targetQuestThings3 = true;
 
-	[ConditionBool, UI("Ignore all other FATE target when Forlorn available (Experimental).",
+	[ConditionBool, UI("Ignore all other FATE target when Forlorn available.",
 		Filter = TargetConfig, Section = 1)]
 	private static readonly bool forlornPriority = true;
 
@@ -1139,7 +1191,7 @@ internal partial class Configs : IPluginConfiguration
 		Filter = TargetConfig, Section = 1)]
 	private static readonly bool _targetFatePriority = true;
 
-	[ConditionBool, UI("Delay autotarget. (Experimental)",
+	[ConditionBool, UI("Delay autotarget.",
 		Filter = TargetConfig)]
 	private static readonly bool _targetDelayEnable = false;
 
@@ -1333,7 +1385,7 @@ internal partial class Configs : IPluginConfiguration
 		File.Copy(Svc.PluginInterface.ConfigFile.FullName, Svc.PluginInterface.ConfigFile.Directory + "\\RotationSolver_SafetySave.json", true);
 		File.Copy(Svc.PluginInterface.ConfigFile.Directory + "\\RotationSolver_Backup.json", Svc.PluginInterface.ConfigFile.FullName, true);
 
-		Configs restoredConfigs = JsonConvert.DeserializeObject<Configs>(
+		var restoredConfigs = JsonConvert.DeserializeObject<Configs>(
 									  File.ReadAllText(Svc.PluginInterface.ConfigFile.FullName))
 								  ?? new Configs();
 

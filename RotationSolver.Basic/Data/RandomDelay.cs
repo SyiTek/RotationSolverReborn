@@ -35,7 +35,7 @@ public struct RandomDelay
 	public RandomDelay(Func<Vector2> getRange)
 		: this(() =>
 		{
-			Vector2 vec = getRange();
+			var vec = getRange();
 			return (vec.X, vec.Y);
 		})
 	{
@@ -48,7 +48,7 @@ public struct RandomDelay
 	/// <returns>The delayed boolean value.</returns>
 	public bool Delay(bool originData)
 	{
-		(float min, float max) = GetRange();
+		(var min, var max) = GetRange();
 		if (min <= 0 || max <= 0)
 		{
 			return originData;
@@ -86,7 +86,7 @@ public struct RandomDelay
 	/// <returns>The delayed item.</returns>
 	public T? Delay<T>(T? originData) where T : class
 	{
-		bool b = originData != null;
+		var b = originData != null;
 
 		return Delay(b) ? originData : null;
 	}

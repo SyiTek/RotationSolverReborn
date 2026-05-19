@@ -1,5 +1,4 @@
-﻿using Dalamud.Game.ClientState.Objects.SubKinds;
-using ECommons.DalamudServices;
+﻿using ECommons.DalamudServices;
 using ECommons.GameHelpers;
 using ECommons.Hooks;
 using ECommons.Hooks.ActionEffectTypes;
@@ -33,16 +32,20 @@ public static class Watcher
 		try
 		{
 			if (set.Source is not IBattleChara battle || !set.Source.IsEnemy())
+			{
 				return;
+			}
 
-			IPlayerCharacter? playerObject = Player.Object;
+			var playerObject = Player.Object;
 			if (playerObject == null)
+			{
 				return;
+			}
 
 			float damageRatio = 0;
-			ulong playerId = playerObject.GameObjectId;
-			uint maxHp = playerObject.MaxHp;
-			uint denom = Math.Max(1u, maxHp); // avoid division by zero
+			var playerId = playerObject.GameObjectId;
+			var maxHp = playerObject.MaxHp;
+			var denom = Math.Max(1u, maxHp); // avoid division by zero
 
 			foreach (var effect in set.TargetEffects)
 			{
@@ -51,7 +54,9 @@ public static class Watcher
 					effect.ForEach(entry =>
 					{
 						if (entry.type == ActionEffectType.Damage)
+						{
 							damageRatio += (float)entry.value / denom;
+						}
 					});
 				}
 			}
@@ -62,7 +67,9 @@ public static class Watcher
 			foreach (var effect in set.TargetEffects)
 			{
 				if (effect.TargetID != playerId)
+				{
 					continue;
+				}
 
 				if (effect.GetSpecificTypeEffect(ActionEffectType.Knockback, out var entry))
 				{
@@ -77,7 +84,7 @@ public static class Watcher
 
 						if (set.Action.HasValue && Service.Config.RecordKnockbackies)
 						{
-							bool isContained = false;
+							var isContained = false;
 							foreach (var id in OtherConfiguration.HostileCastingKnockback)
 							{
 								if (id == set.Action.Value.RowId)
@@ -99,14 +106,14 @@ public static class Watcher
 			}
 
 			var partyMembers = DataCenter.PartyMembers;
-			int partyMemberCount = partyMembers.Count;
+			var partyMemberCount = partyMembers.Count;
 
 			if (set.Header.ActionType == ActionType.Action && partyMemberCount >= 4 && set.Action?.Cast100ms > 0)
 			{
 				var type = set.Action?.GetActionCate();
 				if (type is ActionCate.Spell or ActionCate.Weaponskill or ActionCate.Ability)
 				{
-					int damageEffectCount = 0;
+					var damageEffectCount = 0;
 
 					var partyIds = new HashSet<ulong>();
 					foreach (var pm in partyMembers)
@@ -116,7 +123,7 @@ public static class Watcher
 
 					foreach (var effect in set.TargetEffects)
 					{
-						bool isPartyMember = false;
+						var isPartyMember = false;
 						foreach (var pId in partyIds)
 						{
 							if (pId == effect.TargetID)
@@ -154,7 +161,7 @@ public static class Watcher
 		{
 			//PluginLog.Debug($"ActionFromSelf invoked. Source: {set.Source?.GameObjectId}, Action: {set.Action?.Name.ExtractText() ?? "null"}");
 
-			IPlayerCharacter? playerObject = Player.Object;
+			var playerObject = Player.Object;
 			if (set.Source == null || playerObject == null)
 			{
 				//PluginLog.Debug("ActionFromSelf: Source or playerObject is null. Exiting.");
@@ -192,8 +199,8 @@ public static class Watcher
 				return;
 			}
 
-			Lumina.Excel.Sheets.Action? action = set.Action;
-			IGameObject? tar = set.Target;
+			var action = set.Action;
+			var tar = set.Target;
 
 			// Record
 			//PluginLog.Debug($"ActionFromSelf: ActionType is {set.Header.ActionType}.");
@@ -207,7 +214,7 @@ public static class Watcher
 			var sourceApply = set.GetSpecificTypeEffect(ActionEffectType.ApplyStatusEffectSource);
 			if (sourceApply is { Count: > 0 })
 			{
-				foreach (KeyValuePair<ulong, uint> effect in sourceApply)
+				foreach (var effect in sourceApply)
 				{
 					DataCenter.ApplyStatus[effect.Key] = effect.Value;
 				}
@@ -217,7 +224,7 @@ public static class Watcher
 			var mpEffects = set.GetSpecificTypeEffect(ActionEffectType.MpGain);
 			if (mpEffects != null)
 			{
-				foreach (KeyValuePair<ulong, uint> effect in mpEffects)
+				foreach (var effect in mpEffects)
 				{
 					if (effect.Key == playerObject.GameObjectId)
 					{
@@ -230,12 +237,12 @@ public static class Watcher
 			DataCenter.EffectTime = DateTime.Now;
 			DataCenter.EffectEndTime = DateTime.Now.AddSeconds(set.Header.AnimationLockTime + 1);
 
-			Queue<(ulong id, DateTime time)> attackedTargets = DataCenter.AttackedTargets;
-			int attackedTargetsCount = DataCenter.AttackedTargetsCount;
+			var attackedTargets = DataCenter.AttackedTargets;
+			var attackedTargetsCount = DataCenter.AttackedTargetsCount;
 
 			if (attackedTargetsCount > 0)
 			{
-				foreach (TargetEffect effect in set.TargetEffects)
+				foreach (var effect in set.TargetEffects)
 				{
 					if (!effect.GetSpecificTypeEffect(ActionEffectType.Damage, out _))
 					{
@@ -243,8 +250,8 @@ public static class Watcher
 					}
 
 					// Check if the target is already in the attacked targets list
-					bool targetExists = false;
-					foreach ((ulong id, DateTime time) in attackedTargets)
+					var targetExists = false;
+					foreach ((var id, var time) in attackedTargets)
 					{
 						if (id == effect.TargetID)
 						{
@@ -260,7 +267,7 @@ public static class Watcher
 					// Ensure the current target is not dequeued
 					while (attackedTargets.Count >= attackedTargetsCount && attackedTargets.Count > 0)
 					{
-						(ulong id, DateTime time) = attackedTargets.Peek();
+						(var id, var time) = attackedTargets.Peek();
 						if (id == effect.TargetID)
 						{
 							// If the oldest target is the current target, break the loop to avoid dequeuing it
@@ -275,12 +282,12 @@ public static class Watcher
 			}
 
 			// Macro
-			RegexOptions regexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase;
+			var regexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase;
 			var eventsList = Service.Config.Events ?? [];
 			var actionName = action.Value.Name.ExtractText() ?? string.Empty;
 			if (!string.IsNullOrEmpty(actionName))
 			{
-				foreach (ActionEventInfo item in eventsList)
+				foreach (var item in eventsList)
 				{
 					if (string.IsNullOrWhiteSpace(item.Name))
 					{

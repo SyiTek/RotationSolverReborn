@@ -10,8 +10,8 @@ internal abstract class CtrlWindow(string name) : Window(name, BaseFlags)
 
 	public override void PreDraw()
 	{
-		Basic.Configuration.Configs config = Service.Config;
-		Vector4 bgColor = config.IsControlWindowLock
+		var config = Service.Config;
+		var bgColor = config.IsControlWindowLock
 			? config.ControlWindowLockBg
 			: config.ControlWindowUnlockBg;
 		ImGui.PushStyleColor(ImGuiCol.WindowBg, bgColor);

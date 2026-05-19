@@ -16,7 +16,9 @@ public partial class DutyRotation
 	public virtual void PhantomDisplayDutyStatus()
 	{
 		if (!DataCenter.IsInMonsterHunterDuty)
+		{
 			return;
+		}
 
 		ImGui.Spacing();
 		ImGui.Text($"MegaPotionPvE Slotted: {MegaPotionPvE.Info.IsOnSlot}");

@@ -1,6 +1,6 @@
 namespace RotationSolver.RebornRotations.Melee;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Melee/NIN_Reborn.cs")]
 
 public sealed class NIN_Reborn : NinjaRotation
@@ -65,7 +65,7 @@ public sealed class NIN_Reborn : NinjaRotation
 		}
 
 		// Decision-making for ninjutsu actions based on remaining time until combat starts.
-		if (DoSuiton(out IAction? act))
+		if (DoSuiton(out var act))
 		{
 			return act == SuitonPvE && remainTime > CountDownAhead ? null : act;
 		}
@@ -410,7 +410,7 @@ public sealed class NIN_Reborn : NinjaRotation
 	private bool DoRabbitMedium(out IAction? act)
 	{
 		act = null;
-		uint ninjutsunId = AdjustId(NinjutsuPvE.ID);
+		var ninjutsunId = AdjustId(NinjutsuPvE.ID);
 		if (ninjutsunId == RabbitMediumPvE.ID)
 		{
 			if (RabbitMediumPvE.CanUse(out act))
@@ -429,9 +429,9 @@ public sealed class NIN_Reborn : NinjaRotation
 
 		if (HasTenChiJin)
 		{
-			uint tenId = AdjustId(TenPvE.ID);
-			uint chiId = AdjustId(ChiPvE.ID);
-			uint jinId = AdjustId(JinPvE.ID);
+			var tenId = AdjustId(TenPvE.ID);
+			var chiId = AdjustId(ChiPvE.ID);
+			var jinId = AdjustId(JinPvE.ID);
 
 			//First
 			if (tenId == FumaShurikenPvE_18873.ID

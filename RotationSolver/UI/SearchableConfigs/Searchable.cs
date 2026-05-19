@@ -99,11 +99,11 @@ internal readonly struct JobFilter
 	{
 		get
 		{
-			bool canDraw = true;
+			var canDraw = true;
 
 			if (JobRoles is { Length: > 0 })
 			{
-				JobRole? role = DataCenter.CurrentRotation?.Role;
+				var role = DataCenter.CurrentRotation?.Role;
 				if (role.HasValue)
 				{
 					canDraw = JobRoles.Contains(role.Value);
@@ -165,16 +165,20 @@ internal readonly struct JobFilter
 		get
 		{
 			var sb = new System.Text.StringBuilder();
-			bool firstLine = true;
+			var firstLine = true;
 			foreach (var job in AllJobs)
 			{
 				var sheet = Svc.Data.GetExcelSheet<ClassJob>();
 				var name = sheet?.GetRow((uint)job).Name ?? job.ToString();
-				if (!firstLine) sb.Append('\n');
+				if (!firstLine)
+				{
+					sb.Append('\n');
+				}
+
 				sb.Append(name);
 				firstLine = false;
 			}
-			string roleOrJob = sb.ToString();
+			var roleOrJob = sb.ToString();
 			return string.Format(UiString.NotInJob.GetDescription(), roleOrJob);
 		}
 	}
@@ -193,7 +197,7 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 	{
 		get
 		{
-			UIAttribute? ui = _property.GetCustomAttribute<UIAttribute>();
+			var ui = _property.GetCustomAttribute<UIAttribute>();
 			return ui == null ? string.Empty : ui.Name;
 		}
 	}
@@ -202,7 +206,7 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 	{
 		get
 		{
-			UIAttribute? ui = _property.GetCustomAttribute<UIAttribute>();
+			var ui = _property.GetCustomAttribute<UIAttribute>();
 			return ui == null || string.IsNullOrEmpty(ui.Description) ? string.Empty : ui.Description;
 		}
 	}
@@ -212,7 +216,7 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 	{
 		get
 		{
-			UIAttribute? ui = _property.GetCustomAttribute<UIAttribute>();
+			var ui = _property.GetCustomAttribute<UIAttribute>();
 			return ui == null ? string.Empty : ui.Filter ?? string.Empty;
 		}
 	}
@@ -221,8 +225,8 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 	{
 		get
 		{
-			string result = Service.COMMAND + " " + OtherCommandType.Settings.ToString() + " " + _property.Name;
-			string? extra = _property.GetValue(Service.ConfigDefault)?.ToString();
+			var result = Service.COMMAND + " " + OtherCommandType.Settings.ToString() + " " + _property.Name;
+			var extra = _property.GetValue(Service.ConfigDefault)?.ToString();
 			if (!string.IsNullOrEmpty(extra))
 			{
 				result += " " + extra;
@@ -246,7 +250,7 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 	public unsafe void Draw()
 	{
 		// Determine the appropriate filter based on the context (PvP or PvE)
-		JobFilter filter = DataCenter.IsPvP ? PvPFilter : PvEFilter;
+		var filter = DataCenter.IsPvP ? PvPFilter : PvEFilter;
 
 		// Check if the filter allows drawing
 		if (!filter.CanDraw)
@@ -258,13 +262,13 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 			}
 
 			// Get the text color for disabled text
-			Vector4 textColor = *ImGui.GetStyleColorVec4(ImGuiCol.Text);
+			var textColor = *ImGui.GetStyleColorVec4(ImGuiCol.Text);
 
 			// Push the disabled text color style
 			ImGui.PushStyleColor(ImGuiCol.Text, *ImGui.GetStyleColorVec4(ImGuiCol.TextDisabled));
 
 			// Calculate the cursor position
-			Vector2 cursor = ImGui.GetCursorPos() + ImGui.GetWindowPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
+			var cursor = ImGui.GetCursorPos() + ImGui.GetWindowPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
 
 			// Ensure Name is not null before using it
 			if (!string.IsNullOrEmpty(Name))
@@ -276,15 +280,15 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 			ImGui.PopStyleColor();
 
 			// Calculate the text size and item rectangle size
-			Vector2 step = ImGui.CalcTextSize(Name ?? string.Empty);
-			Vector2 size = ImGui.GetItemRectSize();
-			float height = step.Y / 2;
-			float wholeWidth = step.X;
+			var step = ImGui.CalcTextSize(Name ?? string.Empty);
+			var size = ImGui.GetItemRectSize();
+			var height = step.Y / 2;
+			var wholeWidth = step.X;
 
 			// Draw lines to indicate disabled state
 			while (height < size.Y)
 			{
-				Vector2 pt = cursor + new Vector2(0, height);
+				var pt = cursor + new Vector2(0, height);
 				ImGui.GetWindowDrawList().AddLine(pt, pt + new Vector2(Math.Min(wholeWidth, size.X), 0), ImGui.ColorConvertFloat4ToU32(textColor));
 				height += step.Y;
 				wholeWidth -= size.X;
@@ -306,7 +310,7 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 
 	protected void ShowTooltip(bool showHand = true)
 	{
-		bool showDesc = !string.IsNullOrEmpty(Description);
+		var showDesc = !string.IsNullOrEmpty(Description);
 		if (showDesc)
 		{
 			ImguiTooltips.ShowTooltip(() =>
@@ -319,7 +323,7 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 				{
 					ImGui.Separator();
 				}
-				float wholeWidth = ImGui.GetWindowWidth();
+				var wholeWidth = ImGui.GetWindowWidth();
 
 			});
 		}
@@ -331,7 +335,7 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 	{
 		ImGui.SameLine();
 
-		if (IconSet.GetTexture(IconSet.GetJobIcon(DataCenter.Job, IconType.Framed), out Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap? texture))
+		if (IconSet.GetTexture(IconSet.GetJobIcon(DataCenter.Job, IconType.Framed), out var texture))
 		{
 			ImGui.Image(texture.Handle, Vector2.One * 24 * ImGuiHelpers.GlobalScale);
 			ImguiTooltips.HoveredTooltip(UiString.JobConfigTip.GetDescription());
@@ -340,7 +344,7 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 
 	public virtual void ResetToDefault()
 	{
-		object? v = _property.GetValue(Service.ConfigDefault);
+		var v = _property.GetValue(Service.ConfigDefault);
 		if (v != null)
 		{
 			_property.SetValue(Service.Config, v);

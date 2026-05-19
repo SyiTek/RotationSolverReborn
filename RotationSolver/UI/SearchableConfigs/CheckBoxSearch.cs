@@ -100,7 +100,7 @@ internal abstract class CheckBoxSearch : Searchable
 		: base(property)
 	{
 		Action = property.GetCustomAttribute<UIAttribute>()?.Action ?? ActionID.None;
-		foreach (ISearchable child in children)
+		foreach (var child in children)
 		{
 			AddChild(child);
 		}
@@ -116,15 +116,15 @@ internal abstract class CheckBoxSearch : Searchable
 
 	protected virtual void DrawChildren()
 	{
-		bool lastIs = false;
-		foreach (ISearchable child in Children)
+		var lastIs = false;
+		foreach (var child in Children)
 		{
 			if (!child.ShowInChild)
 			{
 				continue;
 			}
 
-			bool thisIs = child is CheckBoxSearch c && c.Action != ActionID.None && c.Action.GetTexture(out IDalamudTextureWrap? texture);
+			var thisIs = child is CheckBoxSearch c && c.Action != ActionID.None && c.Action.GetTexture(out var texture);
 			if (lastIs && thisIs)
 			{
 				ImGui.SameLine();
@@ -142,10 +142,10 @@ internal abstract class CheckBoxSearch : Searchable
 
 	protected override void DrawMain()
 	{
-		bool hasChild = false;
+		var hasChild = false;
 		if (Children != null)
 		{
-			foreach (ISearchable c in Children)
+			foreach (var c in Children)
 			{
 				if (c.ShowInChild)
 				{
@@ -154,12 +154,12 @@ internal abstract class CheckBoxSearch : Searchable
 				}
 			}
 		}
-		bool hasAdditional = AdditionalDraw != null;
-		bool hasSub = hasChild || hasAdditional;
+		var hasAdditional = AdditionalDraw != null;
+		var hasSub = hasChild || hasAdditional;
 		IDalamudTextureWrap? texture = null;
-		bool hasIcon = Action != ActionID.None && Action.GetTexture(out texture);
+		var hasIcon = Action != ActionID.None && Action.GetTexture(out texture);
 
-		bool enable = Value;
+		var enable = Value;
 		if (ImGui.Checkbox($"##{ID}", ref enable))
 		{
 			Value = enable;
@@ -171,12 +171,12 @@ internal abstract class CheckBoxSearch : Searchable
 
 		ImGui.SameLine();
 
-		string name = $"{Name}##Config_{ID}{GetHashCode()}";
+		var name = $"{Name}##Config_{ID}{GetHashCode()}";
 		if (hasIcon)
 		{
 			ImGui.BeginGroup();
-			Vector2 cursor = ImGui.GetCursorPos();
-			float size = ImGuiHelpers.GlobalScale * 32;
+			var cursor = ImGui.GetCursorPos();
+			var size = ImGuiHelpers.GlobalScale * 32;
 			if (texture?.Handle != null && ImGuiHelper.NoPaddingNoColorImageButton(texture, Vector2.One * size, ID))
 			{
 				Value = enable;
@@ -193,9 +193,9 @@ internal abstract class CheckBoxSearch : Searchable
 		{
 			if (enable || AlwaysShowChildren)
 			{
-				float x = ImGui.GetCursorPosX();
+				var x = ImGui.GetCursorPosX();
 				DrawMiddle();
-				bool drawBody = ImGui.TreeNode(name);
+				var drawBody = ImGui.TreeNode(name);
 				if (ImGui.IsItemHovered())
 				{
 					ShowTooltip();

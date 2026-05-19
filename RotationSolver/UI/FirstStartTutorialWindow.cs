@@ -143,7 +143,7 @@ internal sealed class FirstStartTutorialWindow : Window
 
 	public override void Draw()
 	{
-		TutorialStep step = Steps[_stepIndex];
+		var step = Steps[_stepIndex];
 
 		ImGui.PushFont(FontManager.GetFont(ImGui.GetFontSize() + 6));
 		ImGui.TextColored(ImGuiColors.ParsedGold, step.Title);
@@ -154,7 +154,7 @@ internal sealed class FirstStartTutorialWindow : Window
 
 		if (step.Bullets is { Length: > 0 })
 		{
-			foreach (string bullet in step.Bullets)
+			foreach (var bullet in step.Bullets)
 			{
 				DrawWrappedBullet(bullet);
 			}
@@ -164,13 +164,13 @@ internal sealed class FirstStartTutorialWindow : Window
 		if (step.RecommendedMacros is { Length: > 0 })
 		{
 			ImGui.TextColored(ImGuiColors.HealerGreen, "Recommended macros:");
-			for (int i = 0; i < step.RecommendedMacros.Length; i++)
+			for (var i = 0; i < step.RecommendedMacros.Length; i++)
 			{
-				string macro = step.RecommendedMacros[i];
+				var macro = step.RecommendedMacros[i];
 				DrawWrappedBullet(macro);
 
 				ImGui.SameLine();
-				string buttonId = $"Copy##TutorialMacro_{i}";
+				var buttonId = $"Copy##TutorialMacro_{i}";
 				if (ImGui.SmallButton(buttonId))
 				{
 					ImGui.SetClipboardText(macro);
@@ -202,7 +202,7 @@ internal sealed class FirstStartTutorialWindow : Window
 
 	private static void DrawWrappedText(string text)
 	{
-		float wrapPos = ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X;
+		var wrapPos = ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X;
 		ImGui.PushTextWrapPos(wrapPos);
 		ImGui.TextWrapped(text);
 		ImGui.PopTextWrapPos();

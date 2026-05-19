@@ -85,7 +85,7 @@ namespace RotationSolver.Data
 		[Description("Warning Time")]
 		ConfigWindow_About_Warnings_Time,
 
-		[Description("Rotation Solver helps you choose targets and click actions. Any plugin that changes these will affect its decisions.\n\nHere is a list of known incompatible plugins:")]
+		[Description("Rotation Solver helps you choose targets and click actions. Any plugin that changes these will affect its decisions.\n\nHere is a list of plugins that have historically (but not always) caused compatibility issues:")]
 		ConfigWindow_About_Compatibility_Description,
 
 		[Description("Cannot properly execute the behavior that RSR wants to perform.")]
@@ -135,6 +135,9 @@ namespace RotationSolver.Data
 
 		[Description("If target is below this percent, do not use this action")]
 		ConfigWindow_Actions_MinHPPercent,
+
+		[Description("Skip BossModReborn position-safety check for this movement action")]
+		ConfigWindow_Actions_SkipPositionSafetyCheck,
 
 		[Description("Time-to-kill threshold required for this action to be used")]
 		ConfigWindow_Actions_TTK,
@@ -481,6 +484,9 @@ namespace RotationSolver.Data
 		[Description("Variant Dungeon")]
 		ConfigWindow_Duty_VariantDungeon,
 
+		[Description("Treasure Dungeon")]
+		ConfigWindow_Duty_TreasureDungeon,
+
 		[Description("Alliance Raid")]
 		ConfigWindow_Duty_Alliance,
 
@@ -671,21 +677,21 @@ namespace RotationSolver.Data
 
 		public static string GetDescription(this Enum value)
 		{
-			if (_enumDescriptions.TryGetValue(value, out string? description))
+			if (_enumDescriptions.TryGetValue(value, out var description))
 			{
 				return description;
 			}
 
-			FieldInfo? field = value.GetType().GetField(value.ToString());
+			var field = value.GetType().GetField(value.ToString());
 			if (field == null)
 			{
 				_enumDescriptions.Add(value, value.ToString());
 				return value.ToString();
 			}
 
-			DescriptionAttribute? attribute = field.GetCustomAttribute<DescriptionAttribute>();
+			var attribute = field.GetCustomAttribute<DescriptionAttribute>();
 
-			string descString = attribute == null ? value.ToString() : attribute.Description;
+			var descString = attribute == null ? value.ToString() : attribute.Description;
 			_enumDescriptions.Add(value, descString);
 			return descString;
 		}

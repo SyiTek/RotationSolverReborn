@@ -23,29 +23,32 @@ namespace RotationSolver.Basic.Helpers
 		/// </returns>
 		public static List<IBattleChara> GetTargetsByRange(float range, bool? getFriendly = null)
 		{
-			if (DataCenter.AllTargets == null) return [];
+			if (DataCenter.AllTargets == null)
+			{
+				return [];
+			}
 
-			float searchRange = range;
+			var searchRange = range;
 
 			// Build a non-colliding cache key without mutating input range
-			float groupBias = getFriendly == true ? 1000f : getFriendly == false ? 2000f : 0f;
-			float cacheKey = MathF.Round(searchRange, 0) + groupBias;
+			var groupBias = getFriendly == true ? 1000f : getFriendly == false ? 2000f : 0f;
+			var cacheKey = MathF.Round(searchRange, 0) + groupBias;
 
-			if (DataCenter.TargetsByRange.TryGetValue(cacheKey, out List<IBattleChara>? cachedTargets))
+			if (DataCenter.TargetsByRange.TryGetValue(cacheKey, out var cachedTargets))
 			{
 				return cachedTargets;
 			}
 
 			// Pre-size target list based on expected source set
-			int capacity = getFriendly == true
+			var capacity = getFriendly == true
 				? (DataCenter.PartyMembers?.Count ?? 0)
 				: getFriendly == false
 					? (DataCenter.AllHostileTargets?.Count ?? 0)
 					: (DataCenter.AllTargets?.Count ?? 0);
-			List<IBattleChara> targets = capacity > 0 ? new List<IBattleChara>(capacity) : [];
+			var targets = capacity > 0 ? new List<IBattleChara>(capacity) : [];
 
 			var blacklisted = new HashSet<uint>(DataCenter.BlacklistedNameIds);
-			HashSet<long> stopTargets = Service.Config.FilterStopMark
+			var stopTargets = Service.Config.FilterStopMark2
 				? [.. MarkingHelper.GetStopTargets()]
 				: s_emptyStopTargets;
 
@@ -53,9 +56,13 @@ namespace RotationSolver.Basic.Helpers
 			{
 				if (DataCenter.PartyMembers != null)
 				{
-					foreach (IBattleChara target in DataCenter.PartyMembers.GetObjectInRadius(searchRange))
+					foreach (var target in DataCenter.PartyMembers.GetObjectInRadius(searchRange))
 					{
-						if (!ValidityCheck(target, blacklisted, stopTargets)) continue;
+						if (!ValidityCheck(target, blacklisted, stopTargets))
+						{
+							continue;
+						}
+
 						targets.Add(target);
 					}
 				}
@@ -64,9 +71,13 @@ namespace RotationSolver.Basic.Helpers
 			{
 				if (DataCenter.AllHostileTargets != null)
 				{
-					foreach (IBattleChara target in DataCenter.AllHostileTargets.GetObjectInRadius(searchRange))
+					foreach (var target in DataCenter.AllHostileTargets.GetObjectInRadius(searchRange))
 					{
-						if (!ValidityCheck(target, blacklisted, stopTargets)) continue;
+						if (!ValidityCheck(target, blacklisted, stopTargets))
+						{
+							continue;
+						}
+
 						targets.Add(target);
 					}
 				}
@@ -75,9 +86,13 @@ namespace RotationSolver.Basic.Helpers
 			{
 				if (DataCenter.AllTargets != null)
 				{
-					foreach (IBattleChara target in DataCenter.AllTargets.GetObjectInRadius(searchRange))
+					foreach (var target in DataCenter.AllTargets.GetObjectInRadius(searchRange))
 					{
-						if (!ValidityCheck(target, blacklisted, stopTargets)) continue;
+						if (!ValidityCheck(target, blacklisted, stopTargets))
+						{
+							continue;
+						}
+
 						targets.Add(target);
 					}
 				}
@@ -93,7 +108,7 @@ namespace RotationSolver.Basic.Helpers
 		/// </summary>
 		public static List<IBattleChara> GetTargetsByCastAndEffect(float castRange, float effectRange, bool? getFriendly = null)
 		{
-			float searchRange = castRange > 0 ? castRange : MathF.Max(effectRange, 0);
+			var searchRange = castRange > 0 ? castRange : MathF.Max(effectRange, 0);
 			return GetTargetsByRange(searchRange, getFriendly);
 		}
 
@@ -103,7 +118,10 @@ namespace RotationSolver.Basic.Helpers
 		public static unsafe List<IBattleChara> GetTargetsUsableByAction(float range, uint actionId, bool? getFriendly = null, bool checkRangeAndLoS = true)
 		{
 			var candidates = GetTargetsByRange(range, getFriendly);
-			if (candidates.Count == 0) return candidates;
+			if (candidates.Count == 0)
+			{
+				return candidates;
+			}
 
 			List<IBattleChara> usable = [];
 			foreach (var t in candidates)
@@ -122,9 +140,12 @@ namespace RotationSolver.Basic.Helpers
 		/// </summary>
 		public static unsafe List<IBattleChara> GetTargetsUsableByAction(float castRange, float effectRange, uint actionId, bool? getFriendly = null, bool checkRangeAndLoS = true)
 		{
-			float searchRange = castRange > 0 ? castRange : MathF.Max(effectRange, 0);
+			var searchRange = castRange > 0 ? castRange : MathF.Max(effectRange, 0);
 			var candidates = GetTargetsByRange(searchRange, getFriendly);
-			if (candidates.Count == 0) return candidates;
+			if (candidates.Count == 0)
+			{
+				return candidates;
+			}
 
 			List<IBattleChara> usable = [];
 			foreach (var t in candidates)
@@ -148,20 +169,35 @@ namespace RotationSolver.Basic.Helpers
 		/// </returns>
 		private static bool ValidityCheck(IBattleChara battleChara, HashSet<uint> blacklisted, HashSet<long> stopTargets)
 		{
-			if (battleChara == null) return false;
+			if (battleChara == null)
+			{
+				return false;
+			}
 
 			unsafe
 			{
-				if (battleChara.Struct() == null) return false;
+				if (battleChara.Struct() == null)
+				{
+					return false;
+				}
 			}
 
-			if (!battleChara.IsTargetable) return false;
+			if (!battleChara.IsTargetable)
+			{
+				return false;
+			}
 
-			if (!battleChara.IsEnemy() && battleChara.IsConditionCannotTarget()) return false;
+			if (!battleChara.IsEnemy() && battleChara.IsConditionCannotTarget())
+			{
+				return false;
+			}
 
 			try
 			{
-				if (battleChara.StatusList == null) return false;
+				if (battleChara.StatusList == null)
+				{
+					return false;
+				}
 			}
 			catch (Exception ex)
 			{
@@ -171,17 +207,26 @@ namespace RotationSolver.Basic.Helpers
 
 			foreach (var id in blacklisted)
 			{
-				if (id == battleChara.NameId) return false;
+				if (id == battleChara.NameId)
+				{
+					return false;
+				}
 			}
 
-			if (battleChara.IsEnemy() && !battleChara.IsAttackable()) return false;
+			if (battleChara.IsEnemy() && !battleChara.IsAttackable())
+			{
+				return false;
+			}
 
 			// Respect stop marks only when configured
-			if (Service.Config.FilterStopMark && battleChara.IsEnemy())
+			if (Service.Config.FilterStopMark2 && battleChara.IsEnemy())
 			{
 				foreach (var stopTargetId in stopTargets)
 				{
-					if (stopTargetId == (long)battleChara.GameObjectId) return false;
+					if (stopTargetId == (long)battleChara.GameObjectId)
+					{
+						return false;
+					}
 				}
 			}
 
@@ -190,27 +235,44 @@ namespace RotationSolver.Basic.Helpers
 
 		private static unsafe bool IsUsableByAction(IBattleChara target, uint actionId, bool checkRangeAndLoS)
 		{
-			if (target == null) return false;
+			if (target == null)
+			{
+				return false;
+			}
 
 			var am = ActionManager.Instance();
-			if (am == null) return false;
+			if (am == null)
+			{
+				return false;
+			}
 
-			uint adjusted = am->GetAdjustedActionId(actionId);
+			var adjusted = am->GetAdjustedActionId(actionId);
 
 			if (!am->IsActionOffCooldown(ActionType.Action, adjusted))
+			{
 				return false;
+			}
 
 			var go = (GameObject*)target.Struct();
-			if (go == null) return false;
+			if (go == null)
+			{
+				return false;
+			}
 
 			if (checkRangeAndLoS)
 			{
 				var player = Svc.Objects.LocalPlayer;
-				if (player == null) return false;
+				if (player == null)
+				{
+					return false;
+				}
+
 				var playerPtr = (GameObject*)player.Address;
 				var err = ActionManager.GetActionInRangeOrLoS(adjusted, playerPtr, go);
 				if (err != 0 && err != 565)
+				{
 					return false;
+				}
 			}
 
 			return ActionManager.CanUseActionOnTarget(adjusted, go);

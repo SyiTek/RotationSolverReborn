@@ -28,12 +28,16 @@ public class Program
 				DefaultExcelLanguage = Language.English,
 			});
 
-			var dirInfo = new DirectoryInfo(typeof(Program).Assembly.Location);
-			Console.WriteLine($"Assembly location: {typeof(Program).Assembly.Location}");
-			dirInfo = dirInfo.Parent!.Parent!.Parent!.Parent!.Parent!.Parent!;
-			Console.WriteLine($"Resolved directory: {dirInfo.FullName}");
+			var assemblyLocation = typeof(Program).Assembly.Location;
+			Console.WriteLine($"Assembly location: {assemblyLocation}");
 
-			var resourcePath = Path.Combine(dirInfo.FullName, "RotationSolver.SourceGenerators\\Properties\\Resources.resx");
+			// Navigate up to the solution root (RotationSolverReborn directory)
+			// Path is: .../RotationSolverReborn/RotationSolver.GameData/bin/Debug/net10.0-windows10.0.26100.0/RotationSolver.GameData.dll
+			// We need to go up 5 levels from the assembly file
+			var solutionRoot = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(assemblyLocation)!, "..", "..", "..", "..", ".."));
+			Console.WriteLine($"Solution root: {solutionRoot}");
+
+			var resourcePath = Path.Combine(solutionRoot, "RotationSolver.SourceGenerators", "Properties", "Resources.resx");
 			Console.WriteLine($"Resource path: {resourcePath}");
 			Console.WriteLine($"Resource path exists: {File.Exists(resourcePath)}");
 
@@ -43,6 +47,7 @@ public class Program
 			res.AddResource("ContentType", new ContentTypeGetter(gameData).GetCode());
 			res.AddResource("ActionId", new ActionIdGetter(gameData).GetCode());
 			res.AddResource("ActionCategory", new ActionCategoryGetter(gameData).GetCode());
+			res.AddResource("BNpcNameId", new BNpcNameGetter(gameData).GetCode());
 
 			var rotationBase = new ActionRoleRotationGetter(gameData);
 			var rotationCodes = rotationBase.GetCode();
@@ -118,7 +123,11 @@ public class Program
 			using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
 			var result = await client.GetAsync("https://raw.githubusercontent.com/karashiiro/FFXIVOpcodes/master/opcodes.json");
 
-			if (result.StatusCode != HttpStatusCode.OK) return;
+			if (result.StatusCode != HttpStatusCode.OK)
+			{
+				return;
+			}
+
 			var responseStream = await result.Content.ReadAsStringAsync();
 
 			var root = JToken.Parse(responseStream)[0]!["lists"]!;

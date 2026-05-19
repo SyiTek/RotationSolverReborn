@@ -30,7 +30,7 @@ internal class RotationConfigInt : RotationConfigBase
 	public RotationConfigInt(ICustomRotation rotation, PropertyInfo property)
 		: base(rotation, property)
 	{
-		RangeAttribute? attr = property.GetCustomAttribute<RangeAttribute>();
+		var attr = property.GetCustomAttribute<RangeAttribute>();
 		if (attr != null)
 		{
 			Min = (int)attr.MinValue;
@@ -53,7 +53,7 @@ internal class RotationConfigInt : RotationConfigBase
 	public RotationConfigInt(DutyRotation rotation, PropertyInfo property)
 		: base(rotation, property)
 	{
-		RangeAttribute? attr = property.GetCustomAttribute<RangeAttribute>();
+		var attr = property.GetCustomAttribute<RangeAttribute>();
 		if (attr != null)
 		{
 			Min = (int)attr.MinValue;
@@ -92,10 +92,10 @@ internal class RotationConfigInt : RotationConfigBase
 			return false;
 		}
 
-		string numStr = str[Name.Length..].Trim();
+		var numStr = str[Name.Length..].Trim();
 
 		// Parse the integer value and set it
-		if (int.TryParse(numStr, out int parsedValue))
+		if (int.TryParse(numStr, out var parsedValue))
 		{
 			Value = parsedValue.ToString(); // Convert int to string
 			return true;

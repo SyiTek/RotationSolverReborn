@@ -46,20 +46,20 @@ internal class NextActionWindow : Window
 
 	public override unsafe void Draw()
 	{
-		Basic.Configuration.Configs config = Service.Config;
-		float width = config.ControlWindowGCDSize * config.ControlWindowNextSizeRatio;
+		var config = Service.Config;
+		var width = config.ControlWindowGCDSize * config.ControlWindowNextSizeRatio;
 		DrawGcdCooldown(width, false);
 
-		float percent = 0f;
+		var percent = 0f;
 
-		ActionManager* actionManager = ActionManager.Instance();
+		var actionManager = ActionManager.Instance();
 		if (actionManager == null)
 		{
 			// Handle the case where actionManager is null
 			return;
 		}
 
-		RecastDetail* group = actionManager->GetRecastGroupDetail(ActionHelper.GCDCooldownGroup - 1);
+		var group = actionManager->GetRecastGroupDetail(ActionHelper.GCDCooldownGroup - 1);
 		if (group == null)
 		{
 			// Handle the case where group is null
@@ -101,24 +101,24 @@ internal class NextActionWindow : Window
 			return;
 		}
 
-		string name = suggestedTarget.Name.TextValue;
+		var name = suggestedTarget.Name.TextValue;
 		if (string.IsNullOrEmpty(name))
 		{
 			return;
 		}
 
-		bool isCurrentTarget = Svc.Targets.Target?.GameObjectId == suggestedTarget.GameObjectId;
-		bool isSelf = suggestedTarget.GameObjectId == (Player.Object?.GameObjectId ?? 0);
+		var isCurrentTarget = Svc.Targets.Target?.GameObjectId == suggestedTarget.GameObjectId;
+		var isSelf = suggestedTarget.GameObjectId == (Player.Object?.GameObjectId ?? 0);
 
-		string label = $"Target: {name}";
-		Vector4 color = isSelf
+		var label = $"Target: {name}";
+		var color = isSelf
 			? ImGuiColors.DalamudWhite
 			: isCurrentTarget
 				? ImGuiColors.HealerGreen
 				: ImGuiColors.DalamudOrange;
 
-		float textWidth = ImGui.CalcTextSize(label).X;
-		float offsetX = (width - textWidth) / 2f;
+		var textWidth = ImGui.CalcTextSize(label).X;
+		var offsetX = (width - textWidth) / 2f;
 		ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Math.Max(0, offsetX));
 
 		ImGui.PushStyleColor(ImGuiCol.Text, color);
@@ -138,31 +138,31 @@ internal class NextActionWindow : Window
 
 	public static void DrawGcdCooldown(float width, bool drawTitle)
 	{
-		float remain = DataCenter.DefaultGCDRemain;
-		float total = DataCenter.DefaultGCDTotal;
-		float elapsed = DataCenter.DefaultGCDElapsed;
+		var remain = DataCenter.DefaultGCDRemain;
+		var total = DataCenter.DefaultGCDTotal;
+		var elapsed = DataCenter.DefaultGCDElapsed;
 
 		if (drawTitle)
 		{
-			string str = $"{remain:F2}s / {total:F2}s";
+			var str = $"{remain:F2}s / {total:F2}s";
 			ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (width / 2) - (ImGui.CalcTextSize(str).X / 2));
 			ImGui.Text(str);
 		}
 
-		Vector2 cursor = ImGui.GetCursorPos() + ImGui.GetWindowPos();
-		float height = Service.Config.ControlProgressHeight;
+		var cursor = ImGui.GetCursorPos() + ImGui.GetWindowPos();
+		var height = Service.Config.ControlProgressHeight;
 
 		ImGui.ProgressBar(elapsed / total, new Vector2(width, height), string.Empty);
 
-		float actionRemain = DataCenter.DefaultGCDRemain;
+		var actionRemain = DataCenter.DefaultGCDRemain;
 		if (actionRemain > 0)
 		{
-			float value = total - DataCenter.CalculatedActionAhead;
+			var value = total - DataCenter.CalculatedActionAhead;
 
 			var playerObject = Player.Object;
 			if (playerObject != null && value > playerObject.TotalCastTime)
 			{
-				Vector2 pt = cursor + (new Vector2(width, 0) * value / total);
+				var pt = cursor + (new Vector2(width, 0) * value / total);
 
 				ImGui.GetWindowDrawList().AddLine(pt, pt + new Vector2(0, height),
 					ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudRed), 2);

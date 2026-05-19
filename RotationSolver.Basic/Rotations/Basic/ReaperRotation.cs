@@ -272,19 +272,21 @@ public partial class ReaperRotation
 
 	static partial void ModifyHarpePvE(ref ActionSetting setting)
 	{
-		setting.SpecialType = SpecialActionType.MeleeRange;
+		setting.SpecialType = SpecialActionType.MeleeRangedAttack;
 	}
 
 	static partial void ModifyHellsIngressPvE(ref ActionSetting setting)
 	{
 		setting.StatusProvide = [StatusID.EnhancedHarpe, StatusID.Bind];
 		setting.IsFriendly = true;
+		setting.SpecialType = SpecialActionType.FixedDistanceMoveForward;
 	}
 
 	static partial void ModifyHellsEgressPvE(ref ActionSetting setting)
 	{
 		setting.StatusProvide = [StatusID.EnhancedHarpe, StatusID.Bind];
 		setting.IsFriendly = true;
+		setting.SpecialType = SpecialActionType.FixedDistanceMoveBackward;
 	}
 
 	static partial void ModifySpinningScythePvE(ref ActionSetting setting)
@@ -417,6 +419,8 @@ public partial class ReaperRotation
 	static partial void ModifyRegressPvE(ref ActionSetting setting)
 	{
 		setting.ActionCheck = () => RegressPvEIngressReady || RegressPvEEgressReady;
+		setting.SpecialType = SpecialActionType.ObjectBasedMovement;
+		setting.ObjectBasedMovementObjectOID = 0x4C3; // Hell's Gate
 		setting.IsFriendly = true;
 	}
 
@@ -524,14 +528,15 @@ public partial class ReaperRotation
 
 	static partial void ModifyHellsIngressPvP(ref ActionSetting setting)
 	{
-		//setting.SpecialType = SpecialActionType.MovingForward;
+		setting.SpecialType = SpecialActionType.FixedDistanceMoveForward;
 		setting.IsFriendly = true;
 	}
 
 	static partial void ModifyRegressPvP(ref ActionSetting setting)
 	{
 		setting.ActionCheck = () => Service.GetAdjustedActionId(ActionID.HellsIngressPvP) == ActionID.RegressPvP;
-		setting.SpecialType = SpecialActionType.MovingBackward;
+		setting.SpecialType = SpecialActionType.ObjectBasedMovement;
+		setting.ObjectBasedMovementObjectOID = 0x4C3; // Hell's Gate
 		setting.IsFriendly = true;
 		setting.CreateConfig = () => new ActionConfig()
 		{

@@ -1,6 +1,6 @@
 ﻿namespace RotationSolver.RebornRotations.Magical;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/BasicRotations/Magical/BLM_Default.cs")]
 
 public class BLM_Default : BlackMageRotation
@@ -49,7 +49,7 @@ public class BLM_Default : BlackMageRotation
 	{
 		if (remainTime < FireIiiPvE.Info.CastTime + CountDownAhead)
 		{
-			if (FireIiiPvE.CanUse(out IAction act))
+			if (FireIiiPvE.CanUse(out var act))
 			{
 				return act;
 			}
@@ -230,7 +230,7 @@ public class BLM_Default : BlackMageRotation
 			return true;
 		}
 
-		if (InFireOrIce(out act, out bool mustGo))
+		if (InFireOrIce(out act, out var mustGo))
 		{
 			return true;
 		}
@@ -774,8 +774,8 @@ public class BLM_Default : BlackMageRotation
 			return false;
 		}
 
-		int compare = usedOne ? -1 : 0;
-		byte count = PolyglotStacks;
+		var compare = usedOne ? -1 : 0;
+		var count = PolyglotStacks;
 		if (count == compare++)
 		{
 			return false;

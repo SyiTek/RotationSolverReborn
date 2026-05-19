@@ -12,7 +12,10 @@ internal static class BossModUpdater
 		if (!Service.Config.UseBmrTimeline)
 		{
 			if (DataCenter.BMRHasActiveModule)
+			{
 				DataCenter.ResetBmrData();
+			}
+
 			return;
 		}
 
@@ -61,7 +64,7 @@ internal static class BossModUpdater
 			var damageIn = BMRTimeline_IPCSubscriber.NextDamageIn?.Invoke() ?? float.MaxValue;
 			var damageType = BMRTimeline_IPCSubscriber.NextDamageType?.Invoke() ?? 0;
 			DataCenter.BMRNextDamageIn = damageIn;
-			DataCenter.BMRNextDamageType = damageType;
+			DataCenter.BMRNextDamageType = (PredictedDamageType)damageType;
 			DataCenter.BMRDebugGenericDamageIn = damageIn;
 			DataCenter.BMRDebugGenericDamageType = damageType;
 
@@ -72,8 +75,15 @@ internal static class BossModUpdater
 			DataCenter.BMRDebugHintsTankbuster = hintsTankbuster;
 
 			// Filter out invalid values (<=0 means endpoint missing/SafeWrapper default or damage already resolved)
-			if (hintsRaidwide <= 0f) hintsRaidwide = float.MaxValue;
-			if (hintsTankbuster <= 0f) hintsTankbuster = float.MaxValue;
+			if (hintsRaidwide <= 0f)
+			{
+				hintsRaidwide = float.MaxValue;
+			}
+
+			if (hintsTankbuster <= 0f)
+			{
+				hintsTankbuster = float.MaxValue;
+			}
 
 			// Final fallback: use generic damage prediction if type matches
 			var genericRaidwide = (damageType == 2 && damageIn > 0f) ? damageIn : float.MaxValue;
@@ -84,8 +94,18 @@ internal static class BossModUpdater
 			DataCenter.BMRNextTankbusterIn = Math.Min(Math.Min(timelineTankbuster, hintsTankbuster), genericTankbuster);
 
 			DataCenter.BMRSpecialModeIn = BMRTimeline_IPCSubscriber.SpecialModeIn?.Invoke() ?? float.MaxValue;
-			DataCenter.BMRSpecialModeType = BMRTimeline_IPCSubscriber.SpecialModeType?.Invoke() ?? 0;
+			DataCenter.BMRSpecialModeType = (SpecialMode)(BMRTimeline_IPCSubscriber.SpecialModeType?.Invoke() ?? 0);
 			DataCenter.BMRDebugTimelineWalk = BMRTimeline_IPCSubscriber.DebugTimelineWalk?.Invoke();
+
+			DataCenter.BMRIsPositionSafe = BMRTimeline_IPCSubscriber.IsPositionSafe != null
+				? pos => BMRTimeline_IPCSubscriber.IsPositionSafe.Invoke(pos)
+				: null;
+			DataCenter.BMRIsDashSafe = BMRTimeline_IPCSubscriber.IsDashSafe != null
+				? (from, to) => BMRTimeline_IPCSubscriber.IsDashSafe.Invoke(from, to)
+				: null;
+			DataCenter.BMRIsFixedDashSafe = BMRTimeline_IPCSubscriber.IsFixedDashSafe != null
+				? (from, to) => BMRTimeline_IPCSubscriber.IsFixedDashSafe.Invoke(from, to)
+				: null;
 		}
 		catch
 		{

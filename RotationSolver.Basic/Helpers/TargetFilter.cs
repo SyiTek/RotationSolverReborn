@@ -14,10 +14,18 @@ public static class TargetFilter
 	private static Dictionary<JobRole, HashSet<byte>> GetRoleMap()
 	{
 		var map = _roleJobs;
-		if (map != null) return map;
+		if (map != null)
+		{
+			return map;
+		}
+
 		lock (_roleJobsLock)
 		{
-			if (_roleJobs != null) return _roleJobs;
+			if (_roleJobs != null)
+			{
+				return _roleJobs;
+			}
+
 			var sheet = Service.GetSheet<ClassJob>();
 			var dict = new Dictionary<JobRole, HashSet<byte>>();
 			if (sheet != null)
@@ -46,40 +54,74 @@ public static class TargetFilter
 	/// <returns>The dead characters.</returns>
 	public static IEnumerable<IBattleChara> GetDeath(this IEnumerable<IBattleChara> charas)
 	{
-		if (charas == null) yield break;
+		if (charas == null)
+		{
+			yield break;
+		}
 
-		foreach (IBattleChara item in charas)
+		foreach (var item in charas)
 		{
 			if (item == null)
+			{
 				continue;
+			}
+
 			if (!item.IsDead)
+			{
 				continue;
+			}
+
 			if (item.CurrentHp != 0 || !item.IsTargetable || item.IsTargetMoving() || item.IsEnemy())
+			{
 				continue;
-			RaiseType raisetype = Service.Config.RaiseType;
+			}
+
+			var raisetype = Service.Config.RaiseType;
 
 			if (raisetype == RaiseType.AllOutOfDuty)
 			{
 				if (!item.IsParty() && !item.IsOtherPlayerOutOfDuty())
+				{
 					continue;
+				}
 			}
 			if (raisetype != RaiseType.AllOutOfDuty)
 			{
 				if (!item.IsParty() && !item.IsAllianceMember())
+				{
 					continue;
+				}
 			}
 			if (item.DistanceToPlayer() > 30)
+			{
 				continue;
+			}
+
 			if (!item.CanSee())
+			{
 				continue;
+			}
+
 			if (item.HasStatus(false, StatusID.Raise))
+			{
 				continue;
+			}
+
 			if (item.HasStatus(false, StatusID.ResurrectionDenied))
+			{
 				continue;
+			}
+
 			if (!Service.Config.RaiseBrinkOfDeath && item.HasStatus(false, StatusID.BrinkOfDeath))
+			{
 				continue;
+			}
+
 			if (!item.CanBeRaised())
+			{
 				continue;
+			}
+
 			yield return item;
 		}
 	}
@@ -103,12 +145,15 @@ public static class TargetFilter
 		{
 			if (map.TryGetValue(role, out var set) && set != null)
 			{
-				foreach (var j in set) validJobs.Add(j);
+				foreach (var j in set)
+				{
+					validJobs.Add(j);
+				}
 			}
 		}
 
 		List<IBattleChara> result = [];
-		foreach (IBattleChara obj in objects)
+		foreach (var obj in objects)
 		{
 			if (obj != null && obj.IsJobs(validJobs))
 			{
@@ -165,7 +210,7 @@ public static class TargetFilter
 		}
 
 		HashSet<byte> validJobSet = [];
-		foreach (Job job in validJobs)
+		foreach (var job in validJobs)
 		{
 			_ = validJobSet.Add((byte)(uint)job);
 		}
@@ -187,7 +232,7 @@ public static class TargetFilter
 		}
 
 		HashSet<byte> validJobSet = [];
-		foreach (Job job in validJobs)
+		foreach (var job in validJobs)
 		{
 			_ = validJobSet.Add((byte)(uint)job);
 		}
@@ -228,12 +273,17 @@ public static class TargetFilter
 	/// <returns>The objects within the radius.</returns>
 	public static IEnumerable<T> GetObjectInRadius<T>(this IEnumerable<T> objects, float radius) where T : IBattleChara
 	{
-		if (objects == null) yield break;
-
-		foreach (T obj in objects)
+		if (objects == null)
 		{
-			if (obj.DistanceToPlayer() < radius)
+			yield break;
+		}
+
+		foreach (var obj in objects)
+		{
+			if (obj.DistanceToPlayer() <= radius)
+			{
 				yield return obj;
+			}
 		}
 	}
 }

@@ -1,7 +1,6 @@
 ﻿using ECommons.ExcelServices;
 using ECommons.GameHelpers;
 using ECommons.Logging;
-using ExCSS;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 
@@ -71,7 +70,10 @@ public readonly struct ActionBasicInfo
 		{
 			var additional = _action.Setting.AdditionalAttackTypes;
 			if (additional == null || additional.Length == 0)
+			{
 				return [AttackType];
+			}
+
 			var result = new AttackType[1 + additional.Length];
 			result[0] = AttackType;
 			additional.CopyTo(result, 1);
@@ -83,7 +85,18 @@ public readonly struct ActionBasicInfo
 	/// Returns <see langword="true"/> if this action has the specified attack type,
 	/// accounting for all values in <see cref="AttackTypes"/>.
 	/// </summary>
-	public bool HasAttackType(AttackType attackType) => AttackTypes.Contains(attackType);
+	public bool HasAttackType(AttackType attackType)
+	{
+		var attackTypes = AttackTypes;
+		for (var i = 0; i < attackTypes.Count; i++)
+		{
+			if (attackTypes[i] == attackType)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	/// <summary>
 	/// Gets the aspect of the action.
@@ -102,7 +115,10 @@ public readonly struct ActionBasicInfo
 		{
 			var additional = _action.Setting.AdditionalAspects;
 			if (additional == null || additional.Length == 0)
+			{
 				return [Aspect];
+			}
+
 			var result = new Aspect[1 + additional.Length];
 			result[0] = Aspect;
 			additional.CopyTo(result, 1);
@@ -114,7 +130,18 @@ public readonly struct ActionBasicInfo
 	/// Returns <see langword="true"/> if this action has the specified aspect,
 	/// accounting for all values in <see cref="Aspects"/>.
 	/// </summary>
-	public bool HasAspect(Aspect aspect) => Aspects.Contains(aspect);
+	public bool HasAspect(Aspect aspect)
+	{
+		var aspects = Aspects;
+		for (var i = 0; i < aspects.Count; i++)
+		{
+			if (aspects[i] == aspect)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	/// <summary>
 	/// Gets the level required to use the action.
@@ -249,13 +276,13 @@ public readonly struct ActionBasicInfo
 	{
 		get
 		{
-			uint? mpOver = _action.Setting.MPOverride?.Invoke();
+			var mpOver = _action.Setting.MPOverride?.Invoke();
 			if (mpOver.HasValue)
 			{
 				return mpOver.Value;
 			}
 
-			uint mp = (uint)ActionManager.GetActionCost(ActionType.Action, AdjustedID, 0, 0, 0, 0);
+			var mp = (uint)ActionManager.GetActionCost(ActionType.Action, AdjustedID, 0, 0, 0, 0);
 			return mp < 100 ? 0 : mp;
 		}
 	}
@@ -279,12 +306,41 @@ public readonly struct ActionBasicInfo
 			// BLU morph actions: only visible when their parent action is in an active BLU slot
 			if (_action.Setting.RequiredBluSlotActionId != 0)
 			{
-				return DataCenter.BluSlots.Contains(_action.Setting.RequiredBluSlotActionId);
+				foreach (var slotId in DataCenter.BluSlots)
+				{
+					if (slotId == _action.Setting.RequiredBluSlotActionId)
+					{
+						return true;
+					}
+				}
+				return false;
 			}
 
-			return _action.Action.ClassJob.RowId == (uint)Job.BLU
-				? DataCenter.BluSlots.Contains(ID)
-				: IsDutyAction ? DataCenter.DutyActions.Contains(ID) : IsPvP == DataCenter.IsPvP;
+			if (_action.Action.ClassJob.RowId == (uint)Job.BLU)
+			{
+				foreach (var slotId in DataCenter.BluSlots)
+				{
+					if (slotId == ID)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+
+			if (IsDutyAction)
+			{
+				foreach (var actionId in DataCenter.DutyActions)
+				{
+					if (actionId == ID)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+
+			return IsPvP == DataCenter.IsPvP;
 		}
 	}
 
@@ -437,7 +493,17 @@ public readonly struct ActionBasicInfo
 		{
 			if (IsRealGCD)
 			{
-				if (ConfigurationHelper.BadStatusGCD.Contains(ActionManager.Instance()->GetActionStatus(ActionType.Action, AdjustedID)))
+				var status = ActionManager.Instance()->GetActionStatus(ActionType.Action, AdjustedID);
+				var statusFound = false;
+				foreach (var badStatus in ConfigurationHelper.BadStatusGCD)
+				{
+					if (badStatus == status)
+					{
+						statusFound = true;
+						break;
+					}
+				}
+				if (statusFound)
 				{
 					return false;
 				}
@@ -445,7 +511,17 @@ public readonly struct ActionBasicInfo
 
 			if (IsAbility && !IsRealGCD)
 			{
-				if (ConfigurationHelper.BadStatusAbility.Contains(ActionManager.Instance()->GetActionStatus(ActionType.EventAction, AdjustedID)))
+				var status = ActionManager.Instance()->GetActionStatus(ActionType.EventAction, AdjustedID);
+				var statusFound = false;
+				foreach (var badStatus in ConfigurationHelper.BadStatusAbility)
+				{
+					if (badStatus == status)
+					{
+						statusFound = true;
+						break;
+					}
+				}
+				if (statusFound)
 				{
 					return false;
 				}
@@ -489,21 +565,29 @@ public readonly struct ActionBasicInfo
 
 		// Must have a cast time
 		if (CastTime <= 0f)
+		{
 			return false;
+		}
 
 		// Must not have a instant cast status
 		if (!Player.Object.WillStatusEnd(0, true, StatusHelper.SwiftcastStatus))
+		{
 			return false;
+		}
 
 		// Must not be in the no-cast list
-		if (ActionsNoNeedCasting.Contains(ID))
+		if (Array.IndexOf(ActionsNoNeedCasting, ID) >= 0)
+		{
 			return false;
+		}
 
 		// Must be in a state where casting is not possible
 		if (DataCenter.SpecialType == SpecialCommandType.NoCasting ||
 			(DateTime.Now > DataCenter.KnockbackStart && DateTime.Now < DataCenter.KnockbackFinished) ||
 			(DataCenter.NoPoslock && DataCenter.IsMoving && !skipCastingCheck))
+		{
 			return true;
+		}
 
 		return false;
 	}
@@ -610,9 +694,12 @@ public readonly struct ActionBasicInfo
 
 		if (_action.Setting.ComboIdsNot != null)
 		{
-			if (_action.Setting.ComboIdsNot.Contains(DataCenter.LastComboAction))
+			foreach (var comboIdNot in _action.Setting.ComboIdsNot)
 			{
-				return false;
+				if (comboIdNot == DataCenter.LastComboAction)
+				{
+					return false;
+				}
 			}
 		}
 
@@ -627,7 +714,17 @@ public readonly struct ActionBasicInfo
 
 		if (comboActions.Length > 0)
 		{
-			if (comboActions.Contains(DataCenter.LastComboAction))
+			var foundCombo = false;
+			foreach (var comboAction in comboActions)
+			{
+				if (comboAction == DataCenter.LastComboAction)
+				{
+					foundCombo = true;
+					break;
+				}
+			}
+
+			if (foundCombo)
 			{
 				if (DataCenter.ComboTime < DataCenter.DefaultGCDRemain)
 				{

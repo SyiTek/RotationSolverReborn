@@ -1,4 +1,5 @@
 using ECommons.DalamudServices;
+using ECommons.ExcelServices;
 
 namespace RotationSolver.Basic.Rotations;
 
@@ -19,6 +20,11 @@ public partial class CustomRotation
 			return false;
 		}
 
+		if (DataCenter.MergedStatus.HasFlag(AutoStatus.NoCasting))
+		{
+			return false;
+		}
+
 		if (WeaponRemain <= 0.5f && WeaponRemain > 0f)
 		{
 			return false;
@@ -29,17 +35,17 @@ public partial class CustomRotation
 			return false;
 		}
 
-		//if (DataCenter.Job == ECommons.ExcelServices.Job.PLD && !DataCenter.IsMoving && IsLastAction(ActionID.PassageOfArmsPvE) && StatusHelper.PlayerHasStatus(true, StatusID.PassageOfArms) && DataCenter.MergedStatus.HasFlag(AutoStatus.DefenseArea))
-		//{
-		//    return false;
-		//}
+		if (Service.Config.PldlockCasting && DataCenter.Job == ECommons.ExcelServices.Job.PLD && !DataCenter.IsMoving && IsLastAction(ActionID.PassageOfArmsPvE) && StatusHelper.PlayerHasStatus(true, StatusID.PassageOfArms) && DataCenter.MergedStatus.HasFlag(AutoStatus.DefenseArea))
+		{
+			return false;
+		}
 
-		//if (DataCenter.Job == ECommons.ExcelServices.Job.AST && !DataCenter.IsMoving && IsLastAction(ActionID.CollectiveUnconsciousPvE) && StatusHelper.PlayerHasStatus(true, StatusID.CollectiveUnconscious_848) && DataCenter.MergedStatus.HasFlag(AutoStatus.DefenseArea))
-		//{
-		//    return false;
-		//}
+		if (Service.Config.AstlockCasting && DataCenter.Job == ECommons.ExcelServices.Job.AST && !DataCenter.IsMoving && IsLastAction(ActionID.CollectiveUnconsciousPvE) && StatusHelper.PlayerHasStatus(true, StatusID.CollectiveUnconscious_848) && DataCenter.MergedStatus.HasFlag(AutoStatus.DefenseArea))
+		{
+			return false;
+		}
 
-		if (DataCenter.Job == ECommons.ExcelServices.Job.BLU && !DataCenter.IsMoving && IsLastAction(ActionID.PhantomFlurryPvE) && StatusHelper.PlayerHasStatus(true, StatusID.PhantomFlurry) && !StatusHelper.PlayerWillStatusEnd(1, true, StatusID.PhantomFlurry))
+		if (Service.Config.BlulockCasting && DataCenter.Job == ECommons.ExcelServices.Job.BLU && !DataCenter.IsMoving && IsLastAction(ActionID.PhantomFlurryPvE) && StatusHelper.PlayerHasStatus(true, StatusID.PhantomFlurry) && !StatusHelper.PlayerWillStatusEnd(1, true, StatusID.PhantomFlurry))
 		{
 			return false;
 		}
@@ -81,7 +87,7 @@ public partial class CustomRotation
 			return true;
 		}
 
-		JobRole role = DataCenter.Role;
+		var role = DataCenter.Role;
 
 		IBaseAction.TargetOverride = TargetType.Interrupt;
 		if (DataCenter.MergedStatus.HasFlag(AutoStatus.Interrupt) && !StatusHelper.PlayerHasStatus(true, StatusID.Mudra))
@@ -590,7 +596,7 @@ public partial class CustomRotation
 		#region PvP
 		if (DataCenter.IsPvP)
 		{
-			if (PurifyPvP.CanUse(out act))
+			if (DataCenter.Job != Job.BRD && DataCenter.Job !=Job.WHM &&PurifyPvP.CanUse(out act))
 			{
 				if (Service.Config.PvpPurifyStun && StatusHelper.PlayerHasStatus(false, StatusID.Stun_1343))
 				{

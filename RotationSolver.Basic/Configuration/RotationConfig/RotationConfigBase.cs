@@ -53,7 +53,7 @@ internal abstract class RotationConfigBase : IRotationConfig
 	/// </summary>
 	public string Value
 	{
-		get => !Service.Config.RotationConfigurations.TryGetValue(Name, out string? config) ? DefaultValue : config;
+		get => !Service.Config.RotationConfigurations.TryGetValue(Name, out var config) ? DefaultValue : config;
 		set
 		{
 			Service.Config.RotationConfigurations[Name] = value;
@@ -93,7 +93,7 @@ internal abstract class RotationConfigBase : IRotationConfig
 			// Otherwise, get the actual value from the parent property
 			else if (!string.IsNullOrEmpty(Parent))
 			{
-				PropertyInfo? parentProperty = rotation.GetType().GetProperty(Parent);
+				var parentProperty = rotation.GetType().GetProperty(Parent);
 				if (parentProperty != null)
 				{
 					ParentValue = parentProperty.GetValue(rotation);
@@ -108,7 +108,7 @@ internal abstract class RotationConfigBase : IRotationConfig
 		}
 
 		// Set up initial value
-		if (Service.Config.RotationConfigurations.TryGetValue(Name, out string? value))
+		if (Service.Config.RotationConfigurations.TryGetValue(Name, out var value))
 		{
 			SetValue(value);
 		}
@@ -126,7 +126,7 @@ internal abstract class RotationConfigBase : IRotationConfig
 
 		Name = property.Name;
 		DefaultValue = property.GetValue(rotation)?.ToString() ?? string.Empty;
-		RotationConfigAttribute? attr = property.GetCustomAttribute<RotationConfigAttribute>();
+		var attr = property.GetCustomAttribute<RotationConfigAttribute>();
 		if (attr != null)
 		{
 			DisplayName = attr.Name;
@@ -142,7 +142,7 @@ internal abstract class RotationConfigBase : IRotationConfig
 			// Otherwise, get the actual value from the parent property
 			else if (!string.IsNullOrEmpty(Parent))
 			{
-				PropertyInfo? parentProperty = rotation.GetType().GetProperty(Parent);
+				var parentProperty = rotation.GetType().GetProperty(Parent);
 				if (parentProperty != null)
 				{
 					ParentValue = parentProperty.GetValue(rotation);
@@ -157,7 +157,7 @@ internal abstract class RotationConfigBase : IRotationConfig
 		}
 
 		// Set up initial value
-		if (Service.Config.RotationConfigurations.TryGetValue(Name, out string? value))
+		if (Service.Config.RotationConfigurations.TryGetValue(Name, out var value))
 		{
 			SetValue(value);
 		}
@@ -169,7 +169,7 @@ internal abstract class RotationConfigBase : IRotationConfig
 	/// <param name="value">The value to set.</param>
 	private void SetValue(string value)
 	{
-		Type type = _property.PropertyType;
+		var type = _property.PropertyType;
 		if (type == null)
 		{
 			return;
@@ -209,9 +209,9 @@ internal abstract class RotationConfigBase : IRotationConfig
 			}
 
 			// Attempt to match the value with the Description attribute
-			foreach (FieldInfo field in type.GetFields())
+			foreach (var field in type.GetFields())
 			{
-				DescriptionAttribute? descriptionAttribute = field.GetCustomAttribute<DescriptionAttribute>();
+				var descriptionAttribute = field.GetCustomAttribute<DescriptionAttribute>();
 				if (descriptionAttribute != null && descriptionAttribute.Description == value)
 				{
 					return Enum.Parse(type, field.Name);

@@ -41,9 +41,9 @@ internal class RotationConfigBoolean : RotationConfigBase
 			return false;
 		}
 
-		string numStr = str[Name.Length..].Trim();
+		var numStr = str[Name.Length..].Trim();
 
-		if (bool.TryParse(numStr, out bool result))
+		if (bool.TryParse(numStr, out var result))
 		{
 			Value = result.ToString();
 		}

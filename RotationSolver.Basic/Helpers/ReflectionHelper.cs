@@ -26,9 +26,9 @@
 				return cached;
 			}
 
-			PropertyInfo[] allProperties = type.GetProperties(BindingFlags.Static | BindingFlags.Public);
+			var allProperties = type.GetProperties(BindingFlags.Static | BindingFlags.Public);
 			List<PropertyInfo> filteredProperties = [];
-			foreach (PropertyInfo prop in allProperties)
+			foreach (var prop in allProperties)
 			{
 				if (typeof(T).IsAssignableFrom(prop.PropertyType) &&
 					prop.GetCustomAttribute<ObsoleteAttribute>() == null)
@@ -37,10 +37,10 @@
 				}
 			}
 
-			PropertyInfo[] baseProperties = type.BaseType?.GetStaticProperties<T>() ?? [];
+			var baseProperties = type.BaseType?.GetStaticProperties<T>() ?? [];
 
 			// Combine filteredProperties and baseProperties
-			PropertyInfo[] result = new PropertyInfo[filteredProperties.Count + baseProperties.Length];
+			var result = new PropertyInfo[filteredProperties.Count + baseProperties.Length];
 			filteredProperties.CopyTo(result, 0);
 			if (baseProperties.Length > 0)
 			{
@@ -68,9 +68,9 @@
 				return cached;
 			}
 
-			MethodInfo[] allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+			var allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 			List<MethodInfo> filteredMethods = [];
-			foreach (MethodInfo method in allMethods)
+			foreach (var method in allMethods)
 			{
 				if (!method.IsConstructor)
 				{
@@ -78,7 +78,7 @@
 				}
 			}
 
-			IEnumerable<MethodInfo> baseMethods = type.BaseType?.GetAllMethodInfo() ?? [];
+			var baseMethods = type.BaseType?.GetAllMethodInfo() ?? [];
 
 			// Combine filteredMethods and baseMethods without LINQ
 			List<MethodInfo> resultList = new(filteredMethods.Count + 8);
@@ -108,7 +108,7 @@
 				throw new ArgumentException("Property name cannot be null or empty", nameof(name));
 			}
 
-			PropertyInfo? property = type.GetProperty(name, BindingFlags.Static | BindingFlags.Public);
+			var property = type.GetProperty(name, BindingFlags.Static | BindingFlags.Public);
 
 			return property ?? type.BaseType?.GetPropertyInfo(name);
 		}
@@ -131,7 +131,7 @@
 				throw new ArgumentException("Method name cannot be null or empty", nameof(name));
 			}
 
-			MethodInfo? method = type.GetMethod(name, BindingFlags.Static | BindingFlags.Public);
+			var method = type.GetMethod(name, BindingFlags.Static | BindingFlags.Public);
 
 			return method ?? type.BaseType?.GetMethodInfo(name);
 		}

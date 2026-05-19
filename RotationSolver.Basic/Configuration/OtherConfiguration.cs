@@ -93,7 +93,6 @@ internal class OtherConfiguration
 	/// If you have any of the statuses listed, RSR will stop taking any actions.
 	/// </markdown>
 	public static HashSet<uint> NoCastingStatus = [];
-	public static HashSet<string> SupportersList = [];
 	public static List<Job> DancePartnerPriority = [];
 	public static List<Job> TheSpearPriority = [];
 	public static List<Job> TheBalancePriority = [];
@@ -124,7 +123,33 @@ internal class OtherConfiguration
 		_ = Task.Run(() => InitOne(ref NoCastingStatus, nameof(NoCastingStatus)));
 		_ = Task.Run(() => InitOne(ref HostileCastingKnockback, nameof(HostileCastingKnockback)));
 		_ = Task.Run(() => InitOne(ref HostileCastingStop, nameof(HostileCastingStop)));
-		_ = Task.Run(() => InitOne(ref SupportersList, nameof(SupportersList)));
+	}
+
+	public static async Task InitAsync(CancellationToken cancellationToken = default)
+	{
+		if (!Directory.Exists(Svc.PluginInterface.ConfigDirectory.FullName))
+		{
+			_ = Directory.CreateDirectory(Svc.PluginInterface.ConfigDirectory.FullName);
+		}
+
+		await Task.WhenAll(
+			Task.Run(() => InitOne(ref DangerousStatus, nameof(DangerousStatus)), cancellationToken),
+			Task.Run(() => InitOne(ref PriorityStatus, nameof(PriorityStatus)), cancellationToken),
+			Task.Run(() => InitOne(ref InvincibleStatus, nameof(InvincibleStatus)), cancellationToken),
+			Task.Run(() => InitOne(ref DancePartnerPriority, nameof(DancePartnerPriority)), cancellationToken),
+			Task.Run(() => InitOne(ref TheSpearPriority, nameof(TheSpearPriority)), cancellationToken),
+			Task.Run(() => InitOne(ref TheBalancePriority, nameof(TheBalancePriority)), cancellationToken),
+			Task.Run(() => InitOne(ref KardiaTankPriority, nameof(KardiaTankPriority)), cancellationToken),
+			Task.Run(() => InitOne(ref NoHostileNames, nameof(NoHostileNames)), cancellationToken),
+			Task.Run(() => InitOne(ref NoProvokeNames, nameof(NoProvokeNames)), cancellationToken),
+			Task.Run(() => InitOne(ref HostileCastingArea, nameof(HostileCastingArea)), cancellationToken),
+			Task.Run(() => InitOne(ref HostileCastingTank, nameof(HostileCastingTank)), cancellationToken),
+			Task.Run(() => InitOne(ref BeneficialPositions, nameof(BeneficialPositions)), cancellationToken),
+			Task.Run(() => InitOne(ref RotationSolverRecord, nameof(RotationSolverRecord), false), cancellationToken),
+			Task.Run(() => InitOne(ref NoCastingStatus, nameof(NoCastingStatus)), cancellationToken),
+			Task.Run(() => InitOne(ref HostileCastingKnockback, nameof(HostileCastingKnockback)), cancellationToken),
+			Task.Run(() => InitOne(ref HostileCastingStop, nameof(HostileCastingStop)), cancellationToken)
+		);
 	}
 
 	public static Task Save()
@@ -308,7 +333,7 @@ internal class OtherConfiguration
 
 	private static string GetFilePath(string name)
 	{
-		string directory = Svc.PluginInterface.ConfigDirectory.FullName;
+		var directory = Svc.PluginInterface.ConfigDirectory.FullName;
 
 		return directory + $"\\{name}.json";
 	}
@@ -320,10 +345,10 @@ internal class OtherConfiguration
 
 	private static void SavePath<T>(T value, string path)
 	{
-		int retryCount = 3;
-		int delay = 1000; // 1 second delay
+		var retryCount = 3;
+		var delay = 1000; // 1 second delay
 
-		for (int i = 0; i < retryCount; i++)
+		for (var i = 0; i < retryCount; i++)
 		{
 			try
 			{
@@ -349,7 +374,7 @@ internal class OtherConfiguration
 
 	private static void InitOne<T>(ref T value, string name, bool download = true, bool forceDownload = false) where T : new()
 	{
-		string path = GetFilePath(name);
+		var path = GetFilePath(name);
 		PluginLog.Information($"Initializing {name} from {path}");
 
 		if (File.Exists(path) && !forceDownload)
@@ -360,12 +385,7 @@ internal class OtherConfiguration
 				{
 					TypeNameHandling = TypeNameHandling.None,
 					Converters = [new StringEnumConverter()] // Add this line
-				})!;
-				if (value == null)
-				{
-					throw new Exception("Deserialized value is null.");
-				}
-
+				})! ?? throw new Exception("Deserialized value is null.");
 				PluginLog.Information($"Loaded {name} from local file.");
 			}
 			catch (Exception ex)
@@ -378,19 +398,15 @@ internal class OtherConfiguration
 		{
 			try
 			{
-				string url = $"https://raw.githubusercontent.com/{Service.USERNAME}/{Service.REPO}/main/Resources/{name}.json";
-				string str = Http.GetStringAsync(url).Result;
+				var url = $"https://raw.githubusercontent.com/{Service.USERNAME}/{Service.REPO}/main/Resources/{name}.json";
+				var str = Http.GetStringAsync(url).Result;
 
 				File.WriteAllText(path, str);
 				value = JsonConvert.DeserializeObject<T>(str, new JsonSerializerSettings
 				{
 					TypeNameHandling = TypeNameHandling.None,
 					Converters = [new StringEnumConverter()] // Add this line
-				})!;
-				if (value == null)
-				{
-					throw new Exception("Deserialized value is null.");
-				}
+				})! ?? throw new Exception("Deserialized value is null.");
 
 				PluginLog.Information($"Downloaded and loaded {name} from GitHub.");
 			}

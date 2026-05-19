@@ -135,16 +135,24 @@ public static class StatusHelper
 	/// </summary>
 	public static StatusID[] RampartStatus { get; } =
 	[
-		StatusID.Superbolide,
-		StatusID.HallowedGround,
 		StatusID.Rampart,
 		StatusID.Bulwark,
 		StatusID.Bloodwhetting,
+
 		StatusID.Vengeance,
+		StatusID.Damnation,
+
 		StatusID.Sentinel,
+		StatusID.Guardian,
+
 		StatusID.ShadowWall,
+		StatusID.ShadowedVigil,
+
 		StatusID.Nebula,
 		StatusID.GreatNebula,
+
+		StatusID.Superbolide,
+		StatusID.HallowedGround,
 		StatusID.Holmgang_409,
 		StatusID.LivingDead,
 	];
@@ -163,6 +171,7 @@ public static class StatusHelper
 	public static StatusID[] DoomHealStatus { get; } =
 	[
 		StatusID.Doom_1769,
+		StatusID.Doom_5473
 	];
 
 	/// <summary>
@@ -226,12 +235,16 @@ public static class StatusHelper
 	public unsafe static bool IsStatusCapped(IBattleChara battleChara)
 	{
 		if (battleChara == null)
+		{
 			return false;
+		}
 
 		try
 		{
 			if (battleChara.StatusList == null)
+			{
 				return false;
+			}
 		}
 		catch
 		{
@@ -240,7 +253,7 @@ public static class StatusHelper
 
 		if (battleChara.IsValid())
 		{
-			int count = 0;
+			var count = 0;
 			foreach (var x in battleChara.StatusList)
 			{
 				if (x.StatusId != 0)
@@ -351,7 +364,7 @@ public static class StatusHelper
 			return false;
 		}
 
-		float statusTime = PlayerStatusTime(isFromSelf, statusIDs);
+		var statusTime = PlayerStatusTime(isFromSelf, statusIDs);
 		return (statusTime >= 0f || !PlayerHasStatus(isFromSelf, statusIDs)) && statusTime <= time;
 	}
 
@@ -370,7 +383,7 @@ public static class StatusHelper
 			return false;
 		}
 
-		float statusTime = battleChara.StatusTime(isFromSelf, statusIDs);
+		var statusTime = battleChara.StatusTime(isFromSelf, statusIDs);
 		return (statusTime >= 0f || !battleChara.HasStatus(isFromSelf, statusIDs)) && statusTime <= time;
 	}
 
@@ -392,10 +405,10 @@ public static class StatusHelper
 				return float.MaxValue;
 			}
 
-			IEnumerable<float> times = PlayerStatusTimes(isFromSelf, statusIDs);
-			float min = float.MaxValue;
-			bool found = false;
-			foreach (float t in times)
+			var times = PlayerStatusTimes(isFromSelf, statusIDs);
+			var min = float.MaxValue;
+			var found = false;
+			foreach (var t in times)
 			{
 				if (t < min)
 				{
@@ -426,10 +439,10 @@ public static class StatusHelper
 				return float.MaxValue;
 			}
 
-			IEnumerable<float> times = battleChara.StatusTimes(isFromSelf, statusIDs);
-			float min = float.MaxValue;
-			bool found = false;
-			foreach (float t in times)
+			var times = battleChara.StatusTimes(isFromSelf, statusIDs);
+			var min = float.MaxValue;
+			var found = false;
+			foreach (var t in times)
 			{
 				if (t < min)
 				{
@@ -454,7 +467,7 @@ public static class StatusHelper
 			yield break;
 		}
 
-		foreach (IStatus status in Player.Object.GetStatus(isFromSelf, statusIDs))
+		foreach (var status in Player.Object.GetStatus(isFromSelf, statusIDs))
 		{
 			yield return status.RemainingTime == 0f ? float.MaxValue : status.RemainingTime;
 		}
@@ -462,7 +475,7 @@ public static class StatusHelper
 
 	internal static IEnumerable<float> StatusTimes(this IBattleChara battleChara, bool isFromSelf, params StatusID[] statusIDs)
 	{
-		foreach (IStatus status in battleChara.GetStatus(isFromSelf, statusIDs))
+		foreach (var status in battleChara.GetStatus(isFromSelf, statusIDs))
 		{
 			yield return status.RemainingTime == 0f ? float.MaxValue : status.RemainingTime;
 		}
@@ -486,10 +499,10 @@ public static class StatusHelper
 			return byte.MaxValue;
 		}
 
-		IEnumerable<byte> stacks = PlayerStatusStacks(isFromSelf, statusIDs);
-		byte min = byte.MaxValue;
-		bool found = false;
-		foreach (byte s in stacks)
+		var stacks = PlayerStatusStacks(isFromSelf, statusIDs);
+		var min = byte.MaxValue;
+		var found = false;
+		foreach (var s in stacks)
 		{
 			if (s < min)
 			{
@@ -515,10 +528,10 @@ public static class StatusHelper
 			return byte.MaxValue;
 		}
 
-		IEnumerable<byte> stacks = battleChara.StatusStacks(isFromSelf, statusIDs);
-		byte min = byte.MaxValue;
-		bool found = false;
-		foreach (byte s in stacks)
+		var stacks = battleChara.StatusStacks(isFromSelf, statusIDs);
+		var min = byte.MaxValue;
+		var found = false;
+		foreach (var s in stacks)
 		{
 			if (s < min)
 			{
@@ -537,7 +550,7 @@ public static class StatusHelper
 			yield break;
 		}
 
-		foreach (IStatus status in PlayerGetStatus(isFromSelf, statusIDs))
+		foreach (var status in PlayerGetStatus(isFromSelf, statusIDs))
 		{
 			yield return (byte)(status.Param == 0 ? byte.MaxValue : status.Param);
 		}
@@ -545,7 +558,7 @@ public static class StatusHelper
 
 	private static IEnumerable<byte> StatusStacks(this IBattleChara battleChara, bool isFromSelf, params StatusID[] statusIDs)
 	{
-		foreach (IStatus status in battleChara.GetStatus(isFromSelf, statusIDs))
+		foreach (var status in battleChara.GetStatus(isFromSelf, statusIDs))
 		{
 			yield return (byte)(status.Param == 0 ? byte.MaxValue : status.Param);
 		}
@@ -574,7 +587,7 @@ public static class StatusHelper
 			return true;
 		}
 
-		foreach (IStatus _ in PlayerGetStatus(isFromSelf, statusIDs))
+		foreach (var _ in PlayerGetStatus(isFromSelf, statusIDs))
 		{
 			return true;
 		}
@@ -623,7 +636,7 @@ public static class StatusHelper
 			return true;
 		}
 
-		foreach (IStatus _ in battleChara.GetStatus(isFromSelf, statusIDs))
+		foreach (var _ in battleChara.GetStatus(isFromSelf, statusIDs))
 		{
 			return true;
 		}
@@ -663,9 +676,9 @@ public static class StatusHelper
 			return false;
 		}
 
-		if (DataCenter.InEffectTime && DataCenter.ApplyStatus.TryGetValue(Player.Object.GameObjectId, out uint statusId))
+		if (DataCenter.InEffectTime && DataCenter.ApplyStatus.TryGetValue(Player.Object.GameObjectId, out var statusId))
 		{
-			foreach (StatusID s in statusIDs)
+			foreach (var s in statusIDs)
 			{
 				if ((uint)s == statusId)
 				{
@@ -700,9 +713,9 @@ public static class StatusHelper
 			return false;
 		}
 
-		if (DataCenter.InEffectTime && DataCenter.ApplyStatus.TryGetValue(battleChara.GameObjectId, out uint statusId))
+		if (DataCenter.InEffectTime && DataCenter.ApplyStatus.TryGetValue(battleChara.GameObjectId, out var statusId))
 		{
-			foreach (StatusID s in statusIDs)
+			foreach (var s in statusIDs)
 			{
 				if ((uint)s == statusId)
 				{
@@ -747,13 +760,13 @@ public static class StatusHelper
 	/// <returns>The name of the status.</returns>
 	internal static string GetStatusName(StatusID id)
 	{
-		Lumina.Excel.ExcelSheet<Lumina.Excel.Sheets.Status> sheet = Service.GetSheet<Lumina.Excel.Sheets.Status>();
+		var sheet = Service.GetSheet<Lumina.Excel.Sheets.Status>();
 		if (sheet == null)
 		{
 			return string.Empty;
 		}
 
-		Lumina.Excel.Sheets.Status statusRow = sheet.GetRow((uint)id);
+		var statusRow = sheet.GetRow((uint)id);
 		return statusRow.RowId == 0 ? string.Empty : statusRow.Name.ToString() ?? string.Empty;
 	}
 
@@ -789,18 +802,21 @@ public static class StatusHelper
 		// Linear membership check to avoid HashSet allocation (statusIDs is small in practice)
 		static bool ContainsId(uint id, StatusID[] ids)
 		{
-			for (int i = 0; i < ids.Length; i++)
+			for (var i = 0; i < ids.Length; i++)
 			{
-				if ((uint)ids[i] == id) return true;
+				if ((uint)ids[i] == id)
+				{
+					return true;
+				}
 			}
 			return false;
 		}
 
-		ulong playerId = Player.Object?.GameObjectId ?? 0;
+		var playerId = Player.Object?.GameObjectId ?? 0;
 
-		for (int i = 0; i < statusList.Length; i++)
+		for (var i = 0; i < statusList.Length; i++)
 		{
-			IStatus? status = statusList[i];
+			var status = statusList[i];
 			if (status == null || status.StatusId == 0)
 			{
 				continue;
@@ -852,18 +868,21 @@ public static class StatusHelper
 		// Linear membership check to avoid HashSet allocation (statusIDs is small in practice)
 		static bool ContainsId(uint id, StatusID[] ids)
 		{
-			for (int i = 0; i < ids.Length; i++)
+			for (var i = 0; i < ids.Length; i++)
 			{
-				if ((uint)ids[i] == id) return true;
+				if ((uint)ids[i] == id)
+				{
+					return true;
+				}
 			}
 			return false;
 		}
 
-		ulong playerId = Player.Object?.GameObjectId ?? 0;
+		var playerId = Player.Object?.GameObjectId ?? 0;
 
-		for (int i = 0; i < statusList.Length; i++)
+		for (var i = 0; i < statusList.Length; i++)
 		{
-			IStatus? status = statusList[i];
+			var status = statusList[i];
 			if (status == null || status.StatusId == 0)
 			{
 				continue;
@@ -907,7 +926,7 @@ public static class StatusHelper
 			return false;
 		}
 
-		foreach (uint id in OtherConfiguration.InvincibleStatus)
+		foreach (var id in OtherConfiguration.InvincibleStatus)
 		{
 			if (id == status.StatusId)
 			{
@@ -934,7 +953,7 @@ public static class StatusHelper
 			return false;
 		}
 
-		foreach (uint id in OtherConfiguration.PriorityStatus)
+		foreach (var id in OtherConfiguration.PriorityStatus)
 		{
 			if (id == status.StatusId)
 			{
@@ -982,7 +1001,7 @@ public static class StatusHelper
 			return false;
 		}
 
-		foreach (uint id in OtherConfiguration.DangerousStatus)
+		foreach (var id in OtherConfiguration.DangerousStatus)
 		{
 			if (id == status.StatusId)
 			{

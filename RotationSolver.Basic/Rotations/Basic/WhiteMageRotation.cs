@@ -76,7 +76,7 @@ public partial class WhiteMageRotation
 	{
 		get
 		{
-			byte stacks = StatusHelper.PlayerStatusStack(true, StatusID.SacredSight);
+			var stacks = StatusHelper.PlayerStatusStack(true, StatusID.SacredSight);
 			return stacks == byte.MaxValue ? (byte)3 : stacks;
 		}
 	}
@@ -425,7 +425,7 @@ public partial class WhiteMageRotation
 
 	static partial void ModifySeraphStrikePvP(ref ActionSetting setting)
 	{
-		//setting.SpecialType = SpecialActionType.MovingForward;
+		setting.SpecialType = SpecialActionType.HostileMovingAttack;
 		setting.CreateConfig = () => new ActionConfig()
 		{
 			AoeCount = 1,

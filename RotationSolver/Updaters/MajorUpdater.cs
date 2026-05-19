@@ -101,7 +101,9 @@ internal static class MajorUpdater
 	private static void RSRTeachingClearUpdate(IFramework framework)
 	{
 		if (!_shouldRunThisCycle)
+		{
 			return;
+		}
 
 		if (Service.Config.TeachingMode)
 		{
@@ -119,7 +121,9 @@ internal static class MajorUpdater
 	private static void RSRInvalidUpdate(IFramework framework)
 	{
 		if (!_shouldRunThisCycle)
+		{
 			return;
+		}
 
 		if (!_isValidThisCycle)
 		{
@@ -143,75 +147,163 @@ internal static class MajorUpdater
 	private static void RSRActivatedCoreUpdate(IFramework framework)
 	{
 		if (!_shouldRunThisCycle)
+		{
 			return;
+		}
 
 		var autoOnEnabled = Service.Config.AutoOnYes && (Service.Config.StartOnAllianceIsInCombat2
 			|| Service.Config.StartOnAttackedBySomeone2
 			|| Service.Config.StartOnFieldOpInCombat2
 			|| Service.Config.StartOnPartyIsInCombat2) && !DataCenter.IsInDutyReplay();
 
-		try
+		// Only call UpdateTargets once — cover both the auto-on check and the activated path
+		if (autoOnEnabled || _isActivatedThisCycle)
 		{
-			// Only call UpdateTargets once — cover both the auto-on check and the activated path
-			if (autoOnEnabled || _isActivatedThisCycle)
+			try
 			{
 				TargetUpdater.UpdateTargets();
 			}
-			if (!_isActivatedThisCycle)
-				return;
+			catch (Exception ex)
+			{
+				LogOnce("(RSRActivatedCore): TargetUpdater.UpdateTargets Exception", ex);
+			}
+		}
 
-			// Target updater always needs to be first to update
+		if (!_isActivatedThisCycle)
+		{
+			return;
+		}
+
+		// Target updater always needs to be first to update
+		try
+		{
 			MacroUpdater.UpdateMacro();
+		}
+		catch (Exception ex)
+		{
+			LogOnce("(RSRActivatedCore): MacroUpdater.UpdateMacro Exception", ex);
+		}
 
-			if (DataCenter.BMREndabled)
+		if (DataCenter.BMREndabled)
+		{
+			try
 			{
 				BossModUpdater.Update();
 			}
+			catch (Exception ex)
+			{
+				LogOnce("(RSRActivatedCore): BossModUpdater.Update Exception", ex);
+			}
+		}
 
+		try
+		{
 			StateUpdater.UpdateState();
+		}
+		catch (Exception ex)
+		{
+			LogOnce("(RSRActivatedCore): StateUpdater.UpdateState Exception", ex);
+		}
 
+		try
+		{
+			AutoAttackUpdater.Update();
+		}
+		catch (Exception ex)
+		{
+			LogOnce("(RSRActivatedCore): AutoAttackUpdater.Update Exception", ex);
+		}
+
+		try
+		{
 			ActionUpdater.UpdateNextAction();
+		}
+		catch (Exception ex)
+		{
+			LogOnce("(RSRActivatedCore): ActionUpdater.UpdateNextAction Exception", ex);
+		}
 
-			bool canDoAction = ActionUpdater.CanDoAction();
+		var canDoAction = false;
+		try
+		{
+			canDoAction = ActionUpdater.CanDoAction();
+		}
+		catch (Exception ex)
+		{
+			LogOnce("(RSRActivatedCore): ActionUpdater.CanDoAction Exception", ex);
+		}
+
+		try
+		{
 			MovingUpdater.UpdateCanMove(canDoAction);
+		}
+		catch (Exception ex)
+		{
+			LogOnce("(RSRActivatedCore): MovingUpdater.UpdateCanMove Exception", ex);
+		}
 
-			if (canDoAction)
+		if (canDoAction)
+		{
+			try
 			{
 				RSCommands.DoAction();
 			}
+			catch (Exception ex)
+			{
+				LogOnce("(RSRActivatedCore): RSCommands.DoAction Exception", ex);
+			}
+		}
 
-			// In Target-Only mode, update the player's target from the computed next action without executing it.
-			if (DataCenter.IsTargetOnly)
+		// In Target-Only mode, update the player's target from the computed next action without executing it.
+		if (DataCenter.IsTargetOnly)
+		{
+			try
 			{
 				RSCommands.UpdateTargetFromNextAction();
 			}
+			catch (Exception ex)
+			{
+				LogOnce("(RSRActivatedCore): RSCommands.UpdateTargetFromNextAction (TargetOnly) Exception", ex);
+			}
+		}
 
-			// In Teaching Mode with auto-target enabled, also update the player's target so it matches
-			// the rotation's suggestion (important for tanks/healers where the optimal target varies).
-			if (!DataCenter.IsTargetOnly && Service.Config.TeachingMode && Service.Config.TeachingModeAutoTarget && DataCenter.InCombat)
+		// In Teaching Mode with auto-target enabled, also update the player's target so it matches
+		// the rotation's suggestion (important for tanks/healers where the optimal target varies).
+		if (!DataCenter.IsTargetOnly && Service.Config.TeachingMode && Service.Config.TeachingModeAutoTarget && DataCenter.InCombat)
+		{
+			try
 			{
 				RSCommands.UpdateTargetFromNextAction();
 			}
+			catch (Exception ex)
+			{
+				LogOnce("(RSRActivatedCore): RSCommands.UpdateTargetFromNextAction (TeachingMode) Exception", ex);
+			}
+		}
 
+		try
+		{
 			Wrath_IPCSubscriber.DisableAutoRotation();
 		}
 		catch (Exception ex)
 		{
-			LogOnce("RSRUpdate DC Exception", ex);
+			LogOnce("(RSRActivatedCore): Wrath_IPCSubscriber.DisableAutoRotation Exception", ex);
 		}
 	}
 
 	private static void RSRActivatedHighlightUpdate(IFramework framework)
 	{
 		if (!_shouldRunThisCycle || !_isActivatedThisCycle)
+		{
 			return;
+		}
 
 		// Handle Teaching Mode Highlighting
 		if (Service.Config.TeachingMode && ActionUpdater.NextAction is not null)
 		{
 			try
 			{
-				IAction nextAction = ActionUpdater.NextAction;
+				var nextAction = ActionUpdater.NextAction;
 				HotbarID? hotbar = null;
 				if (nextAction is IBaseItem item)
 				{
@@ -252,7 +344,9 @@ internal static class MajorUpdater
 	private static void RSRCommonUpdate(IFramework framework)
 	{
 		if (!_shouldRunThisCycle)
+		{
 			return;
+		}
 
 		try
 		{
@@ -274,23 +368,25 @@ internal static class MajorUpdater
 	private static void RSRCleanupUpdate(IFramework framework)
 	{
 		if (!_shouldRunThisCycle)
+		{
 			return;
+		}
 
 		try
 		{
 			// Handle system warnings
 			if (DataCenter.SystemWarnings.Count > 0)
 			{
-				DateTime now = DateTime.Now;
+				var now = DateTime.Now;
 				List<string> keysToRemove = [];
-				foreach (KeyValuePair<string, DateTime> kvp in DataCenter.SystemWarnings)
+				foreach (var kvp in DataCenter.SystemWarnings)
 				{
 					if (kvp.Value + TimeSpan.FromMinutes(10) < now)
 					{
 						keysToRemove.Add(kvp.Key);
 					}
 				}
-				foreach (string key in keysToRemove)
+				foreach (var key in keysToRemove)
 				{
 					_ = DataCenter.SystemWarnings.Remove(key);
 				}
@@ -316,13 +412,17 @@ internal static class MajorUpdater
 						if (vfx.Duration >= 0.5f)
 						{
 							if (vfx.TimeDuration.TotalSeconds <= vfx.Duration)
+							{
 								_vfxRemaining.Add(vfx);
+							}
 						}
 						else
 						{
 							// Unknown / very short duration: keep for up to 5 seconds by default
 							if (vfx.TimeDuration.TotalSeconds <= 5.0)
+							{
 								_vfxRemaining.Add(vfx);
+							}
 						}
 					}
 					catch
@@ -348,7 +448,9 @@ internal static class MajorUpdater
 	private static void RSRRotationAndStateUpdate(IFramework framework)
 	{
 		if (!_shouldRunThisCycle)
+		{
 			return;
+		}
 
 		try
 		{
@@ -379,29 +481,33 @@ internal static class MajorUpdater
 	private static void RSRMiscAndTargetFreelyUpdate(IFramework framework)
 	{
 		if (!_shouldRunThisCycle)
+		{
 			return;
+		}
 
 		try
 		{
 			MiscUpdater.UpdateMisc();
 
-			if (Service.Config.TargetFreely && !DataCenter.IsPvP && DataCenter.State)
+			if ((Service.Config.TargetFreely || DataCenter.TargetFreelyOverride) && !DataCenter.IsPvP && DataCenter.State && DataCenter.InCombat)
 			{
-				IAction? nextAction2 = ActionUpdater.NextAction;
+				var nextAction2 = ActionUpdater.NextAction;
 				if (nextAction2 == null)
 				{
 					if (Player.Object != null && Svc.Targets.Target == null)
 					{
 						// Try to find the closest enemy and target it
 						IBattleChara? closestEnemy = null;
-						float minDistance = float.MaxValue;
+						var minDistance = float.MaxValue;
 
 						foreach (var enemy in DataCenter.AllHostileTargets)
 						{
 							if (enemy == null || !enemy.IsEnemy() || enemy == Player.Object)
+							{
 								continue;
+							}
 
-							float distance = Vector3.Distance(Player.Object.Position, enemy.Position);
+							var distance = Vector3.Distance(Player.Object.Position, enemy.Position);
 							if (distance < minDistance)
 							{
 								minDistance = distance;
@@ -434,7 +540,9 @@ internal static class MajorUpdater
 	private static void RSRResetUpdate(IFramework framework)
 	{
 		if (!_shouldRunThisCycle)
+		{
 			return;
+		}
 
 		_shouldRunThisCycle = false;
 	}
@@ -446,18 +554,22 @@ internal static class MajorUpdater
 		{
 			var sheet = Svc.Data.GetExcelSheet<GeneralAction>();
 			if (sheet == null)
+			{
 				return null;
+			}
 
 			_generalActionLookup = [];
-			foreach (GeneralAction gAct in sheet)
+			foreach (var gAct in sheet)
 			{
 				var actionRowId = gAct.Action.RowId;
 				if (actionRowId != 0)
+				{
 					_generalActionLookup.TryAdd(actionRowId, gAct.RowId);
+				}
 			}
 		}
 
-		return _generalActionLookup.TryGetValue(baseAction.ID, out uint generalActionRowId)
+		return _generalActionLookup.TryGetValue(baseAction.ID, out var generalActionRowId)
 			? new HotbarID(HotbarSlotType.GeneralAction, generalActionRowId)
 			: null;
 	}
@@ -492,5 +604,6 @@ internal static class MajorUpdater
 
 		MiscUpdater.Dispose();
 		ActionUpdater.ClearNextAction();
+		AutoAttackUpdater.Disable();
 	}
 }

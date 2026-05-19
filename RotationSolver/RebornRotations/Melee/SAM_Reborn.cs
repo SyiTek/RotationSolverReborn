@@ -2,7 +2,7 @@
 
 namespace RotationSolver.RebornRotations.Melee;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Melee/SAM_Reborn.cs")]
 
 public sealed class SAM_Reborn : SamuraiRotation
@@ -35,7 +35,7 @@ public sealed class SAM_Reborn : SamuraiRotation
 
 	protected override IAction? CountDownAction(float remainTime)
 	{
-		if (remainTime <= MeikyoShisuiCountdown && MeikyoShisuiPvE.CanUse(out IAction? act))
+		if (remainTime <= MeikyoShisuiCountdown && MeikyoShisuiPvE.CanUse(out var act))
 		{
 			return act;
 		}
@@ -113,9 +113,9 @@ public sealed class SAM_Reborn : SamuraiRotation
 
 	protected override bool AttackAbility(IAction nextGCD, out IAction? act)
 	{
-		bool MeleeMeditationcheck = nextGCD.IsTheSameTo(true, ActionID.OgiNamikiriPvE, ActionID.HiganbanaPvE, ActionID.TenkaGokenPvE, ActionID.MidareSetsugekkaPvE, ActionID.TendoGokenPvE, ActionID.TendoSetsugekkaPvE, ActionID.TendoGokenPvE);
-		bool isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
-		bool isTargetDying = CurrentTarget?.IsDying() ?? false;
+		var MeleeMeditationcheck = nextGCD.IsTheSameTo(true, ActionID.OgiNamikiriPvE, ActionID.HiganbanaPvE, ActionID.TenkaGokenPvE, ActionID.MidareSetsugekkaPvE, ActionID.TendoGokenPvE, ActionID.TendoSetsugekkaPvE, ActionID.TendoGokenPvE);
+		var isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
+		var isTargetDying = CurrentTarget?.IsDying() ?? false;
 
 		if (MeikyoShisuiPvE.CanUse(out act, usedUp: !EnhancedMeikyoShisuiTrait.EnoughLevel || (EnhancedMeikyoShisuiTrait.EnoughLevel && MeikyoShisuiPvE.Cooldown.WillHaveXChargesGCD(2, 1)) || TsubamegaeshiActionReady)
 			&& HasHostilesInRange && (!HasFugetsuAndFuka || (isTargetBoss && isTargetDying) || (CurrentTarget?.HasStatus(true, StatusID.Higanbana) ?? false) && !(CurrentTarget?.WillStatusEndGCD(HiganbanaPvE.Config.StatusGcdCount, 0, true, StatusID.Higanbana) ?? false)))
@@ -186,7 +186,7 @@ public sealed class SAM_Reborn : SamuraiRotation
 	#region GCD Logic
 	protected override bool GeneralGCD(out IAction? act)
 	{
-		bool isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
+		var isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
 
 		if (OgiNamikiriPvE.CanUse(out act) && OgiNamikiriPvE.Target.Target != null)
 		{
@@ -278,18 +278,30 @@ public sealed class SAM_Reborn : SamuraiRotation
 			{
 				case "Fugetsu":
 					if (MangetsuPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: HasMeikyoShisui && !HasKa))
+					{
 						return true;
+					}
+
 					break;
 				case "Fuka":
 					if (OkaPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: HasMeikyoShisui && !HasKa))
+					{
 						return true;
+					}
+
 					break;
 				case "Equal":
 				case null:
 					if (MangetsuPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: HasMeikyoShisui && !HasKa))
+					{
 						return true;
+					}
+
 					if (OkaPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: HasMeikyoShisui && !HasKa))
+					{
 						return true;
+					}
+
 					break;
 			}
 		}
@@ -380,18 +392,30 @@ public sealed class SAM_Reborn : SamuraiRotation
 			{
 				case "Fugetsu":
 					if (JinpuPvE.CanUse(out act, skipStatusProvideCheck: true))
+					{
 						return true;
+					}
+
 					break;
 				case "Fuka":
 					if (ShifuPvE.CanUse(out act, skipStatusProvideCheck: true))
+					{
 						return true;
+					}
+
 					break;
 				case "Equal":
 				case null:
 					if (JinpuPvE.CanUse(out act, skipStatusProvideCheck: true))
+					{
 						return true;
+					}
+
 					if (ShifuPvE.CanUse(out act, skipStatusProvideCheck: true))
+					{
 						return true;
+					}
+
 					break;
 			}
 		}
@@ -420,13 +444,17 @@ public sealed class SAM_Reborn : SamuraiRotation
 			if (!HasFugetsu)
 			{
 				if (JinpuPvE.CanUse(out act))
+				{
 					return true;
+				}
 			}
 
 			if (!HasFuka)
 			{
 				if (ShifuPvE.CanUse(out act))
+				{
 					return true;
+				}
 			}
 		}
 
@@ -444,6 +472,11 @@ public sealed class SAM_Reborn : SamuraiRotation
 			{
 				return true;
 			}
+		}
+
+		if (!HasSetsu && HasGetsu && HasKa && HasMeikyoShisui && YukikazePvE.CanUse(out act, skipComboCheck: HasMeikyoShisui))
+		{
+			return true;
 		}
 
 		return base.GeneralGCD(out act);

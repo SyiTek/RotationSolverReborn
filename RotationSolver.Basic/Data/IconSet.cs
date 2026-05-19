@@ -94,8 +94,8 @@ public static class IconSet
 	{
 		using MemoryStream stream = new(data);
 		using MemoryStream outStream = new();
-		SvgDocument svgDocument = SvgDocument.Open<SvgDocument>(stream);
-		using System.Drawing.Bitmap bitmap = svgDocument.Draw();
+		var svgDocument = SvgDocument.Open<SvgDocument>(stream);
+		using var bitmap = svgDocument.Draw();
 		bitmap.Save(outStream, ImageFormat.Png);
 		return outStream.ToArray();
 	}
@@ -174,9 +174,9 @@ public static class IconSet
 			return GetTexture(SPRINT_PVE_ICON_ID, out texture, 0);
 		}
 
-		if (!_actionIcons.TryGetValue(actionID, out uint iconId))
+		if (!_actionIcons.TryGetValue(actionID, out var iconId))
 		{
-			Lumina.Excel.Sheets.Action actionRow = Service.GetSheet<Lumina.Excel.Sheets.Action>().GetRow((uint)actionID);
+			var actionRow = Service.GetSheet<Lumina.Excel.Sheets.Action>().GetRow((uint)actionID);
 			iconId = actionRow.Icon;
 			_actionIcons[actionID] = iconId;
 		}
@@ -317,7 +317,7 @@ public static class IconSet
 	/// <returns>The icon ID for the job.</returns>
 	public static uint GetJobIcon(JobRole role, Job job)
 	{
-		IconType type = IconType.Gold;
+		var type = IconType.Gold;
 		switch (role)
 		{
 			case JobRole.Tank:
@@ -342,13 +342,13 @@ public static class IconSet
 	/// <returns>The icon ID for the job.</returns>
 	public static uint GetJobIcon(Job job)
 	{
-		Lumina.Excel.ExcelSheet<ClassJob> classJobSheet = Svc.Data.GetExcelSheet<ClassJob>();
+		var classJobSheet = Svc.Data.GetExcelSheet<ClassJob>();
 		if (classJobSheet == null)
 		{
 			throw new InvalidOperationException("ClassJob sheet not found.");
 		}
 
-		ClassJob classJobRow = classJobSheet.GetRow((uint)job);
+		var classJobRow = classJobSheet.GetRow((uint)job);
 		return classJobRow.RowId == 0
 			? throw new InvalidOperationException($"ClassJob row for job {job} not found.")
 			: GetJobIcon(classJobRow.GetJobRole(), job);
@@ -374,7 +374,7 @@ public static class IconSet
 			throw new ArgumentOutOfRangeException(nameof(type), "Invalid icon type.");
 		}
 
-		int jobIndex = (int)job - 1;
+		var jobIndex = (int)job - 1;
 		if (jobIndex < 0 || jobIndex >= iconsForType.Length)
 		{
 			throw new ArgumentOutOfRangeException(nameof(job), "Invalid job for icon type.");
@@ -401,7 +401,7 @@ public static class IconSet
 		if (!OccultIconsLoaded)
 		{
 			var uld = Svc.PluginInterface.UiBuilder.LoadUld("ui/uld/MKDSupportJob.uld");
-			for (int i = 0; i < OccultIcons.Length; i++)
+			for (var i = 0; i < OccultIcons.Length; i++)
 			{
 				OccultIcons[i] = uld.LoadTexturePart("ui/uld/MKDSupportJob_hr1.tex", i);
 			}

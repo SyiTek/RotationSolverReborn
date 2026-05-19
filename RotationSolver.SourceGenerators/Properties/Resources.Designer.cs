@@ -296,11 +296,21 @@ namespace RotationSolver.SourceGenerators.Properties {
         ////// &lt;/summary&gt;
         ///Stun = 2,
         ///
-        ////// &lt;summary&gt;        /// [rest of string was truncated]&quot;;.
+        ////// &lt;summary&gt;
+        /// [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string StatusId {
             get {
                 return ResourceManager.GetString("StatusId", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to BNpc name IDs.
+        /// </summary>
+        internal static string BNpcNameId {
+            get {
+                return ResourceManager.GetString("BNpcNameId", resourceCulture);
             }
         }
     }

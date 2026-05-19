@@ -1,6 +1,6 @@
 ﻿namespace RotationSolver.RebornRotations.Magical;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Magical/RDM_Reborn.cs")]
 
 public sealed class RDM_Reborn : RedMageRotation
@@ -29,6 +29,9 @@ public sealed class RDM_Reborn : RedMageRotation
 
 	[RotationConfig(CombatType.PvE, Name = "Use Displacement after Engagement (use at own risk).")]
 	public bool SuicideByDumber { get; set; } = false;
+
+	[RotationConfig(CombatType.PvE, Name = "Allow the use of Corpsacorps while moving (use at own risk).")]
+	public bool CorpsacorpsMove { get; set; } = false;
 	#endregion
 
 	private static BaseAction VeraeroPvEStartUp { get; } = new BaseAction(ActionID.VeraeroPvE, false);
@@ -38,7 +41,7 @@ public sealed class RDM_Reborn : RedMageRotation
 	{
 		if (remainTime < VeraeroPvEStartUp.Info.CastTime + CountDownAhead)
 		{
-			if (VeraeroPvEStartUp.CanUse(out IAction? act))
+			if (VeraeroPvEStartUp.CanUse(out var act))
 			{
 				return act;
 			}
@@ -105,7 +108,7 @@ public sealed class RDM_Reborn : RedMageRotation
 
 	protected override bool EmergencyAbility(IAction nextGCD, out IAction? act)
 	{
-		bool AnyoneInMeleeRange = NumberOfHostilesInRangeOf(3) > 0;
+		var AnyoneInMeleeRange = NumberOfHostilesInRangeOf(3) > 0;
 
 		if (HasEmbolden || EmboldenPvE.Cooldown.HasOneCharge || EmboldenPvE.Cooldown.WillHaveOneCharge(5f) && !IsInMeleeCombo)
 		{
@@ -135,7 +138,7 @@ public sealed class RDM_Reborn : RedMageRotation
 
 	protected override bool AttackAbility(IAction nextGCD, out IAction? act)
 	{
-		bool Meleecheck = nextGCD.IsTheSameTo(true, ActionID.RipostePvE, ActionID.ZwerchhauPvE, ActionID.RedoublementPvE, ActionID.MoulinetPvE, ActionID.ReprisePvE);
+		var Meleecheck = nextGCD.IsTheSameTo(true, ActionID.RipostePvE, ActionID.ZwerchhauPvE, ActionID.RedoublementPvE, ActionID.MoulinetPvE, ActionID.ReprisePvE);
 
 		act = null;
 
@@ -231,7 +234,7 @@ public sealed class RDM_Reborn : RedMageRotation
 			return true;
 		}
 
-		if (!IsMoving && CorpsacorpsPvE.CanUse(out act, usedUp: HasEmbolden || !EmboldenPvE.EnoughLevel || CorpsacorpsPvE.Cooldown.WillHaveXChargesGCD(2, 1)))
+		if ((!IsMoving || CorpsacorpsMove) && CorpsacorpsPvE.CanUse(out act, usedUp: HasEmbolden || !EmboldenPvE.EnoughLevel || CorpsacorpsPvE.Cooldown.WillHaveXChargesGCD(2, 1)))
 		{
 			return true;
 		}
@@ -297,33 +300,68 @@ public sealed class RDM_Reborn : RedMageRotation
 	{
 		if (ManaStacks == 3)
 		{
-			int diff = BlackMana - WhiteMana;
-			int gap = Math.Abs(diff);
+			var diff = BlackMana - WhiteMana;
+			var gap = Math.Abs(diff);
 
-			bool forceBalance = HasEmbolden || gap >= 19;
+			var forceBalance = HasEmbolden || gap >= 19;
 
 			if (forceBalance)
 			{
 				// Balance first
-				if (diff > 0 && VerholyPvE.CanUse(out act)) return true;  // Black leads -> add White
-				if (diff < 0 && VerflarePvE.CanUse(out act)) return true; // White leads -> add Black
+				if (diff > 0 && VerholyPvE.CanUse(out act))
+				{
+					return true;  // Black leads -> add White
+				}
+
+				if (diff < 0 && VerflarePvE.CanUse(out act))
+				{
+					return true; // White leads -> add Black
+				}
 			}
 			else
 			{
 				// Slight imbalance: proc-aware preference to avoid overwriting existing procs
-				if (CanVerFire && VerholyPvE.CanUse(out act)) return true;
-				if (CanVerStone && VerflarePvE.CanUse(out act)) return true;
+				if (CanVerFire && VerholyPvE.CanUse(out act))
+				{
+					return true;
+				}
+
+				if (CanVerStone && VerflarePvE.CanUse(out act))
+				{
+					return true;
+				}
 			}
 
 			// Fallbacks
-			if (diff > 0 && VerholyPvE.CanUse(out act)) return true;
-			if (diff < 0 && VerflarePvE.CanUse(out act)) return true;
+			if (diff > 0 && VerholyPvE.CanUse(out act))
+			{
+				return true;
+			}
 
-			if (CanVerFire && !CanVerStone && VerholyPvE.CanUse(out act)) return true;
-			if (CanVerStone && !CanVerFire && VerflarePvE.CanUse(out act)) return true;
+			if (diff < 0 && VerflarePvE.CanUse(out act))
+			{
+				return true;
+			}
 
-			if (VerholyPvE.CanUse(out act)) return true;
-			if (VerflarePvE.CanUse(out act)) return true;
+			if (CanVerFire && !CanVerStone && VerholyPvE.CanUse(out act))
+			{
+				return true;
+			}
+
+			if (CanVerStone && !CanVerFire && VerflarePvE.CanUse(out act))
+			{
+				return true;
+			}
+
+			if (VerholyPvE.CanUse(out act))
+			{
+				return true;
+			}
+
+			if (VerflarePvE.CanUse(out act))
+			{
+				return true;
+			}
 		}
 
 		if (CanInstantCast && !CanVerEither)
@@ -394,7 +432,7 @@ public sealed class RDM_Reborn : RedMageRotation
 			return true;
 		}
 
-		bool EnoughMana = (!Pooling && EnoughManaComboNoPooling) || (Pooling && EnoughManaComboPooling);
+		var EnoughMana = (!Pooling && EnoughManaComboNoPooling) || (Pooling && EnoughManaComboPooling);
 		//Check if you can start melee combo
 		if (EnoughMana)
 		{
@@ -452,22 +490,32 @@ public sealed class RDM_Reborn : RedMageRotation
 				{
 					case "VerFire":
 						if (VerfirePvE.CanUse(out act))
+						{
 							return true;
+						}
+
 						break;
 					case "VerStone":
 						if (VerstonePvE.CanUse(out act))
+						{
 							return true;
+						}
+
 						break;
 					case "Equal":
 						if (WhiteMana < BlackMana)
 						{
 							if (VerstonePvE.CanUse(out act))
+							{
 								return true;
+							}
 						}
 						if (WhiteMana >= BlackMana)
 						{
 							if (VerfirePvE.CanUse(out act))
+							{
 								return true;
+							}
 						}
 						break;
 				}
@@ -525,12 +573,14 @@ public sealed class RDM_Reborn : RedMageRotation
 	{
 		get
 		{
-			int aliveHealerCount = 0;
-			IEnumerable<IBattleChara> healers = PartyMembers.GetJobCategory(JobRole.Healer);
-			foreach (IBattleChara h in healers)
+			var aliveHealerCount = 0;
+			var healers = PartyMembers.GetJobCategory(JobRole.Healer);
+			foreach (var h in healers)
 			{
 				if (!h.IsDead)
+				{
 					aliveHealerCount++;
+				}
 			}
 
 			return base.CanHealSingleSpell && (GCDHeal || aliveHealerCount == 0);

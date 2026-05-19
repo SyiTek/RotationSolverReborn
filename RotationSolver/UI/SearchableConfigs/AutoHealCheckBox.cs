@@ -35,7 +35,7 @@ internal class AutoHealCheckBox(PropertyInfo property, params ISearchable[] othe
 			_healthSingleSpellHot,
 		];
 
-		ISearchable[] result = new ISearchable[otherChildren.Length + healthChildren.Length];
+		var result = new ISearchable[otherChildren.Length + healthChildren.Length];
 		otherChildren.CopyTo(result, 0);
 		healthChildren.CopyTo(result, otherChildren.Length);
 		return result;
@@ -44,7 +44,7 @@ internal class AutoHealCheckBox(PropertyInfo property, params ISearchable[] othe
 	// Method to create DragFloatSearch instances with null checks
 	private static DragFloatSearch CreateDragFloatSearch(string propertyName)
 	{
-		PropertyInfo? property = typeof(Configs).GetRuntimeProperty(propertyName);
+		var property = typeof(Configs).GetRuntimeProperty(propertyName);
 		return property == null
 			? throw new ArgumentException($"Property '{propertyName}' not found in Configs.")
 			: new DragFloatSearch(property);
@@ -53,7 +53,7 @@ internal class AutoHealCheckBox(PropertyInfo property, params ISearchable[] othe
 	protected override void DrawChildren()
 	{
 		// Draw other children
-		foreach (ISearchable child in _otherChildren)
+		foreach (var child in _otherChildren)
 		{
 			child.Draw();
 		}

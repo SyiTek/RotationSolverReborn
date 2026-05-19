@@ -13,9 +13,9 @@ internal class SearchableCollection
 
 	public SearchableCollection()
 	{
-		IEnumerable<PropertyInfo> properties = typeof(Configs).GetRuntimeProperties();
-		int propertiesLength = 0;
-		foreach (PropertyInfo _ in properties)
+		var properties = typeof(Configs).GetRuntimeProperties();
+		var propertiesLength = 0;
+		foreach (var _ in properties)
 		{
 			propertiesLength++;
 		}
@@ -23,15 +23,15 @@ internal class SearchableCollection
 		List<SearchPair> pairs = new(propertiesLength);
 		Dictionary<string, CheckBoxSearch> parents = new(propertiesLength);
 
-		foreach (PropertyInfo property in properties)
+		foreach (var property in properties)
 		{
-			UIAttribute? ui = property.GetCustomAttribute<UIAttribute>();
+			var ui = property.GetCustomAttribute<UIAttribute>();
 			if (ui == null)
 			{
 				continue;
 			}
 
-			ISearchable? item = CreateSearchable(property);
+			var item = CreateSearchable(property);
 			if (item == null)
 			{
 				continue;
@@ -50,10 +50,10 @@ internal class SearchableCollection
 
 		_items = new List<SearchPair>(pairs.Count);
 
-		foreach (SearchPair pair in pairs)
+		foreach (var pair in pairs)
 		{
-			string parentName = pair.Attribute.Parent;
-			if (string.IsNullOrEmpty(parentName) || !parents.TryGetValue(parentName, out CheckBoxSearch? parent))
+			var parentName = pair.Attribute.Parent;
+			if (string.IsNullOrEmpty(parentName) || !parents.TryGetValue(parentName, out var parent))
 			{
 				_items.Add(pair);
 			}
@@ -66,14 +66,14 @@ internal class SearchableCollection
 
 	public void DrawItems(string filter)
 	{
-		bool isFirst = true;
+		var isFirst = true;
 		Dictionary<byte, List<SearchPair>> filteredItems = [];
 
-		foreach (SearchPair item in _items)
+		foreach (var item in _items)
 		{
 			if (item.Attribute.Filter == filter)
 			{
-				if (!filteredItems.TryGetValue(item.Attribute.Section, out List<SearchPair>? value))
+				if (!filteredItems.TryGetValue(item.Attribute.Section, out var value))
 				{
 					value = [];
 					filteredItems[item.Attribute.Section] = value;
@@ -83,19 +83,19 @@ internal class SearchableCollection
 			}
 		}
 
-		foreach (KeyValuePair<byte, List<SearchPair>> grp in filteredItems)
+		foreach (var grp in filteredItems)
 		{
 			if (!isFirst)
 			{
 				ImGui.Separator();
 			}
 
-			List<SearchPair> items = grp.Value;
+			var items = grp.Value;
 			// Simple insertion sort by Attribute.Order
-			for (int i = 1; i < items.Count; i++)
+			for (var i = 1; i < items.Count; i++)
 			{
-				SearchPair temp = items[i];
-				int j = i - 1;
+				var temp = items[i];
+				var j = i - 1;
 				while (j >= 0 && items[j].Attribute.Order > temp.Attribute.Order)
 				{
 					items[j + 1] = items[j];
@@ -104,7 +104,7 @@ internal class SearchableCollection
 				items[j + 1] = temp;
 			}
 
-			foreach (SearchPair item in items)
+			foreach (var item in items)
 			{
 				item.Searchable.Draw();
 			}
@@ -123,11 +123,11 @@ internal class SearchableCollection
 		HashSet<ISearchable> results = [];
 		List<ISearchable> finalResults = new(MaxResultLength);
 
-		foreach (SearchPair pair in _items)
+		foreach (var pair in _items)
 		{
-			foreach (ISearchable searchable in GetChildren(pair.Searchable))
+			foreach (var searchable in GetChildren(pair.Searchable))
 			{
-				ISearchable parent = GetParent(searchable);
+				var parent = GetParent(searchable);
 				if (results.Contains(parent))
 				{
 					continue;
@@ -194,9 +194,9 @@ internal class SearchableCollection
 
 		if (searchable is CheckBoxSearch c && c.Children != null)
 		{
-			foreach (ISearchable child in c.Children)
+			foreach (var child in c.Children)
 			{
-				foreach (ISearchable grandChild in GetChildren(child))
+				foreach (var grandChild in GetChildren(child))
 				{
 					yield return grandChild;
 				}
@@ -216,15 +216,15 @@ internal class SearchableCollection
 			return 0;
 		}
 
-		string[] chars = text.Split(_splitChar, StringSplitOptions.RemoveEmptyEntries);
-		string[] keys = key.Split(_splitChar, StringSplitOptions.RemoveEmptyEntries);
+		var chars = text.Split(_splitChar, StringSplitOptions.RemoveEmptyEntries);
+		var keys = key.Split(_splitChar, StringSplitOptions.RemoveEmptyEntries);
 
-		int startWithCount = 0;
-		int containCount = 0;
+		var startWithCount = 0;
+		var containCount = 0;
 
-		foreach (string c in chars)
+		foreach (var c in chars)
 		{
-			foreach (string k in keys)
+			foreach (var k in keys)
 			{
 				if (c.StartsWith(k, StringComparison.OrdinalIgnoreCase))
 				{

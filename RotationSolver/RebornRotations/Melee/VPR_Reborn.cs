@@ -1,6 +1,6 @@
 ﻿namespace RotationSolver.RebornRotations.Melee;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Melee/VPR_Reborn.cs")]
 
 public sealed class VPR_Reborn : ViperRotation
@@ -79,19 +79,34 @@ public sealed class VPR_Reborn : ViperRotation
 		{
 			case (true, _):
 				if (UncoiledTwinfangPvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				break;
 			case (_, true):
 				if (UncoiledTwinbloodPvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				break;
 			case (false, false):
 				if (TimeSinceLastAction.TotalSeconds < 2)
+				{
 					break;
+				}
+
 				if (UncoiledTwinfangPvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				if (UncoiledTwinbloodPvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				break;
 		}
 
@@ -100,19 +115,34 @@ public sealed class VPR_Reborn : ViperRotation
 		{
 			case (true, _):
 				if (TwinfangThreshPvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				break;
 			case (_, true):
 				if (TwinbloodThreshPvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				break;
 			case (false, false):
 				if (TimeSinceLastAction.TotalSeconds < 2)
+				{
 					break;
+				}
+
 				if (TwinfangThreshPvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				if (TwinbloodThreshPvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				break;
 		}
 
@@ -121,19 +151,34 @@ public sealed class VPR_Reborn : ViperRotation
 		{
 			case (true, _):
 				if (TwinfangBitePvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				break;
 			case (_, true):
 				if (TwinbloodBitePvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				break;
 			case (false, false):
 				if (TimeSinceLastAction.TotalSeconds < 2)
+				{
 					break;
+				}
+
 				if (TwinfangBitePvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				if (TwinbloodBitePvE.CanUse(out act))
+				{
 					return true;
+				}
+
 				break;
 		}
 
@@ -304,8 +349,8 @@ public sealed class VPR_Reborn : ViperRotation
 		if (LiveComboTime > GCDTime(1) && !WillSwiftEnd && !WillHunterEnd)
 		{
 			// Uncoiled Fury Overcap protection
-			bool isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
-			bool isTargetDying = CurrentTarget?.IsDying() ?? false;
+			var isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
+			var isTargetDying = CurrentTarget?.IsDying() ?? false;
 			if ((MaxRattling == RattlingCoilStacks || RattlingCoilStacks >= MaxUncoiledStacksUser || (isTargetBoss && isTargetDying && RattlingCoilStacks > 0)) && !HasReadyToReawaken && NoAbilityReady)
 			{
 				if (UncoiledFuryPvE.CanUse(out act, usedUp: true))
@@ -343,32 +388,48 @@ public sealed class VPR_Reborn : ViperRotation
 				if (WillSwiftEnd)
 				{
 					if (SwiftskinsDenPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true, skipAoeCheck: true))
+					{
 						return true;
+					}
 				}
 
 				if (WillHunterEnd)
 				{
 					if (HuntersDenPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true, skipAoeCheck: true))
+					{
 						return true;
+					}
 				}
 
 				switch (HunterOrSwiftEndsFirst)
 				{
 					case "Hunter":
 						if (HuntersDenPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true, skipAoeCheck: true))
+						{
 							return true;
+						}
+
 						break;
 					case "Swift":
 						if (SwiftskinsDenPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true, skipAoeCheck: true))
+						{
 							return true;
+						}
+
 						break;
 					case "Equal":
 					case null:
 					default:
 						if (HuntersDenPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true, skipAoeCheck: true))
+						{
 							return true;
+						}
+
 						if (SwiftskinsDenPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true, skipAoeCheck: true))
+						{
 							return true;
+						}
+
 						break;
 				}
 			}
@@ -377,13 +438,17 @@ public sealed class VPR_Reborn : ViperRotation
 				if (!IsSwift)
 				{
 					if (SwiftskinsDenPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true, skipAoeCheck: true))
+					{
 						return true;
+					}
 				}
 
 				if (!IsHunter)
 				{
 					if (HuntersDenPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true, skipAoeCheck: true))
+					{
 						return true;
+					}
 				}
 			}
 		}
@@ -422,17 +487,29 @@ public sealed class VPR_Reborn : ViperRotation
 		{
 			case (true, _):
 				if (JaggedMawPvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: true, skipComboCheck: true))
+				{
 					return true;
+				}
+
 				break;
 			case (_, true):
 				if (BloodiedMawPvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: true, skipComboCheck: true))
+				{
 					return true;
+				}
+
 				break;
 			case (false, false):
 				if (JaggedMawPvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: true, skipComboCheck: true))
+				{
 					return true;
+				}
+
 				if (BloodiedMawPvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: true, skipComboCheck: true))
+				{
 					return true;
+				}
+
 				break;
 		}
 
@@ -445,17 +522,26 @@ public sealed class VPR_Reborn : ViperRotation
 				{
 					case "Hunter":
 						if (HuntersBitePvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 					case "Swift":
 						if (SwiftskinsBitePvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 					case "Equal":
 					case null:
 					default:
 						if (SwiftskinsBitePvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 				}
 			}
@@ -481,14 +567,18 @@ public sealed class VPR_Reborn : ViperRotation
 				if (!IsHunter)
 				{
 					if (HuntersBitePvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: true, skipComboCheck: true))
+					{
 						return true;
+					}
 				}
 			}
 		}
 		if (!SwiftskinsBitePvE.EnoughLevel)
 		{
 			if (HuntersBitePvE.CanUse(out act, skipAoeCheck: true, skipStatusProvideCheck: true, skipComboCheck: true))
+			{
 				return true;
+			}
 		}
 
 		// aoe 1
@@ -498,17 +588,29 @@ public sealed class VPR_Reborn : ViperRotation
 			{
 				case (true, _):
 					if (SteelMawPvE.CanUse(out act))
+					{
 						return true;
+					}
+
 					break;
 				case (_, true):
 					if (ReavingMawPvE.CanUse(out act))
+					{
 						return true;
+					}
+
 					break;
 				case (false, false):
 					if (ReavingMawPvE.CanUse(out act))
+					{
 						return true;
+					}
+
 					if (SteelMawPvE.CanUse(out act))
+					{
 						return true;
+					}
+
 					break;
 			}
 		}
@@ -524,13 +626,17 @@ public sealed class VPR_Reborn : ViperRotation
 				if (WillSwiftEnd)
 				{
 					if (SwiftskinsCoilPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+					{
 						return true;
+					}
 				}
 
 				if (WillHunterEnd)
 				{
 					if (HuntersCoilPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+					{
 						return true;
+					}
 				}
 
 				if (HuntersCoilPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true) && HuntersCoilPvE.Target.Target != null && CanHitPositional(EnemyPositional.Flank, HuntersCoilPvE.Target.Target))
@@ -547,19 +653,31 @@ public sealed class VPR_Reborn : ViperRotation
 				{
 					case "Hunter":
 						if (HuntersCoilPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 					case "Swift":
 						if (SwiftskinsCoilPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 					case "Equal":
 					case null:
 					default:
 						if (HuntersCoilPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						if (SwiftskinsCoilPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
+
 						break;
 				}
 			}
@@ -592,13 +710,17 @@ public sealed class VPR_Reborn : ViperRotation
 				if (!IsSwift)
 				{
 					if (SwiftskinsCoilPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+					{
 						return true;
+					}
 				}
 
 				if (!IsHunter)
 				{
 					if (HuntersCoilPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+					{
 						return true;
+					}
 				}
 			}
 		}
@@ -637,29 +759,53 @@ public sealed class VPR_Reborn : ViperRotation
 		{
 			case (true, _, _, _):
 				if (HindstingStrikePvE.CanUse(out act, skipStatusProvideCheck: true))
+				{
 					return true;
+				}
+
 				break;
 			case (_, true, _, _):
 				if (HindsbaneFangPvE.CanUse(out act, skipStatusProvideCheck: true))
+				{
 					return true;
+				}
+
 				break;
 			case (_, _, true, _):
 				if (FlankstingStrikePvE.CanUse(out act, skipStatusProvideCheck: true))
+				{
 					return true;
+				}
+
 				break;
 			case (_, _, _, true):
 				if (FlanksbaneFangPvE.CanUse(out act, skipStatusProvideCheck: true))
+				{
 					return true;
+				}
+
 				break;
 			case (false, false, false, false):
 				if (HindstingStrikePvE.CanUse(out act, skipStatusProvideCheck: true))
+				{
 					return true;
+				}
+
 				if (HindsbaneFangPvE.CanUse(out act, skipStatusProvideCheck: true))
+				{
 					return true;
+				}
+
 				if (FlankstingStrikePvE.CanUse(out act, skipStatusProvideCheck: true))
+				{
 					return true;
+				}
+
 				if (FlanksbaneFangPvE.CanUse(out act, skipStatusProvideCheck: true))
+				{
 					return true;
+				}
+
 				break;
 		}
 
@@ -673,13 +819,17 @@ public sealed class VPR_Reborn : ViperRotation
 					if (HasHind)
 					{
 						if (SwiftskinsStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
 					}
 
 					if (HasFlank)
 					{
 						if (HuntersStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
 					}
 				}
 
@@ -689,17 +839,26 @@ public sealed class VPR_Reborn : ViperRotation
 					{
 						case "Hunter":
 							if (HuntersStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+							{
 								return true;
+							}
+
 							break;
 						case "Swift":
 							if (SwiftskinsStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+							{
 								return true;
+							}
+
 							break;
 						case "Equal":
 						case null:
 						default:
 							if (SwiftskinsStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+							{
 								return true;
+							}
+
 							break;
 					}
 				}
@@ -712,13 +871,17 @@ public sealed class VPR_Reborn : ViperRotation
 					if (HasHind)
 					{
 						if (SwiftskinsStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
 					}
 
 					if (HasFlank)
 					{
 						if (HuntersStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
 					}
 				}
 
@@ -743,7 +906,9 @@ public sealed class VPR_Reborn : ViperRotation
 					if (!IsHunter)
 					{
 						if (HuntersStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+						{
 							return true;
+						}
 					}
 				}
 			}
@@ -751,7 +916,9 @@ public sealed class VPR_Reborn : ViperRotation
 		if (!SwiftskinsStingPvE.EnoughLevel)
 		{
 			if (HuntersStingPvE.CanUse(out act, skipStatusProvideCheck: true, skipComboCheck: true))
+			{
 				return true;
+			}
 		}
 
 		// st 1
@@ -761,17 +928,29 @@ public sealed class VPR_Reborn : ViperRotation
 			{
 				case (true, _):
 					if (SteelFangsPvE.CanUse(out act))
+					{
 						return true;
+					}
+
 					break;
 				case (_, true):
 					if (ReavingFangsPvE.CanUse(out act))
+					{
 						return true;
+					}
+
 					break;
 				case (false, false):
 					if (ReavingFangsPvE.CanUse(out act))
+					{
 						return true;
+					}
+
 					if (SteelFangsPvE.CanUse(out act))
+					{
 						return true;
+					}
+
 					break;
 			}
 		}

@@ -23,15 +23,19 @@ namespace RotationSolver.Commands
 
 		public static void IncrementState()
 		{
-			if (!DataCenter.State) { DoStateCommandType(StateCommandType.Auto); return; }
-			if (DataCenter.State && !DataCenter.IsManual && DataCenter.TargetingType == TargetingType.Big) { DoStateCommandType(StateCommandType.Auto); return; }
-			if (DataCenter.State && !DataCenter.IsManual) { DoStateCommandType(StateCommandType.Manual); return; }
-			if (DataCenter.State && DataCenter.IsManual) { DoStateCommandType(StateCommandType.Off); return; }
+			if (!DataCenter.State)
+			{ DoStateCommandType(StateCommandType.Auto); return; }
+			if (DataCenter.State && !DataCenter.IsManual && DataCenter.TargetingType == TargetingType.Big)
+			{ DoStateCommandType(StateCommandType.Auto); return; }
+			if (DataCenter.State && !DataCenter.IsManual)
+			{ DoStateCommandType(StateCommandType.Manual); return; }
+			if (DataCenter.State && DataCenter.IsManual)
+			{ DoStateCommandType(StateCommandType.Off); return; }
 		}
 
 		internal static bool CanDoAnAction(bool isGCD)
 		{
-			bool currentState = DataCenter.State;
+			var currentState = DataCenter.State;
 
 			if (!_lastState || !currentState)
 			{
@@ -40,7 +44,7 @@ namespace RotationSolver.Commands
 			}
 			_lastState = currentState;
 
-			TimeSpan delayRange = TimeSpan.FromMilliseconds(random.Next(
+			var delayRange = TimeSpan.FromMilliseconds(random.Next(
 				(int)(Service.Config.ClickingDelay.X * 1000),
 				(int)(Service.Config.ClickingDelay.Y * 1000)));
 
@@ -69,7 +73,7 @@ namespace RotationSolver.Commands
 				return;
 			}
 
-			IAction? nextAction = ActionUpdater.NextAction;
+			var nextAction = ActionUpdater.NextAction;
 			if (nextAction == null)
 			{
 				return;
@@ -89,14 +93,14 @@ namespace RotationSolver.Commands
 				}
 			}
 
-			HashSet<uint> noCastingStatus = OtherConfiguration.NoCastingStatus;
+			var noCastingStatus = OtherConfiguration.NoCastingStatus;
 			if (noCastingStatus != null)
 			{
 				if (_cachedNoCastingStatusSet != noCastingStatus)
 				{
 					_cachedNoCastingStatusArray = new StatusID[noCastingStatus.Count];
-					int index = 0;
-					foreach (uint status in noCastingStatus)
+					var index = 0;
+					foreach (var status in noCastingStatus)
 					{
 						_cachedNoCastingStatusArray[index++] = (StatusID)status;
 					}
@@ -108,13 +112,13 @@ namespace RotationSolver.Commands
 				_cachedNoCastingStatusArray = [];
 				_cachedNoCastingStatusSet = null;
 			}
-			StatusID[] noCastingStatusArray = _cachedNoCastingStatusArray!;
+			var noCastingStatusArray = _cachedNoCastingStatusArray!;
 
-			float minStatusTime = float.MaxValue;
-			int statusTimesCount = 0;
+			var minStatusTime = float.MaxValue;
+			var statusTimesCount = 0;
 			if (Player.Object != null && !DataCenter.IsPvP)
 			{
-				foreach (float t in Player.Object.StatusTimes(false, noCastingStatusArray))
+				foreach (var t in Player.Object.StatusTimes(false, noCastingStatusArray))
 				{
 					statusTimesCount++;
 					if (t < minStatusTime)
@@ -126,11 +130,23 @@ namespace RotationSolver.Commands
 
 			if (statusTimesCount > 0 && Player.Object != null)
 			{
-				float remainingCastTime = Player.Object.TotalCastTime - Player.Object.CurrentCastTime;
+				var remainingCastTime = Player.Object.TotalCastTime - Player.Object.CurrentCastTime;
 				if (minStatusTime > remainingCastTime && minStatusTime < 3f)
 				{
 					return;
 				}
+			}
+
+			if (DataCenter.BMRSpecialModeType == SpecialMode.Pyretic)
+			{
+				PluginLog.Information("Player has Pyretic special mode active, skipping action use to avoid potential issues.");
+				return;
+			}
+
+			if (StatusHelper.PlayerHasStatus(false, StatusID.MotionTracker))
+			{
+				PluginLog.Information("Player has Motion Tracker status, skipping action use to avoid potential issues.");
+				return;
 			}
 
 			if (StatusHelper.PlayerHasStatus(false, StatusID.Transcendent))
@@ -219,7 +235,7 @@ namespace RotationSolver.Commands
 			started = true;
 			try
 			{
-				int pulseCount = random.Next(Service.Config.KeyboardNoisePresses.X, Service.Config.KeyboardNoisePresses.Y);
+				var pulseCount = random.Next(Service.Config.KeyboardNoisePresses.X, Service.Config.KeyboardNoisePresses.Y);
 				PulseAction(id, pulseCount);
 			}
 			catch (Exception ex)
@@ -242,7 +258,7 @@ namespace RotationSolver.Commands
 			}
 
 			MiscUpdater.PulseActionBar(id);
-			double time = Service.Config.ClickingDelay.X + (random.NextDouble() * (Service.Config.ClickingDelay.Y - Service.Config.ClickingDelay.X));
+			var time = Service.Config.ClickingDelay.X + (random.NextDouble() * (Service.Config.ClickingDelay.Y - Service.Config.ClickingDelay.X));
 			_ = Svc.Framework.RunOnTick(() =>
 			{
 				PulseAction(id, remainingPulses - 1);
@@ -270,24 +286,24 @@ namespace RotationSolver.Commands
 				return;
 			}
 
-			float min = Service.Config.TargetDelay.X;
-			float max = Service.Config.TargetDelay.Y;
-			double delay = Math.Max(0, min + (random.NextDouble() * Math.Max(0, max - min)));
+			var min = Service.Config.TargetDelay.X;
+			var max = Service.Config.TargetDelay.Y;
+			var delay = Math.Max(0, min + (random.NextDouble() * Math.Max(0, max - min)));
 			if (delay <= 0)
 			{
 				Svc.Targets.Target = candidate;
 				return;
 			}
 
-			ulong initialTargetId = Svc.Targets.Target?.GameObjectId ?? 0;
-			ulong candidateId = candidate.GameObjectId;
+			var initialTargetId = Svc.Targets.Target?.GameObjectId ?? 0;
+			var candidateId = candidate.GameObjectId;
 
 			_ = Svc.Framework.RunOnTick(() =>
 			{
 				try
 				{
 					var current = Svc.Targets.Target;
-					ulong currentId = current?.GameObjectId ?? 0;
+					var currentId = current?.GameObjectId ?? 0;
 
 					if (currentId == initialTargetId)
 					{
@@ -321,7 +337,7 @@ namespace RotationSolver.Commands
 				return;
 			}
 
-			IAction? nextAction = ActionUpdater.NextAction;
+			var nextAction = ActionUpdater.NextAction;
 			if (nextAction is BaseAction baseAct)
 			{
 				if (baseAct.Target.Target != null && baseAct.Target.Target is IBattleChara target && target != Player.Object && (Service.Config.SwitchTargetFriendly2 || target.IsEnemy()))
@@ -353,13 +369,15 @@ namespace RotationSolver.Commands
 				}
 
 				var hostileTargetObjectIds = new HashSet<ulong>();
-				for (int i = 0; i < DataCenter.AllHostileTargets.Count; i++)
+				for (var i = 0; i < DataCenter.AllHostileTargets.Count; i++)
 				{
 					var ht = DataCenter.AllHostileTargets[i];
 					try
 					{
 						if (ht != null && ht.TargetObjectId != 0)
+						{
 							hostileTargetObjectIds.Add(ht.TargetObjectId);
+						}
 					}
 					catch (AccessViolationException)
 					{
@@ -400,7 +418,7 @@ namespace RotationSolver.Commands
 
 				if (Service.Config.StartOnPartyIsInCombat2 && !DataCenter.State && DataCenter.PartyMembers.Count > 1)
 				{
-					for (int i = 0; i < DataCenter.PartyMembers.Count; i++)
+					for (var i = 0; i < DataCenter.PartyMembers.Count; i++)
 					{
 						var p = DataCenter.PartyMembers[i];
 						if (p != null && p.InCombat())
@@ -419,7 +437,7 @@ namespace RotationSolver.Commands
 
 				if ((Service.Config.StartOnAllianceIsInCombat2 && !DataCenter.State && DataCenter.AllianceMembers.Count > 1) && !(DataCenter.IsInBozjanFieldOp || DataCenter.IsInBozjanFieldOpCE || DataCenter.IsInOccultCrescentOp))
 				{
-					for (int i = 0; i < DataCenter.AllianceMembers.Count; i++)
+					for (var i = 0; i < DataCenter.AllianceMembers.Count; i++)
 					{
 						var a = DataCenter.AllianceMembers[i];
 						if (a != null && a.InCombat())
@@ -439,7 +457,7 @@ namespace RotationSolver.Commands
 				if (Service.Config.StartOnFieldOpInCombat2 && !DataCenter.State && (DataCenter.IsInBozjanFieldOp || DataCenter.IsInBozjanFieldOpCE || DataCenter.IsInOccultCrescentOp) && Player.Object != null)
 				{
 					var targets = TargetHelper.GetTargetsByRange(30f);
-					for (int i = 0; i < targets.Count; i++)
+					for (var i = 0; i < targets.Count; i++)
 					{
 						var t = targets[i];
 						if (t != null && DataCenter.AllHostileTargets.Contains(t) && !ObjectHelper.IsDummy(t))
@@ -466,7 +484,7 @@ namespace RotationSolver.Commands
 				IBattleChara? target = null;
 				if (Service.Config.StartOnAttackedBySomeone2 && !DataCenter.State && Player.Object != null)
 				{
-					for (int i = 0; i < DataCenter.AllHostileTargets.Count; i++)
+					for (var i = 0; i < DataCenter.AllHostileTargets.Count; i++)
 					{
 						var t = DataCenter.AllHostileTargets[i];
 						if (t != null && t is IBattleChara battleChara)

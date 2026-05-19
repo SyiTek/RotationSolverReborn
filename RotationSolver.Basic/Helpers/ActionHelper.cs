@@ -59,7 +59,7 @@ internal static class ActionHelper
 	/// <returns>The cooldown group.</returns>
 	internal static byte GetCoolDownGroup(this Action action)
 	{
-		byte group = action.CooldownGroup == GCDCooldownGroup ? action.AdditionalCooldownGroup : action.CooldownGroup;
+		var group = action.CooldownGroup == GCDCooldownGroup ? action.AdditionalCooldownGroup : action.CooldownGroup;
 		return group == 0 ? GCDCooldownGroup : group;
 	}
 
@@ -72,10 +72,10 @@ internal static class ActionHelper
 	/// <returns><c>true</c> if the action is in the current job; otherwise, <c>false</c>.</returns>
 	internal static bool IsInJob(this Action action)
 	{
-		Lumina.Excel.Sheets.ClassJobCategory? cate = action.ClassJobCategory.ValueNullable;
+		var cate = action.ClassJobCategory.ValueNullable;
 		if (cate != null)
 		{
-			PropertyInfo? property = JobPropertyCache.GetOrAdd(DataCenter.Job, job =>
+			var property = JobPropertyCache.GetOrAdd(DataCenter.Job, job =>
 			{
 				// Cache the property info for this job once
 				var t = cate.GetType();
@@ -84,9 +84,17 @@ internal static class ActionHelper
 
 			if (property != null)
 			{
-				object? val = property.GetValue(cate);
-				if (val is bool b) return b;
-				if (val is byte by) return by != 0;
+				var val = property.GetValue(cate);
+				if (val is bool b)
+				{
+					return b;
+				}
+
+				if (val is byte by)
+				{
+					return by != 0;
+				}
+
 				return true;
 			}
 		}

@@ -1,6 +1,6 @@
 namespace RotationSolver.RebornRotations.Melee;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Melee/DRG_Reborn.cs")]
 
 public sealed class DRG_Reborn : DragoonRotation
@@ -111,17 +111,17 @@ public sealed class DRG_Reborn : DragoonRotation
 
 		if (IsBurst && InCombat && HasHostilesInRange)
 		{
-			bool lsOnBigHit =
+			var lsOnBigHit =
 				nextGCD.IsTheSameTo(true, HeavensThrustPvE, DrakesbanePvE) &&
 				(HasBattleLitany || LOTDEndAfter(1000) ||
 				 LanceChargePvE.Cooldown.IsCoolingDown || BattleLitanyPvE.Cooldown.IsCoolingDown);
 
-			bool lsOnAltFinishersDuringBuff =
+			var lsOnAltFinishersDuringBuff =
 				HasBattleLitany &&
 				LOTDEndAfter(1000) &&
 				nextGCD.IsTheSameTo(true, ChaoticSpringPvE, LanceBarragePvE, WheelingThrustPvE, FangAndClawPvE);
 
-			bool lsLowLevel =
+			var lsLowLevel =
 				(!DisembowelPvE.EnoughLevel && nextGCD.IsTheSameTo(true, VorpalThrustPvE)) ||
 				(!FullThrustPvE.EnoughLevel && nextGCD.IsTheSameTo(true, VorpalThrustPvE, DisembowelPvE)) ||
 				(!LanceChargePvE.EnoughLevel && nextGCD.IsTheSameTo(true, DisembowelPvE, FullThrustPvE)) ||
@@ -130,7 +130,7 @@ public sealed class DRG_Reborn : DragoonRotation
 				 HasBattleLitany && HasLanceCharge && LOTDEndAfter(1000) &&
 				 nextGCD.IsTheSameTo(true, ChaoticSpringPvE, LanceBarragePvE, WheelingThrustPvE, FangAndClawPvE));
 
-			bool lifeSurgeReady = lsOnBigHit || lsOnAltFinishersDuringBuff || lsLowLevel;
+			var lifeSurgeReady = lsOnBigHit || lsOnAltFinishersDuringBuff || lsLowLevel;
 
 			if ((!BattleLitanyPvE.Cooldown.ElapsedAfter(60) || !BattleLitanyPvE.EnoughLevel)
 				&& LanceChargePvE.CanUse(out act))
@@ -217,7 +217,7 @@ public sealed class DRG_Reborn : DragoonRotation
 	#region GCD Logic
 	protected override bool GeneralGCD(out IAction? act)
 	{
-		bool doomSpikeRightNow = DoomSpikeWhenever;
+		var doomSpikeRightNow = DoomSpikeWhenever;
 
 		if (CoerthanTormentPvE.CanUse(out act))
 		{

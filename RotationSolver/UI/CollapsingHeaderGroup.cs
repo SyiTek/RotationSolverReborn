@@ -40,11 +40,11 @@ internal class CollapsingHeaderGroup(Dictionary<Func<string>, Action> headers)
 		{
 			return;
 		}
-		int idx = -1;
-		foreach (KeyValuePair<Func<string>, Action> header in _headers)
+		var idx = -1;
+		foreach (var header in _headers)
 		{
 			idx++;
-			string name = header.Key?.Invoke() ?? string.Empty;
+			var name = header.Key?.Invoke() ?? string.Empty;
 			if (string.IsNullOrEmpty(name))
 			{
 				continue;
@@ -67,8 +67,8 @@ internal class CollapsingHeaderGroup(Dictionary<Func<string>, Action> headers)
 
 	public void Draw()
 	{
-		int index = -1;
-		foreach (KeyValuePair<Func<string>, Action> header in _headers)
+		var index = -1;
+		foreach (var header in _headers)
 		{
 			index++;
 
@@ -77,7 +77,7 @@ internal class CollapsingHeaderGroup(Dictionary<Func<string>, Action> headers)
 				continue;
 			}
 
-			string name = header.Key();
+			var name = header.Key();
 			if (string.IsNullOrEmpty(name))
 			{
 				continue;
@@ -87,9 +87,9 @@ internal class CollapsingHeaderGroup(Dictionary<Func<string>, Action> headers)
 			{
 				ImGui.Spacing();
 				ImGui.Separator();
-				bool selected = index == _openedIndex;
-				bool changed = false;
-				using (ImRaii.Font font = ImRaii.PushFont(FontManager.GetFont(18)))
+				var selected = index == _openedIndex;
+				var changed = false;
+				using (var font = ImRaii.PushFont(FontManager.GetFont(18)))
 				{
 					changed = ImGui.Selectable(name, selected, ImGuiSelectableFlags.DontClosePopups);
 				}

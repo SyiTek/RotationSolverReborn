@@ -2,7 +2,7 @@
 
 namespace RotationSolver.RebornRotations.Magical;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Magical/SMN_Reborn.cs")]
 
 public sealed class SMN_Reborn : SummonerRotation
@@ -78,7 +78,7 @@ public sealed class SMN_Reborn : SummonerRotation
 	#region Countdown Logic
 	protected override IAction? CountDownAction(float remainTime)
 	{
-		if (SummonCarbunclePvE.CanUse(out IAction? act))
+		if (SummonCarbunclePvE.CanUse(out var act))
 		{
 			return act;
 		}
@@ -181,9 +181,9 @@ public sealed class SMN_Reborn : SummonerRotation
 
 	protected override bool AttackAbility(IAction nextGCD, out IAction? act)
 	{
-		bool inBigInvocation = !SummonBahamutPvE.EnoughLevel || InBahamut || InPhoenix || InSolarBahamut;
-		bool inSolarUnique = DataCenter.PlayerSyncedLevel() == 100 ? !InBahamut && !InPhoenix && InSolarBahamut : InBahamut && !InPhoenix;
-		bool burstInSolar = (SummonSolarBahamutPvE.EnoughLevel && InSolarBahamut) || (!SummonSolarBahamutPvE.EnoughLevel && InBahamut) || !SummonBahamutPvE.EnoughLevel;
+		var inBigInvocation = !SummonBahamutPvE.EnoughLevel || InBahamut || InPhoenix || InSolarBahamut;
+		var inSolarUnique = DataCenter.PlayerSyncedLevel() == 100 ? !InBahamut && !InPhoenix && InSolarBahamut : InBahamut && !InPhoenix;
+		var burstInSolar = (SummonSolarBahamutPvE.EnoughLevel && InSolarBahamut) || (!SummonSolarBahamutPvE.EnoughLevel && InBahamut) || !SummonBahamutPvE.EnoughLevel;
 
 		if (burstInSolar)
 		{
@@ -758,12 +758,14 @@ public sealed class SMN_Reborn : SummonerRotation
 	{
 		get
 		{
-			int aliveHealerCount = 0;
-			IEnumerable<IBattleChara> healers = PartyMembers.GetJobCategory(JobRole.Healer);
-			foreach (IBattleChara h in healers)
+			var aliveHealerCount = 0;
+			var healers = PartyMembers.GetJobCategory(JobRole.Healer);
+			foreach (var h in healers)
 			{
 				if (!h.IsDead)
+				{
 					aliveHealerCount++;
+				}
 			}
 
 			return base.CanHealSingleSpell && (GCDHeal || aliveHealerCount == 0);

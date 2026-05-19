@@ -46,26 +46,42 @@ public partial class DutyRotation
 	private static bool HeavenlySwordHasVulnerabilityInCone()
 	{
 		var player = Player;
-		if (player == null) return false;
-		if (DataCenter.AllHostileTargets == null) return false;
+		if (player == null)
+		{
+			return false;
+		}
+
+		if (DataCenter.AllHostileTargets == null)
+		{
+			return false;
+		}
 
 		const float range = 6f;
 		// 25 degree cone -> half-angle 12.5 degrees
-		double halfAngleRad = 12.5 * Math.PI / 180.0;
-		double thresholdCos = Math.Cos(halfAngleRad);
+		var halfAngleRad = 12.5 * Math.PI / 180.0;
+		var thresholdCos = Math.Cos(halfAngleRad);
 
 		var faceVec = Vector3.Normalize(player.GetFaceVector());
 
 		foreach (var t in DataCenter.AllHostileTargets)
 		{
-			if (t == null) continue;
+			if (t == null)
+			{
+				continue;
+			}
 			// quick distance check
 			var dir = t.Position - player.Position;
-			if (dir.LengthSquared() > range * range) continue;
+			if (dir.LengthSquared() > range * range)
+			{
+				continue;
+			}
 
 			var ndir = Vector3.Normalize(dir);
 			double dot = Vector3.Dot(faceVec, ndir);
-			if (dot < thresholdCos) continue;
+			if (dot < thresholdCos)
+			{
+				continue;
+			}
 
 			// check for the vulnerability statuses
 			if (t.HasStatus(false, StatusID.VulnerabilityDown_1782, StatusID.VulnerabilityDown_350))

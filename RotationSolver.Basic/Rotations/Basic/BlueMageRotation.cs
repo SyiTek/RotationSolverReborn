@@ -69,6 +69,11 @@ public partial class BlueMageRotation
 	/// </summary>
 	public static CombatRole BlueId => IsTank ? CombatRole.Tank : IsHealer ? CombatRole.Healer : CombatRole.DPS;
 
+	/// <summary>
+	/// Gets the job role based on the current Aetheric Mimicry status.
+	/// </summary>
+	public new static JobRole Role => IsTank ? JobRole.Tank : IsHealer ? JobRole.Healer : JobRole.RangedMagical;
+
 	static partial void ModifyWaterCannonPvE(ref ActionSetting setting)
 	{
 		setting.AttackTypeOverride = AttackType.Magic;
@@ -325,18 +330,33 @@ public partial class BlueMageRotation
 		};
 		setting.ActionCheck = () =>
 		{
-			if (Player == null) return false;
+			if (Player == null)
+			{
+				return false;
+			}
+
 			var playerFace = Player.GetFaceVector();
 			var playerPos = Player.Position;
 			const float snortRange = 6f;
 			const double coneHalfAngle = Math.PI / 4; // 45 degrees each side = 90 degree cone
 			foreach (var target in DataCenter.AllHostileTargets)
 			{
-				if (!target.CanInterrupt()) continue;
-				if (target.DistanceToPlayer() > snortRange) continue;
+				if (!target.CanInterrupt())
+				{
+					continue;
+				}
+
+				if (target.DistanceToPlayer() > snortRange)
+				{
+					continue;
+				}
+
 				var dir = Vector3.Normalize(target.Position - playerPos);
 				var angle = playerFace.AngleTo(dir);
-				if (angle <= coneHalfAngle) return true;
+				if (angle <= coneHalfAngle)
+				{
+					return true;
+				}
 			}
 			return false;
 		};
@@ -1059,7 +1079,7 @@ public partial class BlueMageRotation
 	{
 		setting.AttackTypeOverride = AttackType.Magic;
 		setting.AspectOverride = Aspect.Unaspected;
-		setting.StatusProvide = [StatusID.Bleeding_1714];
+		setting.TargetStatusProvide = [StatusID.Bleeding_1714];
 		setting.CreateConfig = () => new ActionConfig()
 		{
 			AoeCount = 1,
@@ -1082,7 +1102,7 @@ public partial class BlueMageRotation
 		setting.AttackTypeOverride = AttackType.Magic;
 		setting.AspectOverride = Aspect.Water;
 		setting.IsFriendly = false;
-		setting.ActionCheck	= () => InCombat;
+		setting.ActionCheck = () => InCombat;
 		setting.CreateConfig = () => new ActionConfig()
 		{
 			AoeCount = 1,

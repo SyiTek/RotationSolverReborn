@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace RotationSolver.RebornRotations.Healer;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Healer/SCH_Reborn.cs")]
 
 public sealed class SCH_Reborn : ScholarRotation
@@ -109,7 +109,7 @@ public sealed class SCH_Reborn : ScholarRotation
 	#region Countdown Logic
 	protected override IAction? CountDownAction(float remainTime)
 	{
-		if (SummonEosPvE.CanUse(out IAction? act))
+		if (SummonEosPvE.CanUse(out var act))
 		{
 			return act;
 		}
@@ -155,8 +155,8 @@ public sealed class SCH_Reborn : ScholarRotation
 		// Only use emergency tactics if we're healing from a raid wide damage or multiple members need to be healed for doom
 		if (nextGCD.IsTheSameTo(false, SuccorPvE, ConcitationPvE, AccessionPvE) && EmergencyTacticsPvE.CanUse(out act))
 		{
-			int count = 0;
-			foreach (IBattleChara member in PartyMembers)
+			var count = 0;
+			foreach (var member in PartyMembers)
 			{
 				if (member.DistanceToPlayer() <= 15)
 				{
@@ -177,7 +177,7 @@ public sealed class SCH_Reborn : ScholarRotation
 		}
 
 		// Remove Aetherpact
-		foreach (IBattleChara item in PartyMembers)
+		foreach (var item in PartyMembers)
 		{
 			if (!item.HasStatus(true, StatusID.FeyUnion_1223))
 			{
@@ -267,8 +267,8 @@ public sealed class SCH_Reborn : ScholarRotation
 	[RotationDesc(ActionID.AetherpactPvE, ActionID.ExcogitationPvE, ActionID.LustratePvE, ActionID.SacredSoilPvE, ActionID.WhisperingDawnPvE, ActionID.FeyBlessingPvE)]
 	protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
 	{
-		bool haveLinkDRK = false;
-		foreach (IBattleChara p in PartyMembers)
+		var haveLinkDRK = false;
+		foreach (var p in PartyMembers)
 		{
 			if (p.HasStatus(true, StatusID.FeyUnion_1223) && p.HasStatus(false, StatusID.LivingDead))
 			{
@@ -285,9 +285,9 @@ public sealed class SCH_Reborn : ScholarRotation
 		if (ExcogitationPvE.CanUse(out act))
 		{
 			// Check if any tank matches Excogitation target
-			bool tankHasExcogTarget = false;
-			IEnumerable<IBattleChara> tanks = PartyMembers.GetJobCategory(JobRole.Tank);
-			foreach (IBattleChara member in tanks)
+			var tankHasExcogTarget = false;
+			var tanks = PartyMembers.GetJobCategory(JobRole.Tank);
+			foreach (var member in tanks)
 			{
 				if (member == ExcogitationPvE.Target.Target)
 				{
@@ -302,8 +302,8 @@ public sealed class SCH_Reborn : ScholarRotation
 		}
 
 		// Check if any party member has Fey Union status
-		bool haveLink = false;
-		foreach (IBattleChara p in PartyMembers)
+		var haveLink = false;
+		foreach (var p in PartyMembers)
 		{
 			if (p.HasStatus(true, StatusID.FeyUnion_1223))
 			{
@@ -477,7 +477,7 @@ public sealed class SCH_Reborn : ScholarRotation
 	protected override bool AttackAbility(IAction nextGCD, out IAction? act)
 	{
 		// Count how many hostile targets are within 5 units
-		int closeTargetCount = NumberOfHostilesInRangeOf(5);
+		var closeTargetCount = NumberOfHostilesInRangeOf(5);
 
 		if (BanefulImpactionPvE.CanUse(out act) &&
 			(closeTargetCount > 3 // Mobs are grouped up
@@ -644,12 +644,12 @@ public sealed class SCH_Reborn : ScholarRotation
 			return base.GeneralGCD(out act);
 		}
 
-		int nearbyHostiles = NumberOfHostilesInRangeOf(5);
+		var nearbyHostiles = NumberOfHostilesInRangeOf(5);
 
-		float expectedHPToLive12Seconds = 1f;
+		var expectedHPToLive12Seconds = 1f;
 
-		int partyMemberCount = 0;
-		foreach (IBattleChara _ in PartyMembers)
+		var partyMemberCount = 0;
+		foreach (var _ in PartyMembers)
 		{
 			partyMemberCount++;
 		}
@@ -819,9 +819,9 @@ public sealed class SCH_Reborn : ScholarRotation
 		// Big Excog the tank if they look dangerous
 		if (!ExcogitationPvE.Cooldown.IsCoolingDown)
 		{
-			bool tankNeedsExcog = false;
-			IEnumerable<IBattleChara> tanks = PartyMembers.GetJobCategory(JobRole.Tank);
-			foreach (IBattleChara member in tanks)
+			var tankNeedsExcog = false;
+			var tanks = PartyMembers.GetJobCategory(JobRole.Tank);
+			foreach (var member in tanks)
 			{
 				if (member.GetHealthRatio() <= ExcogHeal && !member.NoNeedHealingInvuln())
 				{
@@ -848,7 +848,7 @@ public sealed class SCH_Reborn : ScholarRotation
 
 	private bool ShouldUseSacredSoil(out IAction? act)
 	{
-		bool passedSacredMoveCheck = false;
+		var passedSacredMoveCheck = false;
 
 		// Check if we are allowed to use sacred soil while moving or have stopped moving for long enough
 		if (SacredSoilTimeStill == 0 || StopMovingTime >= SacredSoilTimeStill || (SacredSoilBossExemption && Target.IsBossFromTTK()))
@@ -891,12 +891,14 @@ public sealed class SCH_Reborn : ScholarRotation
 	{
 		get
 		{
-			int aliveHealerCount = 0;
-			IEnumerable<IBattleChara> healers = PartyMembers.GetJobCategory(JobRole.Healer);
-			foreach (IBattleChara h in healers)
+			var aliveHealerCount = 0;
+			var healers = PartyMembers.GetJobCategory(JobRole.Healer);
+			foreach (var h in healers)
 			{
 				if (!h.IsDead)
+				{
 					aliveHealerCount++;
+				}
 			}
 
 			return base.CanHealSingleSpell && (GCDHeal || aliveHealerCount == 1);
@@ -906,12 +908,14 @@ public sealed class SCH_Reborn : ScholarRotation
 	{
 		get
 		{
-			int aliveHealerCount = 0;
-			IEnumerable<IBattleChara> healers = PartyMembers.GetJobCategory(JobRole.Healer);
-			foreach (IBattleChara h in healers)
+			var aliveHealerCount = 0;
+			var healers = PartyMembers.GetJobCategory(JobRole.Healer);
+			foreach (var h in healers)
 			{
 				if (!h.IsDead)
+				{
 					aliveHealerCount++;
+				}
 			}
 
 			return base.CanHealAreaSpell && (GCDHeal || aliveHealerCount == 1);

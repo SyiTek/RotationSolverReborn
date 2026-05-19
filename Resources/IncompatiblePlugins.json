@@ -1,44 +1,37 @@
 [
   {
-    "Name": "AutoDuty",
-    "Icon": "https://raw.githubusercontent.com/ffxivcode/AutoDuty/refs/heads/master/logo.png",
-    "Url": "https://github.com/ffxivcode/AutoDuty",
-    "Features": "Rotation state issues, sometimes causes BMR/vbm autorotation to be enabled at the same time.",
-    "Type": 1
-  },
-  {
     "Name": "XIV Combo",
     "Icon": "https://raw.githubusercontent.com/MKhayle/XIVComboExpanded/master/res/icon.png",
     "Url": "https://github.com/attickdoor/XivComboPlugin",
-    "Features": "Auto rotation and targetting conflicts",
+    "Features": "May have issues with Auto rotation and targetting conflicts",
     "Type": 5
   },
   {
     "Name": "XIV Combo Expanded",
     "Icon": "https://raw.githubusercontent.com/MKhayle/XIVComboExpanded/master/res/icon.png",
     "Url": "https://github.com/daemitus/XIVComboPlugin",
-    "Features": "Auto rotation and targetting conflicts",
+    "Features": "Fork of XIV Combo, may have issues with auto rotation and targetting conflicts",
     "Type": 5
   },
   {
     "Name": "XIVSlothCombo",
     "Icon": "https://raw.githubusercontent.com/Nik-Potokar/XIVSlothCombo/main/res/plugin/xivslothcombo.png",
     "Url": "https://github.com/Nik-Potokar/XIVSlothCombo",
-    "Features": "Auto rotation and targetting conflicts",
+    "Features": "Fork of XIV Combo Expanded, may have issues with auto rotation and targetting conflicts",
     "Type": 5
   },
   {
     "Name": "Wrath Combo",
     "Icon": "https://s3.puni.sh/media/plugin/60/icon-2bwhkn3zf1f.png",
     "Url": "https://github.com/PunishXIV/WrathCombo",
-    "Features": "Auto rotation and targetting conflicts",
+    "Features": "Fork of XIVSlothCombo, may have issues with auto rotation and targetting conflicts",
     "Type": 5
   },
   {
     "Name": "BossMod Reborn",
     "Icon": "https://raw.githubusercontent.com/FFXIV-CombatReborn/RebornAssets/main/IconAssets/BMR_Icon.png",
     "Url": "https://github.com/FFXIV-CombatReborn/BossmodReborn",
-    "Features": "Auto rotation and targetting conflicts",
+    "Features": "Combat Reborn fork of Bossmod, may have issues with auto rotation and targetting conflicts, though mitigations exist",
     "Type": 3
   },
   {

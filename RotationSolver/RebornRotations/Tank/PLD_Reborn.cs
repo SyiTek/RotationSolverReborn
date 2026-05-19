@@ -1,6 +1,6 @@
 ﻿namespace RotationSolver.RebornRotations.Tank;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Tank/PLD_Reborn.cs")]
 
 public sealed class PLD_Reborn : PaladinRotation
@@ -70,7 +70,7 @@ public sealed class PLD_Reborn : PaladinRotation
 	protected override IAction? CountDownAction(float remainTime)
 	{
 		if (remainTime < HolySpiritPvE.Info.CastTime + CountDownAhead
-			&& HolySpiritPvE.CanUse(out IAction? act))
+			&& HolySpiritPvE.CanUse(out var act))
 		{
 			return act;
 		}
@@ -241,10 +241,28 @@ public sealed class PLD_Reborn : PaladinRotation
 				return true;
 			}
 
-			// If Sentinel is at an enough level and is cooling down for more than 60 seconds, or if Sentinel is not at an enough level, and Rampart can be used, use Rampart and return true.
-			if (((GuardianPvE.EnoughLevel && GuardianPvE.Cooldown.IsCoolingDown && GuardianPvE.Cooldown.ElapsedAfter(60)) || (!GuardianPvE.EnoughLevel && SentinelPvE.EnoughLevel && SentinelPvE.Cooldown.IsCoolingDown && SentinelPvE.Cooldown.ElapsedAfter(60)) || !SentinelPvE.EnoughLevel) && RampartPvE.CanUse(out act))
+			if (!SentinelPvE.EnoughLevel)
 			{
-				return true;
+				if (RampartPvE.CanUse(out act))
+				{
+					return true;
+				}
+			}
+
+			if (SentinelPvE.EnoughLevel && !GuardianPvE.EnoughLevel)
+			{
+				if (SentinelPvE.Cooldown.IsCoolingDown && SentinelPvE.Cooldown.ElapsedAfter(30) && RampartPvE.CanUse(out act))
+				{
+					return true;
+				}
+			}
+
+			if (GuardianPvE.EnoughLevel)
+			{
+				if (GuardianPvE.Cooldown.IsCoolingDown && GuardianPvE.Cooldown.ElapsedAfter(30) && RampartPvE.CanUse(out act))
+				{
+					return true;
+				}
 			}
 
 			// If Reprisal can be used, use it and return true.
@@ -467,12 +485,14 @@ public sealed class PLD_Reborn : PaladinRotation
 	{
 		get
 		{
-			int aliveHealerCount = 0;
-			IEnumerable<IBattleChara> healers = PartyMembers.GetJobCategory(JobRole.Healer);
-			foreach (IBattleChara h in healers)
+			var aliveHealerCount = 0;
+			var healers = PartyMembers.GetJobCategory(JobRole.Healer);
+			foreach (var h in healers)
 			{
 				if (!h.IsDead)
+				{
 					aliveHealerCount++;
+				}
 			}
 
 			return base.CanHealSingleSpell && (GCDHeal || aliveHealerCount == 0);

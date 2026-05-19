@@ -152,8 +152,25 @@ namespace RotationSolver.IPC
 		[EzIPC]
 		public void TriggerSpecialState(SpecialCommandType specialCommand)
 		{
-			DataCenter.SpecialType = specialCommand;
+			RSCommands.DoSpecialCommandType(specialCommand, false);
 			PluginLog.Debug($"IPC TriggerSpecialState was called. SpecialCommand:{specialCommand}");
+		}
+
+		/// <summary>
+		/// Triggers a special state in the plugin via IPC with a specific duration, overriding the configured default.
+		/// </summary>
+		/// <param name="specialCommand">
+		/// The <see cref="SpecialCommandType"/> value representing the special state to activate (e.g., HealArea, DefenseSingle, Burst).
+		/// </param>
+		/// <param name="duration">
+		/// The duration in seconds (as a float) for which the special state window remains open.
+		/// </param>
+		[EzIPC]
+		public void TriggerSpecialStateWithDuration(SpecialCommandType specialCommand, float duration)
+		{
+			RSCommands.DoSpecialCommandType(specialCommand, false);
+			DataCenter.SetSpecialTypeWithDuration(specialCommand, duration);
+			PluginLog.Debug($"IPC TriggerSpecialStateWithDuration was called. SpecialCommand:{specialCommand}, Duration:{duration}");
 		}
 
 		/// <summary>
@@ -184,10 +201,31 @@ namespace RotationSolver.IPC
 		[EzIPC]
 		public void ActionCommand(string action, float time)
 		{
-			string combinedString = $"{action}-{time}";
+			var combinedString = $"{action}-{time}";
 
 			RSCommands.DoActionCommand($"{combinedString}");
 			PluginLog.Debug($"IPC ActionCommand was called. Action Name:{action}, Time:{time}");
+		}
+
+		/// <summary>
+		/// Temporarily enables the TargetFreely behaviour via IPC without changing the user's config.
+		/// Call <see cref="DisableTargetFreelyOverride"/> to revert.
+		/// </summary>
+		[EzIPC]
+		public void EnableTargetFreelyOverride()
+		{
+			DataCenter.TargetFreelyOverride = true;
+			PluginLog.Debug("IPC EnableTargetFreelyOverride was called.");
+		}
+
+		/// <summary>
+		/// Disables the IPC-driven TargetFreely override, restoring normal config-based behaviour.
+		/// </summary>
+		[EzIPC]
+		public void DisableTargetFreelyOverride()
+		{
+			DataCenter.TargetFreelyOverride = false;
+			PluginLog.Debug("IPC DisableTargetFreelyOverride was called.");
 		}
 	}
 }

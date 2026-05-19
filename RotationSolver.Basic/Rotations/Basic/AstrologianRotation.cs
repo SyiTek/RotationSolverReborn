@@ -20,7 +20,13 @@ public partial class AstrologianRotation
 	{
 		get
 		{
-			foreach (var card in DrawnCard) { if (card == CardType.Balance) return true; }
+			foreach (var card in DrawnCard)
+			{
+				if (card == CardType.Balance)
+				{
+					return true;
+				}
+			}
 			return false;
 		}
 	}
@@ -32,7 +38,13 @@ public partial class AstrologianRotation
 	{
 		get
 		{
-			foreach (var card in DrawnCard) { if (card == CardType.Bole) return true; }
+			foreach (var card in DrawnCard)
+			{
+				if (card == CardType.Bole)
+				{
+					return true;
+				}
+			}
 			return false;
 		}
 	}
@@ -44,7 +56,13 @@ public partial class AstrologianRotation
 	{
 		get
 		{
-			foreach (var card in DrawnCard) { if (card == CardType.Arrow) return true; }
+			foreach (var card in DrawnCard)
+			{
+				if (card == CardType.Arrow)
+				{
+					return true;
+				}
+			}
 			return false;
 		}
 	}
@@ -56,7 +74,13 @@ public partial class AstrologianRotation
 	{
 		get
 		{
-			foreach (var card in DrawnCard) { if (card == CardType.Spear) return true; }
+			foreach (var card in DrawnCard)
+			{
+				if (card == CardType.Spear)
+				{
+					return true;
+				}
+			}
 			return false;
 		}
 	}
@@ -68,7 +92,13 @@ public partial class AstrologianRotation
 	{
 		get
 		{
-			foreach (var card in DrawnCard) { if (card == CardType.Ewer) return true; }
+			foreach (var card in DrawnCard)
+			{
+				if (card == CardType.Ewer)
+				{
+					return true;
+				}
+			}
 			return false;
 		}
 	}
@@ -80,7 +110,13 @@ public partial class AstrologianRotation
 	{
 		get
 		{
-			foreach (var card in DrawnCard) { if (card == CardType.Spire) return true; }
+			foreach (var card in DrawnCard)
+			{
+				if (card == CardType.Spire)
+				{
+					return true;
+				}
+			}
 			return false;
 		}
 	}
@@ -235,20 +271,42 @@ public partial class AstrologianRotation
 	{
 		setting.ActionCheck = () =>
 		{
-			if (ActiveDraw != DrawType.Astral) return false;
-			foreach (var card in DrawnCard) { if (card == CardType.Spear) return false; }
+			if (ActiveDraw != DrawType.Astral)
+			{
+				return false;
+			}
+
+			foreach (var card in DrawnCard)
+			{
+				if (card == CardType.Spear)
+				{
+					return false;
+				}
+			}
 			return true;
 		};
+		setting.IsFriendly = true;
 	}
 
 	static partial void ModifyUmbralDrawPvE(ref ActionSetting setting)
 	{
 		setting.ActionCheck = () =>
 		{
-			if (ActiveDraw != DrawType.Umbral) return false;
-			foreach (var card in DrawnCard) { if (card == CardType.Balance) return false; }
+			if (ActiveDraw != DrawType.Umbral)
+			{
+				return false;
+			}
+
+			foreach (var card in DrawnCard)
+			{
+				if (card == CardType.Balance)
+				{
+					return false;
+				}
+			}
 			return true;
 		};
+		setting.IsFriendly = true;
 	}
 
 	static partial void ModifyPlayIPvE(ref ActionSetting setting) //37019
@@ -684,7 +742,7 @@ public partial class AstrologianRotation
 
 	static partial void ModifyEpicyclePvP(ref ActionSetting setting)
 	{
-		//setting.SpecialType = SpecialActionType.MovingForward;
+		setting.SpecialType = SpecialActionType.FixedDistanceMoveForward;
 		setting.IsFriendly = true;
 	}
 
@@ -693,7 +751,8 @@ public partial class AstrologianRotation
 		setting.ActionCheck = () => StatusHelper.PlayerHasStatus(true, StatusID.RetrogradeReady);
 		setting.IsFriendly = true;
 		setting.MPOverride = () => 0;
-		setting.SpecialType = SpecialActionType.MovingBackward;
+		setting.SpecialType = SpecialActionType.ObjectBasedMovement;
+		setting.ObjectBasedMovementObjectOID = 0x3B8; // Pole Star (BNpcBase 952)
 	}
 	#endregion
 }

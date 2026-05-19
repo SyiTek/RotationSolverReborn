@@ -1,4 +1,4 @@
-﻿using Dalamud.Common;
+using Dalamud.Common;
 using Dalamud.Common.Game;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
@@ -62,39 +62,60 @@ public partial class RotationConfigWindow : Window
 
 	private static readonly string[] _supporters =
 	[
-	"Abracon",
+	"????",
+	"ABA",
 	"Akurosuki",
+	"Anguish",
 	"Aniane",
-	"Baliha",
-	"BangPowNyoom",
+	"Bang Pow Nyoom",
 	"Biscuit",
 	"catfourteen",
 	"Chaos_co",
 	"Chris",
+	"Cyxey",
 	"Darkaim",
 	"DeadCode",
 	"Drama",
+	"Eddar",
 	"Elena",
 	"Endings",
 	"Enyo",
+	"Falling_Leaves",
+	"Goku",
+	"Hawa",
+	"Headrushed",
 	"Hex",
+	"Jaci",
 	"kaen",
 	"Kialdir",
 	"kuromiromi",
 	"Lemon",
 	"LouBird",
-	"Lyn Undercroft",
+	"Lyess",
+	"memoryloops",
 	"Miracle Ace",
 	"Miri",
 	"Moniika",
-	"Nekomimi Bakeneko",
+	"mossysaurus",
+	"No",
 	"Papaya",
 	"Plogons",
-	"prismagreen",
-	"purrpletime",
-	"Savage",
+	"poop dealer",
+	"Preset",
+	"purrrrrrrrrrpletime",
+	"Rabbs",
+	"Reek",
+	"Rey Alex",
+	"Riph",
+	"RustySpoon",
 	"smf26",
+	"Sylvie",
+	"Twilightduck",
 	"Vaex_Darastrix",
+	"vivi",
+	"Yana",
+	"Zero",
+	"Zyllius",
 	"KuwoBlack"
 	];
 
@@ -206,7 +227,7 @@ public partial class RotationConfigWindow : Window
 		_enabledIncompatiblePlugins = [];
 		_crashPlugins = [];
 
-		foreach (var p in DownloadHelper.IncompatiblePlugins ?? [])
+		foreach (var p in PluginCompatibility.IncompatiblePlugins)
 		{
 			if (p.IsInstalled && p.IsEnabled)
 			{
@@ -214,7 +235,7 @@ public partial class RotationConfigWindow : Window
 			}
 		}
 
-		if (DalamudReflector.TryGetDalamudStartInfo(out DalamudStartInfo? startinfo, Svc.PluginInterface))
+		if (DalamudReflector.TryGetDalamudStartInfo(out var startinfo, Svc.PluginInterface))
 		{
 			_cachedDiagInfo = new DiagInfo(startinfo);
 		}
@@ -225,9 +246,9 @@ public partial class RotationConfigWindow : Window
 
 		if (_configWindowTabProperties.Count == 0)
 		{
-			foreach (RotationConfigWindowTab tab in Enum.GetValues<RotationConfigWindowTab>())
+			foreach (var tab in Enum.GetValues<RotationConfigWindowTab>())
 			{
-				bool shouldSkip = false;
+				var shouldSkip = false;
 				if (tab.GetAttribute<TabSkipAttribute>() != null)
 				{
 					shouldSkip = true;
@@ -250,7 +271,7 @@ public partial class RotationConfigWindow : Window
 			{
 				logoUrl = $"https://raw.githubusercontent.com/{Service.USERNAME}/{Service.REPO}/main/Images/Logo.png";
 			}
-			if (ThreadLoadImageHandler.TryGetTextureWrap(logoUrl, out IDalamudTextureWrap? logo) && logo != null)
+			if (ThreadLoadImageHandler.TryGetTextureWrap(logoUrl, out var logo) && logo != null)
 			{
 				_logoTexture = logo;
 			}
@@ -358,7 +379,7 @@ public partial class RotationConfigWindow : Window
 		}
 
 		// This affects framed widgets and child windows you create below
-		using ImRaii.Style selectableAlign = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.5f, 0.5f));
+		using var selectableAlign = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.5f, 0.5f));
 		using var framePad = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(4, 3) * Scale);
 		using var childWinPad = ImRaii.PushStyle(ImGuiStyleVar.WindowPadding, new Vector2(12, 12) * Scale);
 		using var frameCellPadding = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(4, 2) * Scale);
@@ -376,7 +397,7 @@ public partial class RotationConfigWindow : Window
 		using var frameTabRounding = ImRaii.PushStyle(ImGuiStyleVar.TabRounding, 11f * Scale);
 		try
 		{
-			using ImRaii.IEndObject table = ImRaii.Table("Rotation Config Table", 2, ImGuiTableFlags.Resizable);
+			using var table = ImRaii.Table("Rotation Config Table", 2, ImGuiTableFlags.Resizable);
 			if (table)
 			{
 				ImGui.TableSetupColumn("Rotation Config Side Bar", ImGuiTableColumnFlags.WidthFixed, 100 * Scale);
@@ -440,7 +461,7 @@ public partial class RotationConfigWindow : Window
 	{
 		StringBuilder diagInfo = new();
 
-		if (_cachedDiagInfo == null && DalamudReflector.TryGetDalamudStartInfo(out Dalamud.Common.DalamudStartInfo? startinfo, Svc.PluginInterface))
+		if (_cachedDiagInfo == null && DalamudReflector.TryGetDalamudStartInfo(out var startinfo, Svc.PluginInterface))
 		{
 			_cachedDiagInfo = new DiagInfo(startinfo);
 		}
@@ -465,7 +486,7 @@ public partial class RotationConfigWindow : Window
 			_ = diagInfo.AppendLine($"Player Job: {Player.Job}");
 			_ = diagInfo.AppendLine($"AutoFaceTargetOnActionSetting: {DataCenter.AutoFaceTargetOnActionSetting()}");
 			var moveModeValue = DataCenter.MoveModeSetting();
-			string moveModeText = moveModeValue switch
+			var moveModeText = moveModeValue switch
 			{
 				0 => "Standard",
 				1 => "Legacy",
@@ -474,16 +495,24 @@ public partial class RotationConfigWindow : Window
 			_ = diagInfo.AppendLine($"MoveModeSetting: {moveModeText}");
 		}
 
-		// Ensure that IncompatiblePlugins is not null
-		IncompatiblePlugin[] incompatiblePlugins = DownloadHelper.IncompatiblePlugins ?? [];
+		var lastFrame = ActionTracer.LastFrameSummary;
+		if (!string.IsNullOrEmpty(lastFrame))
+		{
+			_ = diagInfo.AppendLine();
+			_ = diagInfo.AppendLine("Last Action Tracer Frame:");
+			_ = diagInfo.Append(lastFrame);
+		}
 
-		bool anyCrash = false;
+		// Ensure that IncompatiblePlugins is not null
+		var incompatiblePlugins = PluginCompatibility.IncompatiblePlugins;
+
+		var anyCrash = false;
 		_ = diagInfo.AppendLine("\nPlugins:");
-		foreach (IncompatiblePlugin item in incompatiblePlugins)
+		foreach (var item in incompatiblePlugins)
 		{
 			if (item.IsEnabled)
 			{
-				string name = item.Name ?? "Unnamed Incompatible Plugin";
+				var name = item.Name ?? "Unnamed Incompatible Plugin";
 
 				// Flag that at least one crash-prone plugin is enabled so the info marker pulses red
 				if (item.Type.HasFlag(CompatibleType.Crash))
@@ -506,9 +535,9 @@ public partial class RotationConfigWindow : Window
 		if (anyCrash)
 		{
 			// Alpha pulses between ~0.25 and ~0.70 at a comfortable speed
-			float t = (float)ImGui.GetTime();
-			float pulse = (MathF.Sin(t * 4f) + 1f) * 0.5f; // 0..1
-			float alpha = 0.25f + (0.45f * pulse);
+			var t = (float)ImGui.GetTime();
+			var pulse = (MathF.Sin(t * 4f) + 1f) * 0.5f; // 0..1
+			var alpha = 0.25f + (0.45f * pulse);
 			diagColor = new Vector4(1f, 0f, 0f, alpha);
 		}
 		else
@@ -520,11 +549,11 @@ public partial class RotationConfigWindow : Window
 		ImGui.SetCursorPosX(0);
 
 		// Create an invisible button over the area where the InfoMarker will be drawn
-		Vector2 markerSize = ImGui.CalcTextSize(FontAwesomeIcon.Cube.ToIconString());
+		var markerSize = ImGui.CalcTextSize(FontAwesomeIcon.Cube.ToIconString());
 		markerSize.Y = Math.Max(markerSize.Y, ImGui.GetTextLineHeight()); // Ensure height is at least one line
 
 		ImGui.InvisibleButton("##DiagInfoMarkerBtn", new Vector2(ImGui.GetWindowWidth(), markerSize.Y));
-		bool clicked = ImGui.IsItemClicked();
+		var clicked = ImGui.IsItemClicked();
 
 		ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - 20);
 		ImGui.SetCursorPosX(0);
@@ -550,22 +579,22 @@ public partial class RotationConfigWindow : Window
 
 	private void DrawSideBar()
 	{
-		using ImRaii.IEndObject child = ImRaii.Child("Rotation Solver Side bar", -Vector2.One, false, ImGuiWindowFlags.NoScrollbar);
+		using var child = ImRaii.Child("Rotation Solver Side bar", -Vector2.One, false, ImGuiWindowFlags.NoScrollbar);
 		if (child)
 		{
-			float wholeWidth = ImGui.GetWindowSize().X;
+			var wholeWidth = ImGui.GetWindowSize().X;
 			DrawHeader(wholeWidth);
 			ImGui.Spacing();
 			ImGui.Separator();
 			ImGui.Spacing();
-			float iconSize = Math.Max(Scale * MIN_COLUMN_WIDTH, Math.Min(wholeWidth, Scale * JOB_ICON_WIDTH)) * 0.6f;
+			var iconSize = Math.Max(Scale * MIN_COLUMN_WIDTH, Math.Min(wholeWidth, Scale * JOB_ICON_WIDTH)) * 0.6f;
 			if (wholeWidth > JOB_ICON_WIDTH * Scale)
 			{
 				ImGui.SetNextItemWidth(wholeWidth);
 				SearchingBox();
 				ImGui.Spacing();
 			}
-			foreach (RotationConfigWindowTab item in Enum.GetValues<RotationConfigWindowTab>())
+			foreach (var item in Enum.GetValues<RotationConfigWindowTab>())
 			{
 				// Skip the tab if it has the TabSkipAttribute
 				if (_configWindowTabProperties[item].Item1)
@@ -628,11 +657,11 @@ public partial class RotationConfigWindow : Window
 				}
 
 				// Reverse the order of these to do the non-interop check first
-				if (wholeWidth <= JOB_ICON_WIDTH * Scale && IconSet.GetTexture(_configWindowTabProperties[item].Item2, out IDalamudTextureWrap? icon))
+				if (wholeWidth <= JOB_ICON_WIDTH * Scale && IconSet.GetTexture(_configWindowTabProperties[item].Item2, out var icon))
 				{
 					ImGuiHelper.DrawItemMiddle(() =>
 					{
-						Vector2 cursor = ImGui.GetCursorPos();
+						var cursor = ImGui.GetCursorPos();
 						if (ImGuiHelper.NoPaddingNoColorImageButton(icon, Vector2.One * iconSize, displayName))
 						{
 							_activeTab = item;
@@ -641,8 +670,8 @@ public partial class RotationConfigWindow : Window
 						ImGuiHelper.DrawActionOverlay(cursor, iconSize, _activeTab == item ? 1 : 0);
 					}, Math.Max(Scale * MIN_COLUMN_WIDTH, wholeWidth), iconSize);
 
-					string desc = displayName;
-					string addition = item.GetDescription();
+					var desc = displayName;
+					var addition = item.GetDescription();
 					if (!string.IsNullOrEmpty(addition))
 					{
 						desc += "\n \n" + addition;
@@ -652,7 +681,7 @@ public partial class RotationConfigWindow : Window
 				}
 				else
 				{
-					if (ImGui.Selectable(displayName, _activeTab == item, ImGuiSelectableFlags.None, new Vector2(0, 20)))
+					if (ImGui.Selectable(displayName, _activeTab == item, ImGuiSelectableFlags.None, new Vector2(0, 20) * Scale))
 					{
 						_activeTab = item;
 						_searchResults = [];
@@ -660,7 +689,7 @@ public partial class RotationConfigWindow : Window
 					if (ImGui.IsItemHovered())
 					{
 						ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-						string desc = item.GetDescription();
+						var desc = item.GetDescription();
 						if (!string.IsNullOrEmpty(desc))
 						{
 							ImguiTooltips.ShowTooltip(desc);
@@ -693,12 +722,12 @@ public partial class RotationConfigWindow : Window
 
 	private void DrawHeader(float wholeWidth)
 	{
-		float size = MathF.Max(MathF.Min(wholeWidth, Scale * 128), Scale * MIN_COLUMN_WIDTH);
-		if (IconSet.GetTexture((uint)0, out IDalamudTextureWrap? overlay) && overlay?.Handle != null)
+		var size = MathF.Max(MathF.Min(wholeWidth, Scale * 128), Scale * MIN_COLUMN_WIDTH);
+		if (IconSet.GetTexture((uint)0, out var overlay) && overlay?.Handle != null)
 		{
 			ImGuiHelper.DrawItemMiddle(() =>
 			{
-				Vector2 cursor = ImGui.GetCursorPos();
+				var cursor = ImGui.GetCursorPos();
 				if (ImGuiHelper.SilenceImageButton(overlay, Vector2.One * size,
 					_activeTab == RotationConfigWindowTab.About, "About Icon"))
 				{
@@ -709,7 +738,7 @@ public partial class RotationConfigWindow : Window
 				// Detect long-press on the icon to open the Easter egg window.
 				if (ImGui.IsItemActive())
 				{
-					double now = ImGui.GetTime();
+					var now = ImGui.GetTime();
 					if (_rsrIconPressStart < 0)
 					{
 						_rsrIconPressStart = now;
@@ -748,7 +777,7 @@ public partial class RotationConfigWindow : Window
 						{
 							logoUrl = $"https://raw.githubusercontent.com/{Service.USERNAME}/{Service.REPO}/main/Images/Logo.png";
 						}
-						if (ThreadLoadImageHandler.TryGetTextureWrap(logoUrl, out IDalamudTextureWrap? logo) && logo?.Handle != null)
+						if (ThreadLoadImageHandler.TryGetTextureWrap(logoUrl, out var logo) && logo?.Handle != null)
 						{
 							_logoTexture = logo;
 							ImGui.SetCursorPos(cursor);
@@ -759,7 +788,7 @@ public partial class RotationConfigWindow : Window
 			}, wholeWidth, size);
 			ImGui.Spacing();
 		}
-		ICustomRotation? rotation = DataCenter.CurrentRotation;
+		var rotation = DataCenter.CurrentRotation;
 
 		if (rotation == null)
 		{
@@ -769,7 +798,7 @@ public partial class RotationConfigWindow : Window
 			{
 				ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudOrange);
 
-				string? text = UiString.ConfigWindow_NoRotation.GetDescription();
+				var text = UiString.ConfigWindow_NoRotation.GetDescription();
 				if (string.IsNullOrEmpty(text))
 				{
 					PluginLog.Error("UiString.ConfigWindow_NoRotation.GetDescription() returned null or empty.");
@@ -777,7 +806,7 @@ public partial class RotationConfigWindow : Window
 					return;
 				}
 
-				float textWidth = ImGuiHelpers.GetButtonSize(text).X;
+				var textWidth = ImGuiHelpers.GetButtonSize(text).X;
 				ImGuiHelper.DrawItemMiddle(() =>
 				{
 					ImGui.TextWrapped(text);
@@ -786,7 +815,7 @@ public partial class RotationConfigWindow : Window
 				ImguiTooltips.HoveredTooltip("Please update your rotations!");
 				return;
 			}
-			float availableWidth = ImGui.GetContentRegionAvail().X;
+			var availableWidth = ImGui.GetContentRegionAvail().X;
 			ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + availableWidth);
 			ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudOrange);
 			ImGui.Text(":(");
@@ -796,11 +825,11 @@ public partial class RotationConfigWindow : Window
 		}
 
 		var playerJob = Player.Job;
-		ICustomRotation[] rotations = RotationUpdater.GetRotations(playerJob, DataCenter.IsPvP ? CombatType.PvP : CombatType.PvE);
+		var rotations = RotationUpdater.GetRotations(playerJob, DataCenter.IsPvP ? CombatType.PvP : CombatType.PvE);
 
 		if (_currentRotation != rotation)
 		{
-			RotationAttribute? rot = rotation.GetAttributes();
+			var rot = rotation.GetAttributes();
 			if (rot == null)
 			{
 				// Defensive: don't update fields if attributes are missing
@@ -813,8 +842,8 @@ public partial class RotationConfigWindow : Window
 		// Defensive: ensure _curRotationAttribute is not null
 		var curAttr = _curRotationAttribute ?? new RotationAttribute("Unknown", CombatType.PvE);
 
-		float iconSize = Math.Max(Scale * MIN_COLUMN_WIDTH, Math.Min(wholeWidth, Scale * JOB_ICON_WIDTH));
-		float comboSize = ImGui.CalcTextSize(curAttr.Name ?? string.Empty).X;
+		var iconSize = Math.Max(Scale * MIN_COLUMN_WIDTH, Math.Min(wholeWidth, Scale * JOB_ICON_WIDTH));
+		var comboSize = ImGui.CalcTextSize(curAttr.Name ?? string.Empty).X;
 
 		ImGuiHelper.DrawItemMiddle(() =>
 		{
@@ -838,12 +867,16 @@ public partial class RotationConfigWindow : Window
 	private void DrawRotationIcon(ICustomRotation? rotation, float iconSize)
 	{
 		if (rotation == null)
+		{
 			return;
+		}
 
-		Vector2 cursor = ImGui.GetCursorPos();
+		var cursor = ImGui.GetCursorPos();
 
-		if (!rotation.GetTexture(out IDalamudTextureWrap? jobIcon) || jobIcon?.Handle == null)
+		if (!rotation.GetTexture(out var jobIcon) || jobIcon?.Handle == null)
+		{
 			return;
+		}
 
 		if (ImGuiHelper.SilenceImageButton(jobIcon, Vector2.One * iconSize, _activeTab == RotationConfigWindowTab.Rotation))
 		{
@@ -879,7 +912,14 @@ public partial class RotationConfigWindow : Window
 		if (overlayTexture?.Handle != null)
 		{
 			ImGui.SetCursorPos(cursor + (Vector2.One * iconSize / 2));
-			ImGui.Image(overlayTexture.Handle, Vector2.One * iconSize / 2);
+			if (DataCenter.IsInOccultCrescentOp)
+			{
+				ImGui.Image(overlayTexture.Handle, overlayTexture.Size / 2);
+			}
+			else
+			{
+				ImGui.Image(overlayTexture.Handle, Vector2.One * iconSize / 2);
+			}
 		}
 	}
 
@@ -888,7 +928,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.SetNextItemWidth(comboSize);
 		const string popUp = "Rotation Solver Select Rotation";
 		var rotationColor = rotation.GetColor();
-		using (ImRaii.Color color = ImRaii.PushColor(ImGuiCol.Text, rotation.IsExtra() ? ImGuiColors.DalamudViolet : ImGuiColors.DalamudWhite))
+		using (var color = ImRaii.PushColor(ImGuiCol.Text, rotation.IsExtra() ? ImGuiColors.DalamudViolet : ImGuiColors.DalamudWhite))
 		{
 			if (ImGui.Selectable(_curRotationAttribute.Name + "##RotationName:" + rotation.Name))
 			{
@@ -898,19 +938,19 @@ public partial class RotationConfigWindow : Window
 				}
 			}
 		}
-		using (ImRaii.IEndObject popup = ImRaii.Popup(popUp))
+		using (var popup = ImRaii.Popup(popUp))
 		{
 			if (popup)
 			{
-				foreach (ICustomRotation r in rotations)
+				foreach (var r in rotations)
 				{
-					RotationAttribute? rAttr = r.GetAttributes();
+					var rAttr = r.GetAttributes();
 					if (rAttr == null)
 					{
 						continue;
 					}
 
-					if (IconSet.GetTexture(rAttr.Type.GetIcon(), out IDalamudTextureWrap? texture))
+					if (IconSet.GetTexture(rAttr.Type.GetIcon(), out var texture))
 					{
 						if (texture?.Handle != null)
 						{
@@ -946,7 +986,7 @@ public partial class RotationConfigWindow : Window
 			}
 		}
 
-		string warning = "Game version: " + _curRotationAttribute.GameVersion;
+		var warning = "Game version: " + _curRotationAttribute.GameVersion;
 		warning += "\n \n" + UiString.ConfigWindow_Helper_SwitchRotation.GetDescription();
 		ImguiTooltips.HoveredTooltip(warning);
 	}
@@ -959,8 +999,8 @@ public partial class RotationConfigWindow : Window
 		if (_supporters != null && _supporters.Length > 0 && index % 5 == 0)
 		{
 			// Pick a random supporter for the special thanks message.
-			int supporterIndex = _hintRng.Next(_supporters.Length);
-			string supporter = _supporters[supporterIndex];
+			var supporterIndex = _hintRng.Next(_supporters.Length);
+			var supporter = _supporters[supporterIndex];
 			return $"Special thanks to supporter: {supporter}!";
 		}
 		// Defensive: fallback to base hints if index is valid, else a default message.
@@ -975,11 +1015,11 @@ public partial class RotationConfigWindow : Window
 	// Hint bar at the top of the body
 	private void DrawHintsBar()
 	{
-		bool hasErrors = CheckErrors();
+		var hasErrors = CheckErrors();
 		if (hasErrors)
 		{
-			string errorText = string.Empty;
-			float availableWidth = ImGui.GetContentRegionAvail().X; // Get the available width dynamically
+			var errorText = string.Empty;
+			var availableWidth = ImGui.GetContentRegionAvail().X; // Get the available width dynamically
 
 			if (DataCenter.DalamudStagingEnabled)
 			{
@@ -991,11 +1031,7 @@ public partial class RotationConfigWindow : Window
 				ImGui.Spacing();
 			}
 			//
-			if (_crashPlugins.Count > 0 && _crashPlugins[0].Name != null)
-			{
-				errorText = $"Disable {_crashPlugins[0].Name}, can cause conflicts/crashes.";
-			}
-			else if (Player.Available && (Player.Job == Job.CRP || Player.Job == Job.BSM || Player.Job == Job.ARM || Player.Job == Job.GSM ||
+			if (Player.Available && (Player.Job == Job.CRP || Player.Job == Job.BSM || Player.Job == Job.ARM || Player.Job == Job.GSM ||
 					Player.Job == Job.LTW || Player.Job == Job.WVR || Player.Job == Job.ALC || Player.Job == Job.CUL ||
 					Player.Job == Job.MIN || Player.Job == Job.FSH || Player.Job == Job.BTN))
 			{
@@ -1006,27 +1042,41 @@ public partial class RotationConfigWindow : Window
 			{
 				List<string> warningsToRemove = [];
 
-				foreach (string warning in DataCenter.SystemWarnings.Keys)
+				foreach (var warning in DataCenter.SystemWarnings.Keys)
 				{
-					using ImRaii.Color color = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudOrange));
+					using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudOrange));
 					ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + availableWidth); // Set text wrapping position dynamically
 
 					// Calculate the required height for the button
-					Vector2 textSize = ImGui.CalcTextSize(warning, false, availableWidth);
-					float buttonHeight = textSize.Y + (ImGui.GetStyle().FramePadding.Y * 2);
-					float lineHeight = ImGui.GetTextLineHeight();
-					int lineCount = (int)Math.Ceiling(textSize.X / availableWidth);
+					var textSize = ImGui.CalcTextSize(warning, false, availableWidth);
+					var buttonHeight = textSize.Y + (ImGui.GetStyle().FramePadding.Y * 2);
 
-					if (ImGui.Button(warning, new Vector2(availableWidth, buttonHeight)))
+					// Make the warning clickable to navigate to Compatibility
+					if (ImGui.Selectable(warning, false, ImGuiSelectableFlags.None, new Vector2(availableWidth, buttonHeight)))
 					{
-						warningsToRemove.Add(warning);
+						_activeTab = RotationConfigWindowTab.About;
+						_aboutHeaders.OpenHeaderByTitle(UiString.ConfigWindow_About_Compatibility.GetDescription());
+						_searchResults = [];
+					}
+
+					// Change cursor to hand when hovering
+					if (ImGui.IsItemHovered())
+					{
+						ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+						ImguiTooltips.ShowTooltip("Click to view plugin compatibility information. Right-click to dismiss warning.");
+
+						// Right-click to remove the warning
+						if (ImGui.IsMouseReleased(ImGuiMouseButton.Right))
+						{
+							warningsToRemove.Add(warning);
+						}
 					}
 
 					ImGui.PopTextWrapPos(); // Reset text wrapping position
 				}
 
 				// Remove warnings that were cleared
-				foreach (string warning in warningsToRemove)
+				foreach (var warning in warningsToRemove)
 				{
 					_ = DataCenter.SystemWarnings.Remove(warning);
 				}
@@ -1057,7 +1107,7 @@ public partial class RotationConfigWindow : Window
 
 		// Advance hint periodically when no errors are present (so warnings don't rapidly cycle tips).
 		const float HintSwitchIntervalSeconds = 8f;
-		float now = (float)ImGui.GetTime();
+		var now = (float)ImGui.GetTime();
 		if (!hasErrors)
 		{
 			if (now - _lastHintSwitch >= HintSwitchIntervalSeconds)
@@ -1086,10 +1136,10 @@ public partial class RotationConfigWindow : Window
 			_cachedTipIndex = _hintIndex;
 		}
 
-		using (ImRaii.Font _ = ImRaii.PushFont(FontManager.GetFont(12)))
-		using (ImRaii.Color __ = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudYellow)))
+		using (var _ = ImRaii.PushFont(FontManager.GetFont(12)))
+		using (var __ = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudYellow)))
 		{
-			float avail = ImGui.GetContentRegionAvail().X;
+			var avail = ImGui.GetContentRegionAvail().X;
 			ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + avail);
 
 			ImGui.TextWrapped(_cachedTipText);
@@ -1122,7 +1172,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.SetCursorPos(ImGui.GetCursorPos() + (Vector2.One * 8 * Scale));
 
 		// Create a child window for the body content
-		using ImRaii.IEndObject child = ImRaii.Child("Rotation Solver Body", -Vector2.One);
+		using var child = ImRaii.Child("Rotation Solver Body", -Vector2.One);
 		if (child)
 		{
 			// Hints bar at the top of the body (hide when search is active)
@@ -1135,16 +1185,16 @@ public partial class RotationConfigWindow : Window
 			if (_searchResults != null && _searchResults.Length != 0)
 			{
 				// Display search results header
-				using (ImRaii.Font font = ImRaii.PushFont(FontManager.GetFont(18)))
+				using (var font = ImRaii.PushFont(FontManager.GetFont(18)))
 				{
-					using ImRaii.Color color = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudYellow));
+					using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudYellow));
 					ImGui.TextWrapped(UiString.ConfigWindow_Search_Result.GetDescription());
 				}
 
 				ImGui.Spacing();
 
 				// Display each search result
-				foreach (ISearchable searchable in _searchResults)
+				foreach (var searchable in _searchResults)
 				{
 					if (searchable == null)
 					{
@@ -1156,18 +1206,18 @@ public partial class RotationConfigWindow : Window
 					// Offer a way to jump to the menu where this item resides
 					if (searchable is Searchable s)
 					{
-						string filter = s.Filter;
+						var filter = s.Filter;
 						if (!string.IsNullOrEmpty(filter))
 						{
 							ImGui.SameLine();
-							string btnId = $"##JumpToMenu_{s.ID}_{s.GetHashCode()}";
+							var btnId = $"##JumpToMenu_{s.ID}_{s.GetHashCode()}";
 							if (ImGuiEx.IconButton(FontAwesomeIcon.ExternalLinkAlt, btnId))
 							{
 								NavigateToFilter(filter);
 								_searchResults = [];
 							}
 
-							string path = GetFilterMenuPath(filter);
+							var path = GetFilterMenuPath(filter);
 							if (!string.IsNullOrEmpty(path))
 							{
 								ImguiTooltips.HoveredTooltip($"Open: {path}");
@@ -1265,13 +1315,15 @@ public partial class RotationConfigWindow : Window
 			Configs.BasicAutoSwitch => $"Auto > {UiString.ConfigWindow_Basic_AutoSwitch.GetDescription()}",
 			Configs.AutoActionUsage => $"Auto > {UiString.ConfigWindow_Auto_ActionUsage.GetDescription()}",
 			Configs.HealingActionCondition => $"Auto > {UiString.ConfigWindow_Auto_HealingCondition.GetDescription()}",
-			Configs.DutySpecifcUltimate => $"Auto > {UiString.ConfigWindow_Duty_Ultimate.GetDescription()}",
-			Configs.DutySpecifcSavage => $"Auto > {UiString.ConfigWindow_Duty_Savage.GetDescription()}",
-			Configs.DutySpecifcExtreme => $"Auto > {UiString.ConfigWindow_Duty_Extreme.GetDescription()}",
-			Configs.DutySpecifcAlliance => $"Auto > {UiString.ConfigWindow_Duty_Alliance.GetDescription()}",
-			Configs.DutySpecifcDungeon => $"Auto > {UiString.ConfigWindow_Duty_Dungeon.GetDescription()}",
-			Configs.DutySpecifcFieldOps => $"Auto > {UiString.ConfigWindow_Duty_FieldOps.GetDescription()}",
-			Configs.DutySpecifcPvP => $"Auto > {UiString.ConfigWindow_Duty_PvP.GetDescription()}",
+			Configs.DutySpecificUltimate => $"Auto > {UiString.ConfigWindow_Duty_Ultimate.GetDescription()}",
+			Configs.DutySpecificSavage => $"Auto > {UiString.ConfigWindow_Duty_Savage.GetDescription()}",
+			Configs.DutySpecificExtreme => $"Auto > {UiString.ConfigWindow_Duty_Extreme.GetDescription()}",
+			Configs.DutySpecificAlliance => $"Auto > {UiString.ConfigWindow_Duty_Alliance.GetDescription()}",
+			Configs.DutySpecificDungeon => $"Auto > {UiString.ConfigWindow_Duty_Dungeon.GetDescription()}",
+			Configs.DutySpecificFieldOps => $"Auto > {UiString.ConfigWindow_Duty_FieldOps.GetDescription()}",
+			Configs.DutySpecificPvP => $"Auto > {UiString.ConfigWindow_Duty_PvP.GetDescription()}",
+			Configs.DutySpecificTreasureDungeon => $"Auto > {UiString.ConfigWindow_Duty_TreasureDungeon.GetDescription()}",
+			Configs.DutySpecificTheMaskedCarnivale => $"Auto > {UiString.ConfigWindow_Duty_TheMaskedCarnivale.GetDescription()}",
 
 			Configs.TargetConfig => $"Target > {UiString.ConfigWindow_Target_Config.GetDescription()}",
 
@@ -1321,33 +1373,41 @@ public partial class RotationConfigWindow : Window
 				_activeTab = RotationConfigWindowTab.Auto;
 				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Auto_HealingCondition.GetDescription());
 				break;
-			case Configs.DutySpecifcUltimate:
+			case Configs.DutySpecificUltimate:
 				_activeTab = RotationConfigWindowTab.Duty;
 				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Duty_Ultimate.GetDescription());
 				break;
-			case Configs.DutySpecifcSavage:
+			case Configs.DutySpecificSavage:
 				_activeTab = RotationConfigWindowTab.Duty;
 				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Duty_Savage.GetDescription());
 				break;
-			case Configs.DutySpecifcExtreme:
+			case Configs.DutySpecificExtreme:
 				_activeTab = RotationConfigWindowTab.Duty;
 				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Duty_Extreme.GetDescription());
 				break;
-			case Configs.DutySpecifcAlliance:
+			case Configs.DutySpecificAlliance:
 				_activeTab = RotationConfigWindowTab.Duty;
 				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Duty_Alliance.GetDescription());
 				break;
-			case Configs.DutySpecifcDungeon:
+			case Configs.DutySpecificDungeon:
 				_activeTab = RotationConfigWindowTab.Duty;
 				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Duty_Dungeon.GetDescription());
 				break;
-			case Configs.DutySpecifcFieldOps:
+			case Configs.DutySpecificFieldOps:
 				_activeTab = RotationConfigWindowTab.Duty;
 				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Duty_FieldOps.GetDescription());
 				break;
-			case Configs.DutySpecifcPvP:
+			case Configs.DutySpecificPvP:
 				_activeTab = RotationConfigWindowTab.Duty;
 				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Duty_PvP.GetDescription());
+				break;
+			case Configs.DutySpecificTreasureDungeon:
+				_activeTab = RotationConfigWindowTab.Duty;
+				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Duty_TreasureDungeon.GetDescription());
+				break;
+			case Configs.DutySpecificTheMaskedCarnivale:
+				_activeTab = RotationConfigWindowTab.Duty;
+				_autoHeader.OpenHeaderByTitle(UiString.ConfigWindow_Duty_TheMaskedCarnivale.GetDescription());
 				break;
 
 			case Configs.TargetConfig:
@@ -1376,9 +1436,11 @@ public partial class RotationConfigWindow : Window
 	#region DutyRotation
 	private static void DrawDutyRotationBody()
 	{
-		DutyRotation? rotation = DataCenter.CurrentDutyRotation;
+		var rotation = DataCenter.CurrentDutyRotation;
 		if (rotation == null)
+		{
 			return;
+		}
 
 		_dutyRotationHeader.Draw();
 	}
@@ -1392,8 +1454,8 @@ public partial class RotationConfigWindow : Window
 
 	private static string GetDutyRotationStatusHead()
 	{
-		DutyRotation? rotation = DataCenter.CurrentDutyRotation;
-		string status = UiString.ConfigWindow_DutyRotation_Status.GetDescription();
+		var rotation = DataCenter.CurrentDutyRotation;
+		var status = UiString.ConfigWindow_DutyRotation_Status.GetDescription();
 		return rotation == null ? string.Empty : status;
 	}
 
@@ -1408,38 +1470,60 @@ public partial class RotationConfigWindow : Window
 
 	private static void DrawDutyRotationConfiguration()
 	{
-		DutyRotation? rotation = DataCenter.CurrentDutyRotation;
-		if (rotation == null) return;
-		if (!Player.Available) return;
-
-		IRotationConfigSet set = rotation.Configs;
-
-		bool hasAny = false;
-		foreach (var _ in set.Configs) { hasAny = true; break; }
-		if (hasAny) ImGui.Separator();
-
-		foreach (IRotationConfig config in set.Configs)
+		var rotation = DataCenter.CurrentDutyRotation;
+		if (rotation == null)
 		{
-			if (!config.Type.HasFlag(CombatType.PvE)) continue;
-			if (!ShouldShowRotationConfig(config, set)) continue;
+			return;
+		}
 
-			string typeName = rotation.GetType().FullName ?? rotation.GetType().Name;
-			string key = $"{typeName}.{config.Name}";
-			string name = $"##{config.GetHashCode()}_{key}.Name";
-			string command = ToCommandStr(OtherCommandType.DutyRotations, config.Name, config.DefaultValue);
+		if (!Player.Available)
+		{
+			return;
+		}
+
+		var set = rotation.Configs;
+
+		var hasAny = false;
+		foreach (var _ in set.Configs)
+		{ hasAny = true; break; }
+		if (hasAny)
+		{
+			ImGui.Separator();
+		}
+
+		foreach (var config in set.Configs)
+		{
+			if (!config.Type.HasFlag(CombatType.PvE))
+			{
+				continue;
+			}
+
+			if (!ShouldShowRotationConfig(config, set))
+			{
+				continue;
+			}
+
+			var typeName = rotation.GetType().FullName ?? rotation.GetType().Name;
+			var key = $"{typeName}.{config.Name}";
+			var name = $"##{config.GetHashCode()}_{key}.Name";
+			var command = ToCommandStr(OtherCommandType.DutyRotations, config.Name, config.DefaultValue);
 			void Reset() => config.Value = config.DefaultValue;
 
 			ImGuiHelper.PrepareGroup(key, command, Reset);
 
-			DutyRotation.PhantomJob phantomJob = DutyRotation.GetPhantomJob();
+			var phantomJob = DutyRotation.GetPhantomJob();
 
 			if (config is RotationConfigCombo c)
 			{
-				if (c.PhantomJob != DutyRotation.PhantomJob.None && c.PhantomJob != phantomJob) continue;
-				string[] names = c.DisplayValues;
-				string selectedValue = c.Value;
-				int index = -1;
-				for (int i = 0; i < names.Length; i++)
+				if (c.PhantomJob != DutyRotation.PhantomJob.None && c.PhantomJob != phantomJob)
+				{
+					continue;
+				}
+
+				var names = c.DisplayValues;
+				var selectedValue = c.Value;
+				var index = -1;
+				for (var i = 0; i < names.Length; i++)
 				{
 					if (names[i].Equals(selectedValue, StringComparison.OrdinalIgnoreCase))
 					{
@@ -1447,11 +1531,18 @@ public partial class RotationConfigWindow : Window
 						break;
 					}
 				}
-				if (index == -1) index = 0;
-				string longest = "";
-				for (int i = 0; i < names.Length; i++)
+				if (index == -1)
 				{
-					if (names[i].Length > longest.Length) longest = names[i];
+					index = 0;
+				}
+
+				var longest = "";
+				for (var i = 0; i < names.Length; i++)
+				{
+					if (names[i].Length > longest.Length)
+					{
+						longest = names[i];
+					}
 				}
 				ImGui.SetNextItemWidth(ImGui.CalcTextSize(longest).X + (50 * Scale));
 				if (ImGui.Combo(name, ref index, names, names.Length))
@@ -1461,8 +1552,12 @@ public partial class RotationConfigWindow : Window
 			}
 			else if (config is RotationConfigBoolean b)
 			{
-				if (b.PhantomJob != DutyRotation.PhantomJob.None && b.PhantomJob != phantomJob) continue;
-				if (bool.TryParse(config.Value, out bool val))
+				if (b.PhantomJob != DutyRotation.PhantomJob.None && b.PhantomJob != phantomJob)
+				{
+					continue;
+				}
+
+				if (bool.TryParse(config.Value, out var val))
 				{
 					if (ImGui.Checkbox(name, ref val))
 					{
@@ -1473,13 +1568,17 @@ public partial class RotationConfigWindow : Window
 			}
 			else if (config is RotationConfigFloat f)
 			{
-				if (f.PhantomJob != DutyRotation.PhantomJob.None && f.PhantomJob != phantomJob) continue;
-				if (float.TryParse(config.Value, out float val))
+				if (f.PhantomJob != DutyRotation.PhantomJob.None && f.PhantomJob != phantomJob)
+				{
+					continue;
+				}
+
+				if (float.TryParse(config.Value, out var val))
 				{
 					ImGui.SetNextItemWidth(Scale * Searchable.DRAG_WIDTH);
 					if (f.UnitType == ConfigUnitType.Percent)
 					{
-						float displayValue = val * 100;
+						var displayValue = val * 100;
 						if (ImGui.SliderFloat(name, ref displayValue, f.Min * 100, f.Max * 100, $"{displayValue:F1}{f.UnitType.ToSymbol()}"))
 						{
 							config.Value = (displayValue / 100).ToString();
@@ -1498,8 +1597,12 @@ public partial class RotationConfigWindow : Window
 			}
 			else if (config is RotationConfigString s)
 			{
-				if (s.PhantomJob != DutyRotation.PhantomJob.None && s.PhantomJob != phantomJob) continue;
-				string val = config.Value;
+				if (s.PhantomJob != DutyRotation.PhantomJob.None && s.PhantomJob != phantomJob)
+				{
+					continue;
+				}
+
+				var val = config.Value;
 				ImGui.SetNextItemWidth(ImGui.GetWindowWidth());
 				if (ImGui.InputTextWithHint(name, config.DisplayName, ref val, 128))
 				{
@@ -1510,8 +1613,12 @@ public partial class RotationConfigWindow : Window
 			}
 			else if (config is RotationConfigInt i)
 			{
-				if (i.PhantomJob != DutyRotation.PhantomJob.None && i.PhantomJob != phantomJob) continue;
-				if (int.TryParse(config.Value, out int val))
+				if (i.PhantomJob != DutyRotation.PhantomJob.None && i.PhantomJob != phantomJob)
+				{
+					continue;
+				}
+
+				if (int.TryParse(config.Value, out var val))
 				{
 					ImGui.SetNextItemWidth(Scale * Searchable.DRAG_WIDTH);
 					if (ImGui.DragInt(name, ref val, i.Speed, i.Min, i.Max))
@@ -1543,16 +1650,17 @@ public partial class RotationConfigWindow : Window
 	{
 		{ UiString.ConfigWindow_Duty_Ultimate.GetDescription, DrawDutySpecificUltimate },
 		{ UiString.ConfigWindow_Duty_Savage.GetDescription, DrawDutySpecificSavage },
-		{ UiString.ConfigWindow_Duty_Extreme.GetDescription, DrawDutySpecifcExtreme },
-		{ UiString.ConfigWindow_Duty_ChaoticAlliance.GetDescription, DrawDutySpecifcChaoticAlliance },
-		{ UiString.ConfigWindow_Duty_Alliance.GetDescription, DrawDutySpecifcAlliance },
-		{ UiString.ConfigWindow_Duty_Dungeon.GetDescription, DrawDutySpecifcDungeon },
-		{ UiString.ConfigWindow_Duty_DeepDungeon.GetDescription, DrawDutySpecifcDeepDungeon },
-		{ UiString.ConfigWindow_Duty_VariantDungeon.GetDescription, DrawDutySpecifcVariantDungeon },
-		{ UiString.ConfigWindow_Duty_FieldOps.GetDescription, DrawDutySpecifcFieldOps },
-		{ UiString.ConfigWindow_Duty_PvP.GetDescription, DrawDutySpecifcPvP },
-		{ UiString.ConfigWindow_Duty_TheMaskedCarnivale.GetDescription, DrawDutySpecifcTheMaskedCarnivale },
-		{ UiString.ConfigWindow_Duty_CrucibleOfTheUnbroken.GetDescription, DrawDutySpecifcCrucibleOfTheUnbroken },
+		{ UiString.ConfigWindow_Duty_Extreme.GetDescription, DrawDutySpecificExtreme },
+		{ UiString.ConfigWindow_Duty_ChaoticAlliance.GetDescription, DrawDutySpecificChaoticAlliance },
+		{ UiString.ConfigWindow_Duty_Alliance.GetDescription, DrawDutySpecificAlliance },
+		{ UiString.ConfigWindow_Duty_Dungeon.GetDescription, DrawDutySpecificDungeon },
+		{ UiString.ConfigWindow_Duty_DeepDungeon.GetDescription, DrawDutySpecificDeepDungeon },
+		{ UiString.ConfigWindow_Duty_VariantDungeon.GetDescription, DrawDutySpecificVariantDungeon },
+		{ UiString.ConfigWindow_Duty_TreasureDungeon.GetDescription, DrawDutySpecificTreasureDungeon },
+		{ UiString.ConfigWindow_Duty_FieldOps.GetDescription, DrawDutySpecificFieldOps },
+		{ UiString.ConfigWindow_Duty_PvP.GetDescription, DrawDutySpecificPvP },
+		{ UiString.ConfigWindow_Duty_TheMaskedCarnivale.GetDescription, DrawDutySpecificTheMaskedCarnivale },
+		{ UiString.ConfigWindow_Duty_CrucibleOfTheUnbroken.GetDescription, DrawDutySpecificCrucibleOfTheUnbroken },
 	})
 	{
 		HeaderSize = HeaderSize,
@@ -1560,51 +1668,55 @@ public partial class RotationConfigWindow : Window
 
 	private static void DrawDutySpecificUltimate()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcUltimate);
+		_allSearchable.DrawItems(Configs.DutySpecificUltimate);
 	}
 	private static void DrawDutySpecificSavage()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcSavage);
+		_allSearchable.DrawItems(Configs.DutySpecificSavage);
 	}
-	private static void DrawDutySpecifcExtreme()
+	private static void DrawDutySpecificExtreme()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcExtreme);
+		_allSearchable.DrawItems(Configs.DutySpecificExtreme);
 	}
-	private static void DrawDutySpecifcChaoticAlliance()
+	private static void DrawDutySpecificChaoticAlliance()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcChaoticAlliance);
+		_allSearchable.DrawItems(Configs.DutySpecificChaoticAlliance);
 	}
-	private static void DrawDutySpecifcAlliance()
+	private static void DrawDutySpecificAlliance()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcAlliance);
+		_allSearchable.DrawItems(Configs.DutySpecificAlliance);
 	}
-	private static void DrawDutySpecifcDungeon()
+	private static void DrawDutySpecificDungeon()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcDungeon);
+		_allSearchable.DrawItems(Configs.DutySpecificDungeon);
 	}
-	private static void DrawDutySpecifcDeepDungeon()
+	private static void DrawDutySpecificDeepDungeon()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcDeepDungeon);
+		_allSearchable.DrawItems(Configs.DutySpecificDeepDungeon);
 	}
-	private static void DrawDutySpecifcVariantDungeon()
+	private static void DrawDutySpecificVariantDungeon()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcVariantDungeon);
+		_allSearchable.DrawItems(Configs.DutySpecificVariantDungeon);
 	}
-	private static void DrawDutySpecifcFieldOps()
+	private static void DrawDutySpecificTreasureDungeon()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcFieldOps);
+		_allSearchable.DrawItems(Configs.DutySpecificTreasureDungeon);
 	}
-	private static void DrawDutySpecifcPvP()
+	private static void DrawDutySpecificFieldOps()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcPvP);
+		_allSearchable.DrawItems(Configs.DutySpecificFieldOps);
 	}
-	private static void DrawDutySpecifcTheMaskedCarnivale()
+	private static void DrawDutySpecificPvP()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcTheMaskedCarnivale);
+		_allSearchable.DrawItems(Configs.DutySpecificPvP);
 	}
-	private static void DrawDutySpecifcCrucibleOfTheUnbroken()
+	private static void DrawDutySpecificTheMaskedCarnivale()
 	{
-		_allSearchable.DrawItems(Configs.DutySpecifcCrucibleOfTheUnbroken);
+		_allSearchable.DrawItems(Configs.DutySpecificTheMaskedCarnivale);
+	}
+	private static void DrawDutySpecificCrucibleOfTheUnbroken()
+	{
+		_allSearchable.DrawItems(Configs.DutySpecificCrucibleOfTheUnbroken);
 	}
 
 	#endregion
@@ -1613,9 +1725,9 @@ public partial class RotationConfigWindow : Window
 	private static void DrawAbout()
 	{
 		// Draw the punchline with a specific font and color
-		using (ImRaii.Font font = ImRaii.PushFont(FontManager.GetFont(18)))
+		using (var font = ImRaii.PushFont(FontManager.GetFont(18)))
 		{
-			using ImRaii.Color color = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudYellow));
+			using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudYellow));
 			ImGui.TextWrapped(UiString.ConfigWindow_About_Punchline.GetDescription());
 		}
 
@@ -1627,7 +1739,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.Spacing();
 
 		// Draw the warning with a specific color
-		using (ImRaii.Color color = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudOrange)))
+		using (var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.DalamudOrange)))
 		{
 			ImGui.TextWrapped(UiString.ConfigWindow_About_Warning.GetDescription());
 		}
@@ -1639,26 +1751,26 @@ public partial class RotationConfigWindow : Window
 		}
 
 		ImGui.Spacing();
-		float width2 = ImGui.GetWindowWidth();
-		if (IconSet.GetTexture("https://storage.ko-fi.com/cdn/brandasset/kofi_button_red.png", out IDalamudTextureWrap? icon2) && ImGuiHelper.TextureButton(icon2, width2, 250 * Scale, "Ko-fi link"))
+		var width2 = ImGui.GetWindowWidth();
+		if (IconSet.GetTexture("https://storage.ko-fi.com/cdn/brandasset/kofi_button_red.png", out var icon2) && ImGuiHelper.TextureButton(icon2, width2, 250 * Scale, "Ko-fi link"))
 		{
 			Util.OpenLink("https://ko-fi.com/ltscombatreborn");
 		}
 
-		float width = ImGui.GetWindowWidth();
+		var width = ImGui.GetWindowWidth();
 
 		// Draw the Discord link button
-		if (IconSet.GetTexture("https://discordapp.com/api/guilds/1064448004498653245/embed.png?style=banner2", out Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap? icon) && ImGuiHelper.TextureButton(icon, width, 250 * Scale, "Discord link"))
+		if (IconSet.GetTexture("https://discordapp.com/api/guilds/1064448004498653245/embed.png?style=banner2", out var icon) && ImGuiHelper.TextureButton(icon, width, 250 * Scale, "Discord link"))
 		{
-			Util.OpenLink("https://discord.gg/p54TZMPnC9");
+			Util.OpenLink("https://discord.gg/r9V4RHYt6v");
 		}
 
-		uint clickingCount = OtherConfiguration.RotationSolverRecord.ClickingCount;
+		var clickingCount = OtherConfiguration.RotationSolverRecord.ClickingCount;
 		if (clickingCount > 0)
 		{
 			// Draw the clicking count with a specific color
-			using ImRaii.Color color = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.2f, 0.6f, 0.95f, 1));
-			string countStr = UiString.ConfigWindow_About_ClickingCount.GetDescription();
+			using var color = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.2f, 0.6f, 0.95f, 1));
+			var countStr = UiString.ConfigWindow_About_ClickingCount.GetDescription();
 			if (countStr != null)
 			{
 				countStr = string.Format(countStr, clickingCount);
@@ -1702,8 +1814,8 @@ public partial class RotationConfigWindow : Window
 		}
 
 		// Header text
-		using (ImRaii.Font _ = ImRaii.PushFont(FontManager.GetFont(16)))
-		using (ImRaii.Color __ = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.ParsedGreen)))
+		using (var _ = ImRaii.PushFont(FontManager.GetFont(16)))
+		using (var __ = ImRaii.PushColor(ImGuiCol.Text, ImGui.ColorConvertFloat4ToU32(ImGuiColors.ParsedGreen)))
 		{
 			ImGui.TextWrapped($"Special thanks to the {_supporters.Length} supporters (including those not listed here):");
 		}
@@ -1712,29 +1824,31 @@ public partial class RotationConfigWindow : Window
 
 		// Layout: table of supporter names (multi-column, wraps nicely)
 		const int columns = 3;
-		using ImRaii.IEndObject table = ImRaii.Table("SupportersTable", columns, ImGuiTableFlags.SizingStretchProp);
+		using var table = ImRaii.Table("SupportersTable", columns, ImGuiTableFlags.SizingStretchProp);
 		if (!table)
+		{
 			return;
+		}
 
 		// Pre-sort for stable display
 		var names = new List<string>(_supporters);
 		names.Sort(StringComparer.OrdinalIgnoreCase);
 
 		// Compute per-row distribution
-		int perCol = (int)Math.Ceiling(names.Count / (float)columns);
-		int idx = 0;
+		var perCol = (int)Math.Ceiling(names.Count / (float)columns);
+		var idx = 0;
 
-		for (int col = 0; col < columns; col++)
+		for (var col = 0; col < columns; col++)
 		{
 			ImGui.TableNextColumn();
-			int end = Math.Min(idx + perCol, names.Count);
+			var end = Math.Min(idx + perCol, names.Count);
 
-			for (int i = idx; i < end; i++)
+			for (var i = idx; i < end; i++)
 			{
-				string name = names[i];
+				var name = names[i];
 
 				// Draw each name as a selectable text; right-click copies to clipboard
-				bool selected = ImGui.Selectable(name, false, ImGuiSelectableFlags.AllowDoubleClick);
+				var selected = ImGui.Selectable(name, false, ImGuiSelectableFlags.AllowDoubleClick);
 
 				// Small visual break
 				ImGui.Spacing();
@@ -1750,7 +1864,7 @@ public partial class RotationConfigWindow : Window
 	private static void DrawAboutMacros()
 	{
 		// Adjust item spacing for better layout
-		using ImRaii.Style style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 5f));
+		using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 5f));
 
 		// Display command help for different state commands
 		DisplayCommandHelp(StateCommandType.Auto);
@@ -1784,7 +1898,7 @@ public partial class RotationConfigWindow : Window
 	private static void DrawAboutSettingsCommands()
 	{
 		// Adjust item spacing for better layout
-		using ImRaii.Style style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 5f));
+		using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 5f));
 		ImGui.NewLine();
 		ImGui.TextWrapped("These commands can be used to open or change plugin settings directly from chat or macros.");
 		ImGui.NewLine();
@@ -1804,10 +1918,10 @@ public partial class RotationConfigWindow : Window
 
 		ImGui.Spacing();
 
-		float iconSize = 40 * Scale;
+		var iconSize = 40 * Scale;
 
 		// Create a table to display incompatible plugins
-		using ImRaii.IEndObject table = ImRaii.Table("Incompatible plugin", 5, ImGuiTableFlags.BordersInner
+		using var table = ImRaii.Table("Incompatible plugin", 5, ImGuiTableFlags.BordersInner
 			| ImGuiTableFlags.Resizable
 			| ImGuiTableFlags.SizingStretchProp);
 		if (table)
@@ -1832,10 +1946,10 @@ public partial class RotationConfigWindow : Window
 			ImGui.TableHeader("Enabled");
 
 			// Ensure that IncompatiblePlugins is not null
-			IncompatiblePlugin[] incompatiblePlugins = DownloadHelper.IncompatiblePlugins ?? [];
+			var incompatiblePlugins = PluginCompatibility.IncompatiblePlugins;
 
 			// Iterate over each incompatible plugin and display its details
-			foreach (IncompatiblePlugin item in incompatiblePlugins)
+			foreach (var item in incompatiblePlugins)
 			{
 				ImGui.TableNextRow();
 				_ = ImGui.TableNextColumn();
@@ -1844,11 +1958,11 @@ public partial class RotationConfigWindow : Window
 
 				_ = ImGui.TableNextColumn();
 
-				string icon = string.IsNullOrEmpty(item.Icon)
+				var icon = string.IsNullOrEmpty(item.Icon)
 					? "https://raw.githubusercontent.com/goatcorp/DalamudAssets/master/UIRes/defaultIcon.png"
 					: item.Icon;
 
-				if (IconSet.GetTexture(icon, out Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap? texture))
+				if (IconSet.GetTexture(icon, out var texture))
 				{
 					if (ImGuiHelper.NoPaddingNoColorImageButton(texture, Vector2.One * iconSize))
 					{
@@ -1895,13 +2009,13 @@ public partial class RotationConfigWindow : Window
 
 	private static void DrawAboutLinks()
 	{
-		float width = ImGui.GetWindowWidth();
+		var width = ImGui.GetWindowWidth();
 
 		ImGui.Spacing();
 
 		// Display button to open the configuration folder
-		string text = UiString.ConfigWindow_About_OpenConfigFolder.GetDescription();
-		float textWidth = ImGuiHelpers.GetButtonSize(text).X;
+		var text = UiString.ConfigWindow_About_OpenConfigFolder.GetDescription();
+		var textWidth = ImGuiHelpers.GetButtonSize(text).X;
 		ImGuiHelper.DrawItemMiddle(() =>
 		{
 			if (ImGui.Button(text))
@@ -1920,7 +2034,7 @@ public partial class RotationConfigWindow : Window
 
 		ImGui.Spacing();
 		// Display GitHub link button
-		if (IconSet.GetTexture("https://GitHub-readme-stats.vercel.app/api/pin/?username=FFXIV-CombatReborn&repo=RotationSolverReborn&show_icons=true&theme=dark", out Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap? icon))
+		if (IconSet.GetTexture("https://GitHub-readme-stats.vercel.app/api/pin/?username=FFXIV-CombatReborn&repo=RotationSolverReborn&show_icons=true&theme=dark", out var icon))
 		{
 			if (ImGuiHelper.TextureButton(icon, width, width))
 			{
@@ -1959,17 +2073,28 @@ public partial class RotationConfigWindow : Window
 		];
 
 		// Check if "Boss Mod" and "BossMod Reborn" are enabled
-		bool isBossModEnabled = false;
-		bool isBossModRebornEnabled = false;
+		var isBossModEnabled = false;
+		var isBossModRebornEnabled = false;
 		foreach (var plugin in pluginsToCheck)
 		{
-			if (plugin.Name == "Boss Mod" && plugin.IsEnabled) isBossModEnabled = true;
-			if (plugin.Name == "BossModReborn" && plugin.IsEnabled) isBossModRebornEnabled = true;
-			if (isBossModEnabled && isBossModRebornEnabled) break;
+			if (plugin.Name == "Boss Mod" && plugin.IsEnabled)
+			{
+				isBossModEnabled = true;
+			}
+
+			if (plugin.Name == "BossModReborn" && plugin.IsEnabled)
+			{
+				isBossModRebornEnabled = true;
+			}
+
+			if (isBossModEnabled && isBossModRebornEnabled)
+			{
+				break;
+			}
 		}
 
 		// Iterate through the list and check if each plugin is installed and enabled
-		foreach (AutoDutyPlugin plugin in pluginsToCheck)
+		foreach (var plugin in pluginsToCheck)
 		{
 			// Only display information about "Boss Mod" if it is installed and enabled
 			if (plugin.Name == "Boss Mod" && !isBossModEnabled)
@@ -1977,8 +2102,8 @@ public partial class RotationConfigWindow : Window
 				continue;
 			}
 
-			bool isEnabled = plugin.IsEnabled;
-			bool isInstalled = plugin.IsInstalled;
+			var isEnabled = plugin.IsEnabled;
+			var isInstalled = plugin.IsInstalled;
 
 			// Add a button to copy the URL to the clipboard if the plugin is not installed
 			if (!isEnabled && !CNLanguageClient)
@@ -2074,16 +2199,16 @@ public partial class RotationConfigWindow : Window
 	#region Rotation
 	private static void DrawRotation()
 	{
-		ICustomRotation? rotation = DataCenter.CurrentRotation;
+		var rotation = DataCenter.CurrentRotation;
 		if (rotation == null)
 		{
 			return;
 		}
 
-		string desc = rotation.Description;
+		var desc = rotation.Description;
 		if (!string.IsNullOrEmpty(desc))
 		{
-			using ImRaii.Font font = ImRaii.PushFont(FontManager.GetFont(15));
+			using var font = ImRaii.PushFont(FontManager.GetFont(15));
 			ImGuiEx.TextWrappedCopy(desc);
 		}
 
@@ -2095,7 +2220,7 @@ public partial class RotationConfigWindow : Window
 
 	private static uint ChangeAlpha(uint color)
 	{
-		Vector4 c = ImGui.ColorConvertU32ToFloat4(color);
+		var c = ImGui.ColorConvertU32ToFloat4(color);
 		c.W = 0.55f;
 		return ImGui.ColorConvertFloat4ToU32(c);
 	}
@@ -2112,40 +2237,40 @@ public partial class RotationConfigWindow : Window
 	private const float DESC_SIZE = 24;
 	private static void DrawRotationDescription()
 	{
-		ICustomRotation? rotation = DataCenter.CurrentRotation;
+		var rotation = DataCenter.CurrentRotation;
 		if (rotation == null)
 		{
 			return;
 		}
 
 		_ = ImGui.GetWindowWidth();
-		Type type = rotation.GetType();
+		var type = rotation.GetType();
 
 		List<RotationDescAttribute?> attrs = [RotationDescAttribute.MergeToOne(type.GetCustomAttributes<RotationDescAttribute>())];
 
-		foreach (MethodInfo m in type.GetAllMethodInfo())
+		foreach (var m in type.GetAllMethodInfo())
 		{
 			attrs.Add(RotationDescAttribute.MergeToOne(m.GetCustomAttributes<RotationDescAttribute>()));
 		}
 
-		using ImRaii.IEndObject table = ImRaii.Table("Rotation Description", 2, ImGuiTableFlags.Borders
+		using var table = ImRaii.Table("Rotation Description", 2, ImGuiTableFlags.Borders
 			| ImGuiTableFlags.Resizable
 			| ImGuiTableFlags.SizingStretchProp);
 		if (table)
 		{
-			foreach (RotationDescAttribute[] a in RotationDescAttribute.Merge(attrs))
+			foreach (var a in RotationDescAttribute.Merge(attrs))
 			{
-				RotationDescAttribute? attr = RotationDescAttribute.MergeToOne(a);
+				var attr = RotationDescAttribute.MergeToOne(a);
 				if (attr == null)
 				{
 					continue;
 				}
 
 				List<IBaseAction> allActions = [];
-				foreach (ActionID actionId in attr.Actions)
+				foreach (var actionId in attr.Actions)
 				{
 					IBaseAction? action = null;
-					foreach (IBaseAction baseAction in rotation.AllBaseActions)
+					foreach (var baseAction in rotation.AllBaseActions)
 					{
 						if (baseAction.ID == (uint)actionId)
 						{
@@ -2159,7 +2284,7 @@ public partial class RotationConfigWindow : Window
 					}
 				}
 
-				bool hasDesc = !string.IsNullOrEmpty(attr.Description);
+				var hasDesc = !string.IsNullOrEmpty(attr.Description);
 
 				if (!hasDesc && allActions.Count == 0)
 				{
@@ -2169,13 +2294,13 @@ public partial class RotationConfigWindow : Window
 				ImGui.TableNextRow();
 				_ = ImGui.TableNextColumn();
 
-				if (IconSet.GetTexture(attr.IconID, out Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap? image) && image?.Handle != null)
+				if (IconSet.GetTexture(attr.IconID, out var image) && image?.Handle != null)
 				{
 					ImGui.Image(image.Handle, Vector2.One * DESC_SIZE * Scale);
 				}
 
 				ImGui.SameLine();
-				bool isOnCommand = attr.IsOnCommand;
+				var isOnCommand = attr.IsOnCommand;
 				if (isOnCommand)
 				{
 					ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudYellow);
@@ -2194,10 +2319,10 @@ public partial class RotationConfigWindow : Window
 					ImGui.Text(attr.Description);
 				}
 
-				bool notStart = false;
-				float size = DESC_SIZE * Scale;
-				float y = ImGui.GetCursorPosY() + (size * 4 / 82);
-				foreach (IBaseAction item in allActions)
+				var notStart = false;
+				var size = DESC_SIZE * Scale;
+				var y = ImGui.GetCursorPosY() + (size * 4 / 82);
+				foreach (var item in allActions)
 				{
 					if (item == null)
 					{
@@ -2209,10 +2334,10 @@ public partial class RotationConfigWindow : Window
 						ImGui.SameLine();
 					}
 
-					if (item.GetTexture(out IDalamudTextureWrap? texture))
+					if (item.GetTexture(out var texture))
 					{
 						ImGui.SetCursorPosY(y);
-						Vector2 cursor = ImGui.GetCursorPos();
+						var cursor = ImGui.GetCursorPos();
 						_ = ImGuiHelper.NoPaddingNoColorImageButton(texture, Vector2.One * size);
 						ImGuiHelper.DrawActionOverlay(cursor, size, 1);
 						ImguiTooltips.HoveredTooltip(item.Name);
@@ -2225,8 +2350,8 @@ public partial class RotationConfigWindow : Window
 
 	private static string GetRotationStatusHead()
 	{
-		ICustomRotation? rotation = DataCenter.CurrentRotation;
-		string status = UiString.ConfigWindow_Rotation_Status.GetDescription();
+		var rotation = DataCenter.CurrentRotation;
+		var status = UiString.ConfigWindow_Rotation_Status.GetDescription();
 		return rotation == null ? string.Empty : status;
 	}
 
@@ -2237,7 +2362,7 @@ public partial class RotationConfigWindow : Window
 
 	private static string ToCommandStr(OtherCommandType type, string str, string extra = "")
 	{
-		string result = Service.COMMAND + " " + type.ToString() + " " + str;
+		var result = Service.COMMAND + " " + type.ToString() + " " + str;
 		if (!string.IsNullOrEmpty(extra))
 		{
 			result += " " + extra;
@@ -2248,15 +2373,30 @@ public partial class RotationConfigWindow : Window
 
 	/// <summary>
 	/// Checks if a rotation config should be visible based on parent-child relationships.
+	/// A config is visible only if all ancestors in its parent chain are visible and its direct parent condition matches.
 	/// </summary>
 	/// <param name="config">The configuration to check.</param>
 	/// <param name="configSet">The set of all configurations.</param>
 	/// <returns>True if the config should be shown, false otherwise.</returns>
 	private static bool ShouldShowRotationConfig(IRotationConfig config, IRotationConfigSet configSet)
 	{
+		return ShouldShowRotationConfigInternal(config, configSet, new HashSet<string>(StringComparer.Ordinal));
+	}
+
+	private static bool ShouldShowRotationConfigInternal(
+		IRotationConfig config,
+		IRotationConfigSet configSet,
+		HashSet<string> visiting)
+	{
 		if (string.IsNullOrEmpty(config.Parent))
 		{
 			return true;
+		}
+
+		// Guard against accidental parent cycles.
+		if (!visiting.Add(config.Name))
+		{
+			return false;
 		}
 
 		IRotationConfig? parentConfig = null;
@@ -2271,6 +2411,7 @@ public partial class RotationConfigWindow : Window
 
 		if (parentConfig == null)
 		{
+			visiting.Remove(config.Name);
 			return true;
 		}
 
@@ -2292,71 +2433,97 @@ public partial class RotationConfigWindow : Window
 					var parentValueStr = parentValue.ToString();
 					if (parentValue.GetType().IsEnum && parentValueStr != null && parentValueStr.Contains('.'))
 					{
-						parentValueStr = parentValueStr.Split('.').Last();
+						var dotIndex = parentValueStr.LastIndexOf('.');
+						parentValueStr = dotIndex >= 0 ? parentValueStr[(dotIndex + 1)..] : parentValueStr;
 					}
 
 					if (parentConfig.Value == null ||
-						!string.Equals(parentConfig.Value.Trim(), parentValueStr?.Trim(), StringComparison.OrdinalIgnoreCase))
+						!string.Equals(parentConfig.Value.Trim(), parentValueStr?.Trim(),
+							StringComparison.OrdinalIgnoreCase))
 					{
+						visiting.Remove(config.Name);
 						return false;
 					}
 				}
 			}
 		}
 
+		visiting.Remove(config.Name);
 		return true;
 	}
 
 	private static void DrawRotationConfiguration()
 	{
-		ICustomRotation? rotation = DataCenter.CurrentRotation;
-		if (rotation == null) return;
-		if (!Player.Available) return;
+		var rotation = DataCenter.CurrentRotation;
+		if (rotation == null)
+		{
+			return;
+		}
 
-		bool enable = rotation.IsEnabled;
+		if (!Player.Available)
+		{
+			return;
+		}
+
+		var enable = rotation.IsEnabled;
 		if (ImGui.Checkbox(rotation.Name, ref enable))
 		{
 			rotation.IsEnabled = enable;
 		}
-		if (!enable) return;
+		if (!enable)
+		{
+			return;
+		}
 
-		IRotationConfigSet set = rotation.Configs;
+		var set = rotation.Configs;
 
-		bool hasAny = false;
+		var hasAny = false;
 		foreach (var _ in set.Configs)
 		{
 			hasAny = true;
 			break;
 		}
-		if (hasAny) ImGui.Separator();
+		if (hasAny)
+		{
+			ImGui.Separator();
+		}
 
-		foreach (IRotationConfig config in set.Configs)
+		foreach (var config in set.Configs)
 		{
 			if (DataCenter.IsPvP)
 			{
-				if (!config.Type.HasFlag(CombatType.PvP)) continue;
+				if (!config.Type.HasFlag(CombatType.PvP))
+				{
+					continue;
+				}
 			}
 			else
 			{
-				if (!config.Type.HasFlag(CombatType.PvE)) continue;
+				if (!config.Type.HasFlag(CombatType.PvE))
+				{
+					continue;
+				}
 			}
 
-			if (!ShouldShowRotationConfig(config, set)) continue;
+			if (!ShouldShowRotationConfig(config, set))
+			{
+				continue;
+			}
 
-			string typeName = rotation.GetType().FullName ?? rotation.GetType().Name;
-			string key = $"{typeName}.{config.Name}";
-			string name = $"##{config.GetHashCode()}_{key}.Name";
-			string command = ToCommandStr(OtherCommandType.Rotations, config.Name, config.DefaultValue);
+			var typeName = rotation.GetType().FullName ?? rotation.GetType().Name;
+			var key = $"{typeName}.{config.Name}";
+			var name = $"##{config.GetHashCode()}_{key}.Name";
+			var command = ToCommandStr(OtherCommandType.Rotations, config.Name, config.DefaultValue);
 			void Reset() => config.Value = config.DefaultValue;
 
 			ImGuiHelper.PrepareGroup(key, command, Reset);
 
 			if (config is RotationConfigCombo c)
 			{
-				string[] names = c.DisplayValues;
-				string selectedValue = c.Value;
-				int index = -1;
-				for (int i = 0; i < names.Length; i++)
+				var names = c.DisplayValues;
+				var selectedValue = c.Value;
+				var index = -1;
+				for (var i = 0; i < names.Length; i++)
 				{
 					if (names[i].Equals(selectedValue, StringComparison.OrdinalIgnoreCase))
 					{
@@ -2364,12 +2531,18 @@ public partial class RotationConfigWindow : Window
 						break;
 					}
 				}
-				if (index == -1) index = 0;
-
-				string longest = "";
-				for (int i = 0; i < names.Length; i++)
+				if (index == -1)
 				{
-					if (names[i].Length > longest.Length) longest = names[i];
+					index = 0;
+				}
+
+				var longest = "";
+				for (var i = 0; i < names.Length; i++)
+				{
+					if (names[i].Length > longest.Length)
+					{
+						longest = names[i];
+					}
 				}
 				ImGui.SetNextItemWidth(ImGui.CalcTextSize(longest).X + (50 * Scale));
 				if (ImGui.Combo(name, ref index, names, names.Length))
@@ -2379,7 +2552,7 @@ public partial class RotationConfigWindow : Window
 			}
 			else if (config is RotationConfigBoolean b)
 			{
-				if (bool.TryParse(config.Value, out bool val))
+				if (bool.TryParse(config.Value, out var val))
 				{
 					if (ImGui.Checkbox(name, ref val))
 					{
@@ -2390,12 +2563,12 @@ public partial class RotationConfigWindow : Window
 			}
 			else if (config is RotationConfigFloat f)
 			{
-				if (float.TryParse(config.Value, out float val))
+				if (float.TryParse(config.Value, out var val))
 				{
 					ImGui.SetNextItemWidth(Scale * Searchable.DRAG_WIDTH);
 					if (f.UnitType == ConfigUnitType.Percent)
 					{
-						float displayValue = val * 100;
+						var displayValue = val * 100;
 						if (ImGui.SliderFloat(name, ref displayValue, f.Min * 100, f.Max * 100, $"{displayValue:F1}{f.UnitType.ToSymbol()}"))
 						{
 							config.Value = (displayValue / 100).ToString();
@@ -2414,7 +2587,7 @@ public partial class RotationConfigWindow : Window
 			}
 			else if (config is RotationConfigString s)
 			{
-				string val = config.Value;
+				var val = config.Value;
 				ImGui.SetNextItemWidth(ImGui.GetWindowWidth());
 				if (ImGui.InputTextWithHint(name, config.DisplayName, ref val, 128))
 				{
@@ -2425,7 +2598,7 @@ public partial class RotationConfigWindow : Window
 			}
 			else if (config is RotationConfigInt i)
 			{
-				if (int.TryParse(config.Value, out int val))
+				if (int.TryParse(config.Value, out var val))
 				{
 					ImGui.SetNextItemWidth(Scale * Searchable.DRAG_WIDTH);
 					if (ImGui.DragInt(name, ref val, i.Speed, i.Min, i.Max))
@@ -2458,7 +2631,9 @@ public partial class RotationConfigWindow : Window
 			{
 				var tProp = config.GetType().GetProperty("Tooltip", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 				if (tProp != null)
+				{
 					tooltip = tProp.GetValue(config) as string;
+				}
 			}
 
 			// Only render the small help marker and ImGui tooltip when we have a non-empty tooltip
@@ -2473,9 +2648,9 @@ public partial class RotationConfigWindow : Window
 					// Limit tooltip width so very long tooltips wrap nicely.
 					// `Scale` is the existing global UI scale in this file.
 					const float BASE_MAX_TOOLTIP_PX = 520f;
-					float maxWidth = BASE_MAX_TOOLTIP_PX * Scale;
-					float screenMax = ImGui.GetIO().DisplaySize.X * 0.8f; // don't exceed most of the screen
-					float wrapWidth = Math.Min(maxWidth, screenMax);
+					var maxWidth = BASE_MAX_TOOLTIP_PX * Scale;
+					var screenMax = ImGui.GetIO().DisplaySize.X * 0.8f; // don't exceed most of the screen
+					var wrapWidth = Math.Min(maxWidth, screenMax);
 
 					// Push wrap position relative to current cursor X
 					ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrapWidth);
@@ -2505,14 +2680,14 @@ public partial class RotationConfigWindow : Window
 			ImGui.Spacing();
 
 			List<Job> workingCopy = [.. OtherConfiguration.DancePartnerPriority];
-			bool orderChanged = false;
+			var orderChanged = false;
 
 			_ = ImGui.BeginChild("DancePartnerPriorityList", new Vector2(0, 200 * Scale), true);
 
-			for (int i = 0; i < workingCopy.Count; i++)
+			for (var i = 0; i < workingCopy.Count; i++)
 			{
-				Job job = workingCopy[i];
-				string jobName = job.ToString();
+				var job = workingCopy[i];
+				var jobName = job.ToString();
 
 				if (ImGuiEx.IconButton(FontAwesomeIcon.ArrowUp, $"##Up{i}") && i > 0)
 				{
@@ -2557,14 +2732,14 @@ public partial class RotationConfigWindow : Window
 			ImGui.Spacing();
 
 			List<Job> kardiaTankPriority = [.. OtherConfiguration.KardiaTankPriority];
-			bool orderChanged = false;
+			var orderChanged = false;
 
 			_ = ImGui.BeginChild("KardiaTankPriorityList", new Vector2(0, 200 * Scale), true);
 
-			for (int i = 0; i < kardiaTankPriority.Count; i++)
+			for (var i = 0; i < kardiaTankPriority.Count; i++)
 			{
-				Job job = kardiaTankPriority[i];
-				string jobName = job.ToString();
+				var job = kardiaTankPriority[i];
+				var jobName = job.ToString();
 
 				if (ImGuiEx.IconButton(FontAwesomeIcon.ArrowUp, $"##Up{i}") && i > 0)
 				{
@@ -2595,9 +2770,11 @@ public partial class RotationConfigWindow : Window
 
 		if (Player.Available && DataCenter.PartyMembers != null && Player.Object != null && Player.Object.IsJobs(Job.AST))
 		{
-			using ImRaii.IEndObject table = ImRaii.Table("AstCardPriorityTable", 2, ImGuiTableFlags.SizingStretchProp);
+			using var table = ImRaii.Table("AstCardPriorityTable", 2, ImGuiTableFlags.SizingStretchProp);
 			if (!table)
+			{
 				return;
+			}
 
 			// Column 1: Spear Card Priority
 			ImGui.TableNextColumn();
@@ -2615,14 +2792,14 @@ public partial class RotationConfigWindow : Window
 			ImGui.Spacing();
 
 			List<Job> spearPriority = [.. OtherConfiguration.TheSpearPriority];
-			bool spearOrderChanged = false;
+			var spearOrderChanged = false;
 
 			_ = ImGui.BeginChild("TheSpearPriorityList", new Vector2(0, 200 * Scale), true);
 
-			for (int i = 0; i < spearPriority.Count; i++)
+			for (var i = 0; i < spearPriority.Count; i++)
 			{
-				Job job = spearPriority[i];
-				string jobName = job.ToString();
+				var job = spearPriority[i];
+				var jobName = job.ToString();
 
 				if (ImGuiEx.IconButton(FontAwesomeIcon.ArrowUp, $"##UpSpear{i}") && i > 0)
 				{
@@ -2666,14 +2843,14 @@ public partial class RotationConfigWindow : Window
 			ImGui.Spacing();
 
 			List<Job> balancePriority = [.. OtherConfiguration.TheBalancePriority];
-			bool balanceOrderChanged = false;
+			var balanceOrderChanged = false;
 
 			_ = ImGui.BeginChild("TheBalancePriorityList", new Vector2(0, 200 * Scale), true);
 
-			for (int i = 0; i < balancePriority.Count; i++)
+			for (var i = 0; i < balancePriority.Count; i++)
 			{
-				Job job = balancePriority[i];
-				string jobName = job.ToString();
+				var job = balancePriority[i];
+				var jobName = job.ToString();
 
 				if (ImGuiEx.IconButton(FontAwesomeIcon.ArrowUp, $"##UpBalance{i}") && i > 0)
 				{
@@ -2709,7 +2886,7 @@ public partial class RotationConfigWindow : Window
 	{
 		ImGui.TextWrapped(UiString.ConfigWindow_Actions_Description.GetDescription());
 
-		using ImRaii.IEndObject table = ImRaii.Table("Rotation Solver Actions", 2, ImGuiTableFlags.Resizable);
+		using var table = ImRaii.Table("Rotation Solver Actions", 2, ImGuiTableFlags.Resizable);
 
 		if (table)
 		{
@@ -2722,13 +2899,13 @@ public partial class RotationConfigWindow : Window
 
 				if (DataCenter.CurrentRotation != null && RotationUpdater.AllGroupedActions != null)
 				{
-					float size = 30 * Scale;
-					int count = Math.Max(1, (int)MathF.Floor(ImGui.GetColumnWidth() / ((size * 1.1f) + ImGui.GetStyle().ItemSpacing.X)));
+					var size = 30 * Scale;
+					var count = Math.Max(1, (int)MathF.Floor(ImGui.GetColumnWidth() / ((size * 1.1f) + ImGui.GetStyle().ItemSpacing.X)));
 					foreach (var pair in RotationUpdater.AllGroupedActions)
 					{
 						_actionsList.AddCollapsingHeader(() => pair.Key, () =>
 						{
-							int index = 0;
+							var index = 0;
 
 							// Build list from the current group
 							List<IAction> source = [.. pair];
@@ -2736,9 +2913,9 @@ public partial class RotationConfigWindow : Window
 							// Group by AdjustedID, sort groups by their lowest Level,
 							// then flatten back while keeping Adjusted IDs contiguous.
 							var byAdjusted = new Dictionary<uint, List<IAction>>();
-							for (int i = 0; i < source.Count; i++)
+							for (var i = 0; i < source.Count; i++)
 							{
-								IAction a = source[i];
+								var a = source[i];
 								if (!byAdjusted.TryGetValue(a.AdjustedID, out var list))
 								{
 									list = [];
@@ -2750,32 +2927,34 @@ public partial class RotationConfigWindow : Window
 							var groups = new List<(uint AdjustedID, byte MinLevel, List<IAction> Items)>(byAdjusted.Count);
 							foreach (var kv in byAdjusted)
 							{
-								List<IAction> items = kv.Value;
+								var items = kv.Value;
 								// Sort items inside a group by Level then by ID for stability
 								items.Sort((x, y) =>
 								{
-									int cmp = x.Level.CompareTo(y.Level);
+									var cmp = x.Level.CompareTo(y.Level);
 									return cmp != 0 ? cmp : x.ID.CompareTo(y.ID);
 								});
-								byte minLvl = items.Count > 0 ? items[0].Level : (byte)0;
+								var minLvl = items.Count > 0 ? items[0].Level : (byte)0;
 								groups.Add((kv.Key, minLvl, items));
 							}
 
 							// Sort groups by the lowest required level, then by AdjustedID
 							groups.Sort((g1, g2) =>
 							{
-								int cmp = g1.MinLevel.CompareTo(g2.MinLevel);
+								var cmp = g1.MinLevel.CompareTo(g2.MinLevel);
 								return cmp != 0 ? cmp : g1.AdjustedID.CompareTo(g2.AdjustedID);
 							});
 
 							// Flatten into the final sorted list
 							List<IAction> sorted = new(source.Count);
-							foreach (var (AdjustedID, MinLevel, Items) in groups)
-								sorted.AddRange(Items);
-
-							foreach (IAction? item in sorted)
+							foreach ((var AdjustedID, var MinLevel, var Items) in groups)
 							{
-								if (!IconSet.GetTexture(item.IconID, out IDalamudTextureWrap? icon))
+								sorted.AddRange(Items);
+							}
+
+							foreach (var item in sorted)
+							{
+								if (!IconSet.GetTexture(item.IconID, out var icon))
 								{
 									continue;
 								}
@@ -2786,14 +2965,14 @@ public partial class RotationConfigWindow : Window
 								}
 
 								ImGui.BeginGroup();
-								Vector2 cursor = ImGui.GetCursorPos();
+								var cursor = ImGui.GetCursorPos();
 								if (ImGuiHelper.NoPaddingNoColorImageButton(icon, Vector2.One * size, item.Name + item.ID))
 								{
 									_activeAction = item;
 								}
 								ImGuiHelper.DrawActionOverlay(cursor, size, _activeAction == item ? 1 : 0);
 
-								if (IconSet.GetTexture("ui/uld/readycheck_hr1.tex", out IDalamudTextureWrap? texture))
+								if (IconSet.GetTexture("ui/uld/readycheck_hr1.tex", out var texture))
 								{
 									Vector2 offset = new(1 / 12f, 1 / 6f);
 									ImGui.SetCursorPos(cursor + (new Vector2(0.6f, 0.7f) * size));
@@ -2803,8 +2982,8 @@ public partial class RotationConfigWindow : Window
 								}
 								ImGui.EndGroup();
 
-								string key = $"Action Macro Usage {item.Name} {item.ID}";
-								string cmd = ToCommandStr(OtherCommandType.DoActions, $"{item}-{5}");
+								var key = $"Action Macro Usage {item.Name} {item.ID}";
+								var cmd = ToCommandStr(OtherCommandType.DoActions, $"{item}-{5}");
 								ImGuiHelper.DrawHotKeysPopup(key, cmd);
 								ImGuiHelper.ExecuteHotKeysPopup(key, cmd, item.Name, false);
 							}
@@ -2828,39 +3007,55 @@ public partial class RotationConfigWindow : Window
 				return;
 			}
 
-			bool isEnabled = _activeAction.IsEnabled;
+			var isEnabled = _activeAction.IsEnabled;
 			if (ImGui.Checkbox($"{_activeAction.Name}##{_activeAction.Name} Enabled", ref isEnabled))
 			{
 				_activeAction.IsEnabled = isEnabled;
 			}
 
 			const string key = "Action Enable Popup";
-			string cmd = ToCommandStr(OtherCommandType.ToggleActions, _activeAction.ToString()!);
+			var cmd = ToCommandStr(OtherCommandType.ToggleActions, _activeAction.ToString()!);
 			ImGuiHelper.DrawHotKeysPopup(key, cmd);
 			ImGuiHelper.ExecuteHotKeysPopup(key, cmd, string.Empty, false);
 
-			bool isIntercepted = _activeAction.IsIntercepted;
+			var isIntercepted = _activeAction.IsIntercepted;
 			if (ImGui.Checkbox($"{UiString.ConfigWindow_Actions_IsIntercepted.GetDescription()}##{_activeAction.Name}", ref isIntercepted))
 			{
 				_activeAction.IsIntercepted = isIntercepted;
 			}
 
-			bool minHPFeatureSet = _activeAction.MinHPFeature;
+			var minHPFeatureSet = _activeAction.MinHPFeature;
 			if (ImGui.Checkbox($"{UiString.ConfigWindow_Actions_MinHPFeature.GetDescription()}##{_activeAction.Name}", ref minHPFeatureSet))
 			{
 				_activeAction.MinHPFeature = minHPFeatureSet;
 			}
 
-			bool isRestrictedDOT = _activeAction.IsRestrictedDOT;
+			if (_activeAction is IBaseAction movesAction &&
+			(movesAction.Setting.SpecialType == SpecialActionType.FixedDistanceMoveForward
+			|| movesAction.Setting.SpecialType == SpecialActionType.FixedDistanceMoveBackward
+			|| movesAction.Setting.SpecialType == SpecialActionType.HostileMovingForward
+			|| movesAction.Setting.SpecialType == SpecialActionType.FriendlyMovingForward
+			|| movesAction.Setting.SpecialType == SpecialActionType.HostileFriendlyMovingForward
+			|| movesAction.Setting.SpecialType == SpecialActionType.HostileMovingAttack
+			|| movesAction.Setting.SpecialType == SpecialActionType.ObjectBasedMovement))
+			{
+				var skipPosSafety = _activeAction.SkipPositionSafetyCheck;
+				if (ImGui.Checkbox($"{UiString.ConfigWindow_Actions_SkipPositionSafetyCheck.GetDescription()}##{_activeAction.Name}", ref skipPosSafety))
+				{
+					_activeAction.SkipPositionSafetyCheck = skipPosSafety;
+				}
+			}
+
+			var isRestrictedDOT = _activeAction.IsRestrictedDOT;
 			if (ImGui.Checkbox($"{UiString.ConfigWindow_Actions_IsRestrictedDOT.GetDescription()}##{_activeAction.Name}", ref isRestrictedDOT))
 			{
 				_activeAction.IsRestrictedDOT = isRestrictedDOT;
 			}
 
-			float minHPPercentSet = _activeAction.MinHPPercent;
+			var minHPPercentSet = _activeAction.MinHPPercent;
 			if (_activeAction.MinHPFeature == true)
 			{
-				float minHPPercentUi = Math.Clamp(_activeAction.MinHPPercent * 100f, 0f, 100f);
+				var minHPPercentUi = Math.Clamp(_activeAction.MinHPPercent * 100f, 0f, 100f);
 				ImGui.SetNextItemWidth(Scale * 150);
 				if (ImGui.DragFloat($"{UiString.ConfigWindow_Actions_MinHPPercent.GetDescription()}##{_activeAction.Name}",
 					ref minHPPercentUi, 0.1f, 0f, 100f, $"{minHPPercentUi:F1}{ConfigUnitType.Percent.ToSymbol()}"))
@@ -2869,7 +3064,7 @@ public partial class RotationConfigWindow : Window
 				}
 			}
 
-			bool showOnCdWindow = _activeAction.IsOnCooldownWindow;
+			var showOnCdWindow = _activeAction.IsOnCooldownWindow;
 			if (ImGui.Checkbox($"{UiString.ConfigWindow_Actions_ShowOnCDWindow.GetDescription()}##{_activeAction.Name}InCooldown", ref showOnCdWindow))
 			{
 				_activeAction.IsOnCooldownWindow = showOnCdWindow;
@@ -2884,11 +3079,11 @@ public partial class RotationConfigWindow : Window
 
 			static void DrawConfigsOfBaseAction(IBaseAction a)
 			{
-				ActionConfig config = a.Config;
+				var config = a.Config;
 
 				ImGui.Separator();
 
-				float ttk = config.TimeToKill;
+				var ttk = config.TimeToKill;
 				ImGui.SetNextItemWidth(Scale * 150);
 				if (ImGui.DragFloat($"{UiString.ConfigWindow_Actions_TTK.GetDescription()}##{a}",
 					ref ttk, 0.1f, 0, 120, $"%.1f{ConfigUnitType.Seconds.ToSymbol()}"))
@@ -2899,7 +3094,7 @@ public partial class RotationConfigWindow : Window
 
 				if (a.Setting.StatusProvide != null || a.Setting.TargetStatusProvide != null)
 				{
-					bool shouldStatus = config.ShouldCheckStatus;
+					var shouldStatus = config.ShouldCheckStatus;
 					if (ImGui.Checkbox($"{UiString.ConfigWindow_Actions_CheckStatus.GetDescription()}##{a}", ref shouldStatus))
 					{
 						config.ShouldCheckStatus = shouldStatus;
@@ -2928,7 +3123,7 @@ public partial class RotationConfigWindow : Window
 					}
 				}
 
-				float ratio = config.AutoHealRatio;
+				var ratio = config.AutoHealRatio;
 				ImGui.SetNextItemWidth(Scale * 150);
 				if (ImGui.DragFloat($"{UiString.ConfigWindow_Actions_HealRatio.GetDescription()}##{a}",
 					ref ratio, 0.002f, 0, 1, $"{ratio * 100:F1}{ConfigUnitType.Percent.ToSymbol()}"))
@@ -2951,12 +3146,7 @@ public partial class RotationConfigWindow : Window
 			{
 				try
 				{
-					IBattleChara target = action.Target.Target;
-					if (target is not IBattleChara battleChara)
-					{
-						ImGui.TextColored(ImGuiColors.DalamudRed, "Target is not a valid BattleChara.");
-						return;
-					}
+					var target = action.Target.Target;
 					ImGui.Text("Can Use: " + action.CanUse(out _));
 					ImGui.Spacing();
 					ImGui.Text("ID: " + action.Info.ID);
@@ -2998,9 +3188,41 @@ public partial class RotationConfigWindow : Window
 					ImGui.Text($"Charges: {action.Cooldown.CurrentCharges} / {action.Cooldown.MaxCharges}");
 
 					ImGui.Text("IgnoreCastCheck:" + action.CanUse(out _, skipCastingCheck: true));
-						action.CanUse(out _, skipCastingCheck: true, skipStatusProvideCheck: true, skipTargetStatusNeedCheck: true, skipAoeCheck: true);
+					action.CanUse(out _, skipCastingCheck: true, skipStatusProvideCheck: true, skipTargetStatusNeedCheck: true, skipAoeCheck: true);
+					if (target == null)
+					{
+						ImGui.TextColored(ImGuiColors.DalamudRed, "Target is not set.");
+					}
+					else if (target != null)
+					{
 						ImGui.Text("Target Name: " + action.Target.Target?.Name ?? string.Empty);
 						ImGui.Text("AffectedTarget Count: " + (action.Target.AffectedTargets?.Length ?? 0));
+
+						// BMR Safety Check for movement actions
+						if (IsMovingSpecialType(action.Setting.SpecialType))
+						{
+							var safetyResult = GetMovementSafetyStatus(action);
+							var color = safetyResult.Status switch
+							{
+								MovementSafetyStatus.Safe => ImGuiColors.HealerGreen,
+								MovementSafetyStatus.NotSafe => ImGuiColors.DalamudRed,
+								MovementSafetyStatus.NotApplicable => ImGuiColors.DalamudGrey,
+								_ => ImGuiColors.DalamudWhite
+							};
+							var statusText = safetyResult.Status switch
+							{
+								MovementSafetyStatus.Safe => "Pass",
+								MovementSafetyStatus.NotSafe => "Fail",
+								MovementSafetyStatus.NotApplicable => "N/A",
+								_ => "Unknown"
+							};
+							ImGui.TextColored(color, $"BMR Safetycheck: {statusText}");
+							if (!string.IsNullOrEmpty(safetyResult.Reason))
+							{
+								ImGui.Text($"Reason: {safetyResult.Reason}");
+							}
+						}
+					}
 				}
 				catch (Exception ex)
 				{
@@ -3016,7 +3238,7 @@ public partial class RotationConfigWindow : Window
 					{
 						ImGui.Text("Status: " + ActionManager.Instance()->GetActionStatus(ActionType.Item, item.ID).ToString());
 						ImGui.Text("Status HQ: " + ActionManager.Instance()->GetActionStatus(ActionType.Item, item.ID + 1000000).ToString());
-						float remain = ActionManager.Instance()->GetRecastTime(ActionType.Item, item.ID) - ActionManager.Instance()->GetRecastTimeElapsed(ActionType.Item, item.ID);
+						var remain = ActionManager.Instance()->GetRecastTime(ActionType.Item, item.ID) - ActionManager.Instance()->GetRecastTimeElapsed(ActionType.Item, item.ID);
 						ImGui.Text("remain: " + remain.ToString());
 						ImGui.Text("ID: " + item.ID.ToString());
 						ImGui.Text("A4: " + item.A4.ToString());
@@ -3044,6 +3266,156 @@ public partial class RotationConfigWindow : Window
 	{
 		HeaderSize = 18,
 	};
+
+	/// <summary>
+	/// Determines if the special action type is a movement type that requires safety checking.
+	/// </summary>
+	static bool IsMovingSpecialType(SpecialActionType specialType)
+	{
+		return specialType == SpecialActionType.FixedDistanceMoveForward
+			|| specialType == SpecialActionType.FixedDistanceMoveBackward
+			|| specialType == SpecialActionType.HostileMovingForward
+			|| specialType == SpecialActionType.FriendlyMovingForward
+			|| specialType == SpecialActionType.HostileFriendlyMovingForward
+			|| specialType == SpecialActionType.HostileMovingAttack
+			|| specialType == SpecialActionType.ObjectBasedMovement;
+	}
+
+	/// <summary>
+	/// Represents the safety status of a movement action.
+	/// </summary>
+	enum MovementSafetyStatus
+	{
+		Safe,
+		NotSafe,
+		NotApplicable
+	}
+
+	/// <summary>
+	/// Represents the result of a movement safety check.
+	/// </summary>
+	struct MovementSafetyResult
+	{
+		public MovementSafetyStatus Status;
+		public string Reason;
+	}
+
+	/// <summary>
+	/// Gets the movement safety status for a given action based on its special type.
+	/// </summary>
+	static MovementSafetyResult GetMovementSafetyStatus(IBaseAction action)
+	{
+		if (Player.Object == null)
+		{
+			return new MovementSafetyResult { Status = MovementSafetyStatus.NotApplicable, Reason = "Player not available" };
+		}
+
+		var playerPos = Player.Object.Position;
+		var specialType = action.Setting.SpecialType;
+
+		try
+		{
+			switch (specialType)
+			{
+				case SpecialActionType.FixedDistanceMoveForward:
+					{
+						var range = action.TargetInfo.Range;
+						var faceVector = Player.Object.GetFaceVector();
+						var destination = playerPos + (Vector3.Normalize(faceVector) * range);
+						var isSafe = DataCenter.IsFixedDashSafe(playerPos, destination);
+						return new MovementSafetyResult
+						{
+							Status = isSafe ? MovementSafetyStatus.Safe : MovementSafetyStatus.NotSafe,
+							Reason = isSafe ? string.Empty : "Destination unsafe (IsFixedDashSafe)"
+						};
+					}
+
+				case SpecialActionType.FixedDistanceMoveBackward:
+					{
+						var range = action.TargetInfo.Range;
+						var faceVector = Player.Object.GetFaceVector();
+						var destination = playerPos - (Vector3.Normalize(faceVector) * range);
+						var isSafe = DataCenter.IsFixedDashSafe(playerPos, destination);
+						return new MovementSafetyResult
+						{
+							Status = isSafe ? MovementSafetyStatus.Safe : MovementSafetyStatus.NotSafe,
+							Reason = isSafe ? string.Empty : "Destination unsafe (IsFixedDashSafe)"
+						};
+					}
+
+				case SpecialActionType.HostileMovingForward:
+				case SpecialActionType.FriendlyMovingForward:
+				case SpecialActionType.HostileFriendlyMovingForward:
+				case SpecialActionType.HostileMovingAttack:
+					{
+						var target = action.Target.Target;
+						if (target == null)
+						{
+							return new MovementSafetyResult { Status = MovementSafetyStatus.NotApplicable, Reason = "No target" };
+						}
+
+						// Calculate the destination as the position at the target's hitbox
+						var directionToTarget = target.Position - playerPos;
+						var distanceToTarget = directionToTarget.Length();
+
+						if (distanceToTarget < 0.001f)
+						{
+							return new MovementSafetyResult { Status = MovementSafetyStatus.Safe, Reason = "Already at target" };
+						}
+
+						// Stop at target's hitbox edge
+						var normalizedDirection = directionToTarget / distanceToTarget;
+						var distanceToHitbox = Math.Max(0, distanceToTarget - target.HitboxRadius);
+						var destination = playerPos + (normalizedDirection * distanceToHitbox);
+
+						var isSafe = DataCenter.IsDashSafe(playerPos, destination);
+						return new MovementSafetyResult
+						{
+							Status = isSafe ? MovementSafetyStatus.Safe : MovementSafetyStatus.NotSafe,
+							Reason = isSafe ? string.Empty : "Path to target unsafe (IsDashSafe)"
+						};
+					}
+
+				case SpecialActionType.ObjectBasedMovement:
+					{
+						if (action.Setting.ObjectBasedMovementObjectOID == 0)
+						{
+							return new MovementSafetyResult { Status = MovementSafetyStatus.NotApplicable, Reason = "No object OID configured" };
+						}
+
+						Vector3? objectPosition = null;
+						var playerId = Player.Object.GameObjectId;
+						foreach (var obj in Svc.Objects)
+						{
+							if (obj != null && obj.BaseId == action.Setting.ObjectBasedMovementObjectOID && obj.OwnerId == playerId)
+							{
+								objectPosition = obj.Position;
+								break;
+							}
+						}
+
+						if (!objectPosition.HasValue)
+						{
+							return new MovementSafetyResult { Status = MovementSafetyStatus.NotApplicable, Reason = "Object not found" };
+						}
+
+						var isSafe = DataCenter.IsDashSafe(playerPos, objectPosition.Value);
+						return new MovementSafetyResult
+						{
+							Status = isSafe ? MovementSafetyStatus.Safe : MovementSafetyStatus.NotSafe,
+							Reason = isSafe ? string.Empty : "Object position unsafe (IsDashSafe)"
+						};
+					}
+
+				default:
+					return new MovementSafetyResult { Status = MovementSafetyStatus.NotSafe, Reason = "Unknown movement type" };
+			}
+		}
+			catch (Exception ex)
+		{
+			return new MovementSafetyResult { Status = MovementSafetyStatus.NotSafe, Reason = $"Error: {ex.Message}" };
+		}
+	}
 	#endregion
 
 	#region List
@@ -3067,7 +3439,10 @@ public partial class RotationConfigWindow : Window
 	{
 		var sheet = Service.GetSheet<Status>();
 		if (sheet == null)
+		{
 			return [];
+		}
+
 		var list = new List<Status>();
 		foreach (var s in sheet)
 		{
@@ -3093,8 +3468,8 @@ public partial class RotationConfigWindow : Window
 				list.Add(a);
 			}
 		}
-		GAction[] result = new GAction[list.Count];
-		for (int i = 0; i < list.Count; i++)
+		var result = new GAction[list.Count];
+		for (var i = 0; i < list.Count; i++)
 		{
 			result[i] = list[i];
 		}
@@ -3138,7 +3513,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.SetNextItemWidth(ImGui.GetWindowWidth());
 		_ = ImGui.InputTextWithHint("##Searching the action", UiString.ConfigWindow_List_StatusNameOrId.GetDescription(), ref _statusSearching, 50);
 
-		using ImRaii.IEndObject table = ImRaii.Table("Rotation Solver List Statuses", 4, ImGuiTableFlags.BordersInner | ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingStretchSame);
+		using var table = ImRaii.Table("Rotation Solver List Statuses", 4, ImGuiTableFlags.BordersInner | ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingStretchSame);
 		if (table)
 		{
 			ImGui.TableSetupScrollFreeze(0, 1);
@@ -3215,10 +3590,10 @@ public partial class RotationConfigWindow : Window
 		{
 			try
 			{
-				string clipboardText = ImGui.GetClipboardText();
+				var clipboardText = ImGui.GetClipboardText();
 				if (clipboardText != null)
 				{
-					foreach (uint aId in JsonConvert.DeserializeObject<uint[]>(clipboardText) ?? [])
+					foreach (var aId in JsonConvert.DeserializeObject<uint[]>(clipboardText) ?? [])
 					{
 						_ = items.Add(aId);
 					}
@@ -3247,9 +3622,9 @@ public partial class RotationConfigWindow : Window
 		FromClipBoardButton(statuses);
 
 		uint removeStatusId = 0; // Renamed variable to avoid conflict
-		uint notLoadId = DefaultNotLoadId;
+		var notLoadId = DefaultNotLoadId;
 
-		string popupId = $"Rotation Solver Popup{name}";
+		var popupId = $"Rotation Solver Popup{name}";
 
 		StatusPopUp(popupId, allStatus, ref _statusSearching, status =>
 		{
@@ -3257,8 +3632,8 @@ public partial class RotationConfigWindow : Window
 			_ = OtherConfiguration.Save();
 		}, notLoadId);
 
-		int count = Math.Max(1, (int)MathF.Floor(ImGui.GetColumnWidth() / ((IconWidth * Scale) + ImGui.GetStyle().ItemSpacing.X)));
-		int index = 0;
+		var count = Math.Max(1, (int)MathF.Floor(ImGui.GetColumnWidth() / ((IconWidth * Scale) + ImGui.GetStyle().ItemSpacing.X)));
+		var index = 0;
 
 		if (index++ % count != 0)
 		{
@@ -3273,9 +3648,9 @@ public partial class RotationConfigWindow : Window
 		}
 		ImguiTooltips.HoveredTooltip(UiString.ConfigWindow_List_AddStatus.GetDescription());
 
-		foreach (uint statusId in statuses)
+		foreach (var statusId in statuses)
 		{
-			Status status = Service.GetSheet<Status>().GetRow(statusId);
+			var status = Service.GetSheet<Status>().GetRow(statusId);
 			if (status.RowId == 0)
 			{
 				continue;
@@ -3286,11 +3661,11 @@ public partial class RotationConfigWindow : Window
 				removeStatusId = status.RowId; // Updated variable name
 			}
 
-			string key = $"Status{status.RowId}";
+			var key = $"Status{status.RowId}";
 
 			ImGuiHelper.DrawHotKeysPopup(key, string.Empty, (UiString.ConfigWindow_List_Remove.GetDescription(), Delete, pairsArray));
 
-			if (IconSet.GetTexture(status.Icon, out Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap? texture, notLoadId) && texture?.Handle != null)
+			if (IconSet.GetTexture(status.Icon, out var texture, notLoadId) && texture?.Handle != null)
 			{
 				if (index++ % count != 0)
 				{
@@ -3317,7 +3692,7 @@ public partial class RotationConfigWindow : Window
 		const float ChildHeight = 400f;
 		const int InputTextLength = 128;
 
-		using ImRaii.IEndObject popup = ImRaii.Popup(popupId);
+		using var popup = ImRaii.Popup(popupId);
 		if (popup)
 		{
 			ImGui.SetNextItemWidth(InputWidth * Scale);
@@ -3325,24 +3700,24 @@ public partial class RotationConfigWindow : Window
 
 			ImGui.Spacing();
 
-			using ImRaii.IEndObject child = ImRaii.Child("Rotation Solver Reborn Add Status", new Vector2(-1, ChildHeight * Scale));
+			using var child = ImRaii.Child("Rotation Solver Reborn Add Status", new Vector2(-1, ChildHeight * Scale));
 			if (child)
 			{
-				int count = Math.Max(1, (int)MathF.Floor(ImGui.GetWindowWidth() / ((size * 3 / 4 * Scale) + ImGui.GetStyle().ItemSpacing.X)));
-				int index = 0;
+				var count = Math.Max(1, (int)MathF.Floor(ImGui.GetWindowWidth() / ((size * 3 / 4 * Scale) + ImGui.GetStyle().ItemSpacing.X)));
+				var index = 0;
 
 				if (string.IsNullOrWhiteSpace(searching))
 				{
 					return;
 				}
 
-				string searchingKey = searching;
+				var searchingKey = searching;
 
 				// Manual filtering and sorting instead of LINQ
 				List<(Status status, double score)> filtered = [];
-				for (int i = 0; i < allStatus.Length; i++)
+				for (var i = 0; i < allStatus.Length; i++)
 				{
-					Status s = allStatus[i];
+					var s = allStatus[i];
 					double sim = SearchableCollection.Similarity($"{s.Name} {s.RowId}", searchingKey);
 					if (sim > 0)
 					{
@@ -3351,9 +3726,9 @@ public partial class RotationConfigWindow : Window
 				}
 
 				// Sort descending by similarity
-				for (int i = 0; i < filtered.Count - 1; i++)
+				for (var i = 0; i < filtered.Count - 1; i++)
 				{
-					for (int j = i + 1; j < filtered.Count; j++)
+					for (var j = i + 1; j < filtered.Count; j++)
 					{
 						if (filtered[j].score > filtered[i].score)
 						{
@@ -3370,8 +3745,8 @@ public partial class RotationConfigWindow : Window
 
 				foreach (var tuple in filtered)
 				{
-					Status status = tuple.status;
-					if (status.Icon != 215049 && IconSet.GetTexture(status.Icon, out Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap? texture, notLoadId) && texture?.Handle != null)
+					var status = tuple.status;
+					if (status.Icon != 215049 && IconSet.GetTexture(status.Icon, out var texture, notLoadId) && texture?.Handle != null)
 					{
 						if (index++ % count != 0)
 						{
@@ -3394,7 +3769,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.SetNextItemWidth(ImGui.GetWindowWidth());
 		_ = ImGui.InputTextWithHint("##Searching the action", UiString.ConfigWindow_List_ActionNameOrId.GetDescription(), ref _actionSearching, 50);
 
-		using ImRaii.IEndObject table = ImRaii.Table("Rotation Solver List Actions", 4, ImGuiTableFlags.BordersInner | ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingStretchSame);
+		using var table = ImRaii.Table("Rotation Solver List Actions", 4, ImGuiTableFlags.BordersInner | ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingStretchSame);
 		if (table)
 		{
 			ImGui.TableSetupScrollFreeze(0, 1);
@@ -3466,7 +3841,7 @@ public partial class RotationConfigWindow : Window
 		}
 		ImGui.PushID(name);
 		uint removeId = 0;
-		string popupId = $"Rotation Solver Reborn Action Popup{name}";
+		var popupId = $"Rotation Solver Reborn Action Popup{name}";
 
 		if (ImGui.Button($"{UiString.ConfigWindow_List_AddAction.GetDescription()}##{name}"))
 		{
@@ -3483,7 +3858,7 @@ public partial class RotationConfigWindow : Window
 
 		// Build a list of GAction objects from the action IDs
 		List<GAction> actionList = [];
-		foreach (uint a in actions)
+		foreach (var a in actions)
 		{
 			GAction? act = Service.GetSheet<GAction>().GetRow(a);
 			if (act != null)
@@ -3499,24 +3874,24 @@ public partial class RotationConfigWindow : Window
 			var scored = new List<(GAction action, float score)>(actionList.Count);
 			foreach (var action in actionList)
 			{
-				float sim = SearchableCollection.Similarity($"{action.Name} {action.RowId}", _actionSearching);
+				var sim = SearchableCollection.Similarity($"{action.Name} {action.RowId}", _actionSearching);
 				scored.Add((action, sim));
 			}
 			// Sort descending by score
 			scored.Sort((a, b) => b.score.CompareTo(a.score));
 			// Overwrite actionList with sorted results
 			actionList.Clear();
-			foreach (var (action, score) in scored)
+			foreach ((var action, var score) in scored)
 			{
 				actionList.Add(action);
 			}
 		}
 
-		for (int idx = 0; idx < actionList.Count; idx++)
+		for (var idx = 0; idx < actionList.Count; idx++)
 		{
-			GAction action = actionList[idx];
+			var action = actionList[idx];
 			void Reset() => removeId = action.RowId;
-			string key = $"Action{action.RowId}";
+			var key = $"Action{action.RowId}";
 
 			ImGuiHelper.DrawHotKeysPopup(key, string.Empty, (UiString.ConfigWindow_List_Remove.GetDescription(), Reset, pairs));
 
@@ -3542,7 +3917,7 @@ public partial class RotationConfigWindow : Window
 		const float ChildHeight = 400f;
 		const int MaxDisplayCount = 20;
 
-		using ImRaii.IEndObject popup = ImRaii.Popup(popupId);
+		using var popup = ImRaii.Popup(popupId);
 		if (popup)
 		{
 			ImGui.SetNextItemWidth(InputWidth * Scale);
@@ -3550,7 +3925,7 @@ public partial class RotationConfigWindow : Window
 
 			ImGui.Spacing();
 
-			using ImRaii.IEndObject child = ImRaii.Child("Rotation Solver Add action", new Vector2(-1, ChildHeight * Scale));
+			using var child = ImRaii.Child("Rotation Solver Add action", new Vector2(-1, ChildHeight * Scale));
 			if (child)
 			{
 				if (string.IsNullOrWhiteSpace(_actionPopupSearching))
@@ -3571,15 +3946,15 @@ public partial class RotationConfigWindow : Window
 						_lastActionPopupSearching = _actionPopupSearching;
 						_cachedPopupFiltered.Clear();
 
-						string searchLower = _actionPopupSearching.Trim().ToLowerInvariant();
-						bool useSimilarity = searchLower.Length >= 3;
+						var searchLower = _actionPopupSearching.Trim().ToLowerInvariant();
+						var useSimilarity = searchLower.Length >= 3;
 
-						for (int i = 0; i < AllActions.Length; i++)
+						for (var i = 0; i < AllActions.Length; i++)
 						{
-							GAction a = AllActions[i];
+							var a = AllActions[i];
 
 							// Skip actions already in the list
-							bool found = false;
+							var found = false;
 							foreach (var id in actions)
 							{
 								if (id == a.RowId)
@@ -3589,10 +3964,12 @@ public partial class RotationConfigWindow : Window
 								}
 							}
 							if (found)
+							{
 								continue;
+							}
 
-							string nameLower = a.Name.ToString().ToLowerInvariant();
-							string idStr = a.RowId.ToString();
+							var nameLower = a.Name.ToString().ToLowerInvariant();
+							var idStr = a.RowId.ToString();
 
 							// Direct substring or ID match gets highest score
 							if (nameLower.Contains(searchLower) || idStr == searchLower)
@@ -3601,9 +3978,11 @@ public partial class RotationConfigWindow : Window
 							}
 							else if (useSimilarity)
 							{
-								float sim = SearchableCollection.Similarity($"{a.Name} {a.RowId}", _actionPopupSearching);
+								var sim = SearchableCollection.Similarity($"{a.Name} {a.RowId}", _actionPopupSearching);
 								if (sim > 0f)
+								{
 									_cachedPopupFiltered.Add((a, sim));
+								}
 							}
 						}
 
@@ -3614,11 +3993,11 @@ public partial class RotationConfigWindow : Window
 						}
 					}
 
-					int shown = 0;
-					for (int i = 0; i < _cachedPopupFiltered.Count && shown < MaxDisplayCount; i++)
+					var shown = 0;
+					for (var i = 0; i < _cachedPopupFiltered.Count && shown < MaxDisplayCount; i++)
 					{
-						GAction action = _cachedPopupFiltered[i].action;
-						bool selected = ImGui.Selectable($"{action.Name} ({action.RowId})");
+						var action = _cachedPopupFiltered[i].action;
+						var selected = ImGui.Selectable($"{action.Name} ({action.RowId})");
 						if (ImGui.IsItemHovered())
 						{
 							ImguiTooltips.ShowTooltip($"{action.Name} ({action.RowId})");
@@ -3644,10 +4023,14 @@ public partial class RotationConfigWindow : Window
 	public static Vector3 HoveredPosition { get; private set; } = Vector3.Zero;
 	private static void DrawListTerritories()
 	{
-		if (Svc.ClientState == null) return;
-		ushort territoryId = Svc.ClientState.TerritoryType;
+		if (Svc.ClientState == null)
+		{
+			return;
+		}
 
-		using ImRaii.IEndObject table = ImRaii.Table("Rotation Solver List Territories", 4,
+		var territoryId = Svc.ClientState.TerritoryType;
+
+		using var table = ImRaii.Table("Rotation Solver List Territories", 4,
 			ImGuiTableFlags.BordersInner | ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingStretchSame);
 		if (table)
 		{
@@ -3666,15 +4049,15 @@ public partial class RotationConfigWindow : Window
 			// NoHostile
 			_ = ImGui.TableNextColumn();
 			ImGui.TextWrapped(UiString.ConfigWindow_List_NoHostileDesc.GetDescription());
-			float width = ImGui.GetColumnWidth() - ImGuiEx.CalcIconSize(FontAwesomeIcon.Ban).X - ImGui.GetStyle().ItemSpacing.X - (10 * Scale);
+			var width = ImGui.GetColumnWidth() - ImGuiEx.CalcIconSize(FontAwesomeIcon.Ban).X - ImGui.GetStyle().ItemSpacing.X - (10 * Scale);
 
-			if (!OtherConfiguration.NoHostileNames.TryGetValue(territoryId, out string[]? libs))
+			if (!OtherConfiguration.NoHostileNames.TryGetValue(territoryId, out var libs))
 			{
 				OtherConfiguration.NoHostileNames[territoryId] = libs = [];
 			}
 
-			bool hasEmpty = false;
-			for (int i = 0; i < libs.Length; i++)
+			var hasEmpty = false;
+			for (var i = 0; i < libs.Length; i++)
 			{
 				if (string.IsNullOrEmpty(libs[i]))
 				{
@@ -3685,13 +4068,17 @@ public partial class RotationConfigWindow : Window
 			if (!hasEmpty)
 			{
 				var newArr = new string[libs.Length + 1];
-				for (int i = 0; i < libs.Length; i++) newArr[i] = libs[i];
+				for (var i = 0; i < libs.Length; i++)
+				{
+					newArr[i] = libs[i];
+				}
+
 				newArr[^1] = string.Empty;
 				OtherConfiguration.NoHostileNames[territoryId] = libs = newArr;
 			}
 
-			int removeIndex = -1;
-			for (int i = 0; i < libs.Length; i++)
+			var removeIndex = -1;
+			for (var i = 0; i < libs.Length; i++)
 			{
 				ImGui.SetNextItemWidth(width);
 				if (ImGui.InputTextWithHint($"##Rotation Solver Territory Target Name {i}",
@@ -3709,9 +4096,13 @@ public partial class RotationConfigWindow : Window
 			if (removeIndex > -1)
 			{
 				var list = new List<string>(libs.Length - 1);
-				for (int i = 0; i < libs.Length; i++)
+				for (var i = 0; i < libs.Length; i++)
 				{
-					if (i == removeIndex) continue;
+					if (i == removeIndex)
+					{
+						continue;
+					}
+
 					list.Add(libs[i]);
 				}
 				OtherConfiguration.NoHostileNames[territoryId] = [.. list];
@@ -3731,20 +4122,25 @@ public partial class RotationConfigWindow : Window
 			}
 
 			hasEmpty = false;
-			for (int i = 0; i < libs.Length; i++)
+			for (var i = 0; i < libs.Length; i++)
 			{
-				if (string.IsNullOrEmpty(libs[i])) { hasEmpty = true; break; }
+				if (string.IsNullOrEmpty(libs[i]))
+				{ hasEmpty = true; break; }
 			}
 			if (!hasEmpty)
 			{
 				var newArr = new string[libs.Length + 1];
-				for (int i = 0; i < libs.Length; i++) newArr[i] = libs[i];
+				for (var i = 0; i < libs.Length; i++)
+				{
+					newArr[i] = libs[i];
+				}
+
 				newArr[^1] = string.Empty;
 				OtherConfiguration.NoProvokeNames[territoryId] = libs = newArr;
 			}
 
 			removeIndex = -1;
-			for (int i = 0; i < libs.Length; i++)
+			for (var i = 0; i < libs.Length; i++)
 			{
 				ImGui.SetNextItemWidth(width);
 				if (ImGui.InputTextWithHint($"##Rotation Solver Reborn Territory Provoke Name {i}",
@@ -3762,9 +4158,13 @@ public partial class RotationConfigWindow : Window
 			if (removeIndex > -1)
 			{
 				var list = new List<string>(libs.Length - 1);
-				for (int i = 0; i < libs.Length; i++)
+				for (var i = 0; i < libs.Length; i++)
 				{
-					if (i == removeIndex) continue;
+					if (i == removeIndex)
+					{
+						continue;
+					}
+
 					list.Add(libs[i]);
 				}
 				OtherConfiguration.NoProvokeNames[territoryId] = [.. list];
@@ -3772,7 +4172,7 @@ public partial class RotationConfigWindow : Window
 			}
 
 			_ = ImGui.TableNextColumn();
-			if (!OtherConfiguration.BeneficialPositions.TryGetValue(territoryId, out Vector3[]? pts))
+			if (!OtherConfiguration.BeneficialPositions.TryGetValue(territoryId, out var pts))
 			{
 				OtherConfiguration.BeneficialPositions[territoryId] = pts = [];
 			}
@@ -3781,16 +4181,20 @@ public partial class RotationConfigWindow : Window
 			{
 				unsafe
 				{
-					Vector3 point = Player.Object.Position;
-					Vector3 pointMathed = point + (Vector3.UnitY * 5);
-					Vector3 direction = Vector3.UnitY;
-					Vector3* directionPtr = &direction;
-					Vector3* pointPtr = &pointMathed;
-					int* unknown = stackalloc int[] { 0x4000, 0, 0x4000, 0 };
+					var point = Player.Object.Position;
+					var pointMathed = point + (Vector3.UnitY * 5);
+					var direction = Vector3.UnitY;
+					var directionPtr = &direction;
+					var pointPtr = &pointMathed;
+					var unknown = stackalloc int[] { 0x4000, 0, 0x4000, 0 };
 					RaycastHit hit = default;
 
 					var newPts = new Vector3[pts.Length + 1];
-					for (int i = 0; i < pts.Length; i++) newPts[i] = pts[i];
+					for (var i = 0; i < pts.Length; i++)
+					{
+						newPts[i] = pts[i];
+					}
+
 					if (Framework.Instance()->BGCollisionModule
 						->RaycastMaterialFilter(&hit, pointPtr, directionPtr, 20, 1, unknown))
 					{
@@ -3806,24 +4210,32 @@ public partial class RotationConfigWindow : Window
 			}
 
 			HoveredPosition = Vector3.Zero;
-			int removePosIndex = -1;
-			for (int i = 0; i < pts.Length; i++)
+			var removePosIndex = -1;
+			for (var i = 0; i < pts.Length; i++)
 			{
 				void Reset() => removePosIndex = i;
-				string key = "Beneficial Positions" + i.ToString();
+				var key = "Beneficial Positions" + i.ToString();
 				ImGuiHelper.DrawHotKeysPopup(key, string.Empty,
 					(UiString.ConfigWindow_List_Remove.GetDescription(), Reset, ["Delete"]));
 				_ = ImGui.Selectable(pts[i].ToString());
-				if (ImGui.IsItemHovered()) HoveredPosition = pts[i];
+				if (ImGui.IsItemHovered())
+				{
+					HoveredPosition = pts[i];
+				}
+
 				ImGuiHelper.ExecuteHotKeysPopup(key, string.Empty, string.Empty, false,
 					(Reset, [VirtualKey.DELETE]));
 			}
 			if (removePosIndex > -1)
 			{
 				var list = new List<Vector3>(pts.Length - 1);
-				for (int i = 0; i < pts.Length; i++)
+				for (var i = 0; i < pts.Length; i++)
 				{
-					if (i == removePosIndex) continue;
+					if (i == removePosIndex)
+					{
+						continue;
+					}
+
 					list.Add(pts[i]);
 				}
 				OtherConfiguration.BeneficialPositions[territoryId] = [.. list];
@@ -3835,12 +4247,12 @@ public partial class RotationConfigWindow : Window
 	internal static void DrawContentFinder(uint imageId)
 	{
 		const float MaxWidth = 480f;
-		uint badge = imageId;
+		var badge = imageId;
 		if (badge != 0
-			&& IconSet.GetTexture(badge, out Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap? badgeTexture) && badgeTexture?.Handle != null)
+			&& IconSet.GetTexture(badge, out var badgeTexture) && badgeTexture?.Handle != null)
 		{
-			float wholeWidth = ImGui.GetWindowWidth();
-			Vector2 size = new Vector2(badgeTexture.Width, badgeTexture.Height) * MathF.Min(1, MathF.Min(MaxWidth, wholeWidth) / badgeTexture.Width);
+			var wholeWidth = ImGui.GetWindowWidth();
+			var size = new Vector2(badgeTexture.Width, badgeTexture.Height) * MathF.Min(1, MathF.Min(MaxWidth, wholeWidth) / badgeTexture.Width);
 
 			ImGuiHelper.DrawItemMiddle(() =>
 			{
@@ -3855,6 +4267,59 @@ public partial class RotationConfigWindow : Window
 	private static void DrawDebug()
 	{
 		_allSearchable.DrawItems(Configs.Debug);
+
+		{
+			var tracePath = ActionTracer.CurrentFilePath;
+			var hasFile = !string.IsNullOrEmpty(tracePath) && File.Exists(tracePath);
+			var hasAnyData = hasFile
+				|| !string.IsNullOrEmpty(ActionTracer.LastFrameSummary)
+				|| ActionTracer.HasAnyTraceFiles();
+
+			if (!hasFile)
+			{
+				ImGui.BeginDisabled();
+			}
+			if (ImGui.Button("Open Action Trace File"))
+			{
+				try
+				{
+					_ = Process.Start("explorer.exe", $"\"{tracePath}\"");
+				}
+				catch (Exception ex)
+				{
+					PluginLog.Warning($"Failed to open trace file: {ex.Message}");
+				}
+			}
+			if (!hasFile)
+			{
+				ImGui.EndDisabled();
+			}
+			if (ImGui.IsItemHovered())
+			{
+				ImGui.SetTooltip(hasFile
+					? tracePath
+					: "No trace file yet — enable the tracer and enter combat to create one.");
+			}
+
+			ImGui.SameLine();
+
+			if (!hasAnyData)
+			{
+				ImGui.BeginDisabled();
+			}
+			if (ImGui.Button("Clear Trace"))
+			{
+				ActionTracer.ClearTrace();
+			}
+			if (!hasAnyData)
+			{
+				ImGui.EndDisabled();
+			}
+			if (ImGui.IsItemHovered())
+			{
+				ImGui.SetTooltip("Delete every actiontrace_*.log file in the Traces folder and clear the buffered last-frame data.");
+			}
+		}
 
 		if (!Player.Available || !Service.Config.InDebug)
 		{
@@ -3919,7 +4384,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.Text($"MoveModeSetting: {DataCenter.MoveModeSetting()}");
 		Dalamud.Game.ClientState.Conditions.ConditionFlag[] conditions = [.. Svc.Condition.AsReadOnlySet()];
 		ImGui.Text("InternalCondition:");
-		foreach (Dalamud.Game.ClientState.Conditions.ConditionFlag condition in conditions)
+		foreach (var condition in conditions)
 		{
 			ImGui.Text($"    {condition}");
 		}
@@ -3943,7 +4408,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.Text($"AttackedTargets: {DataCenter.AttackedTargets?.Count ?? 0}");
 		if (DataCenter.AttackedTargets != null)
 		{
-			foreach ((ulong id, DateTime time) in DataCenter.AttackedTargets)
+			foreach ((var id, var time) in DataCenter.AttackedTargets)
 			{
 				ImGui.Text(id.ToString() ?? "Unknown ID");
 			}
@@ -3965,24 +4430,24 @@ public partial class RotationConfigWindow : Window
 		// Check and display VFX casting status
 		ImGui.Text("Casting Vfx:");
 		List<VfxNewData> filteredVfx = [];
-		foreach (VfxNewData s in DataCenter.VfxDataQueue)
+		foreach (var s in DataCenter.VfxDataQueue)
 		{
 			if (s.Path.StartsWith("vfx/lockon/eff/") && s.TimeDuration.TotalSeconds > 0 && s.TimeDuration.TotalSeconds < 6)
 			{
 				filteredVfx.Add(s);
 			}
 		}
-		foreach (VfxNewData vfx in filteredVfx)
+		foreach (var vfx in filteredVfx)
 		{
 			ImGui.Text($"Path: {vfx.Path}");
 		}
 
 		// Display all party members
-		List<IBattleChara> partyMembers = DataCenter.PartyMembers;
+		var partyMembers = DataCenter.PartyMembers;
 		if (partyMembers.Count != 0)
 		{
 			ImGui.Text("Party Members:");
-			foreach (IBattleChara member in partyMembers)
+			foreach (var member in partyMembers)
 			{
 				ImGui.Text($"- {member.Name}");
 			}
@@ -3996,12 +4461,14 @@ public partial class RotationConfigWindow : Window
 		foreach (var member in DataCenter.PartyMembers)
 		{
 			if (member.IsJobCategory(JobRole.Tank))
+			{
 				tankPartyMembers.Add(member);
+			}
 		}
 		if (tankPartyMembers.Count != 0)
 		{
 			ImGui.Text("Tank Party Members:");
-			foreach (IBattleChara? member in tankPartyMembers)
+			foreach (var member in tankPartyMembers)
 			{
 				ImGui.Text($"- {member.Name}");
 			}
@@ -4012,7 +4479,7 @@ public partial class RotationConfigWindow : Window
 		}
 
 		// Display dispel target
-		IBattleChara? dispelTarget = DataCenter.DispelTarget;
+		var dispelTarget = DataCenter.DispelTarget;
 		if (dispelTarget != null)
 		{
 			ImGui.Text("Dispel Target:");
@@ -4037,12 +4504,43 @@ public partial class RotationConfigWindow : Window
 
 		ImGui.Spacing();
 		ImGui.Text($"Statuses:");
-		foreach (Dalamud.Game.ClientState.Statuses.IStatus status in Player.Object.StatusList)
+		using var statusTable = ImRaii.Table("TargetStatusTable", 5,
+			ImGuiTableFlags.BordersInner | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.ScrollY,
+			new Vector2(0, 200 * Scale));
+		if (statusTable)
 		{
-			string source = status.SourceId == Player.Object.GameObjectId ? "You" : Svc.Objects.SearchById(status.SourceId) == null ? "None" : "Others";
-			byte stacks = Player.Object.StatusStack(true, (StatusID)status.StatusId);
-			string stackDisplay = stacks == byte.MaxValue ? "N/A" : stacks.ToString(); // Convert 255 to "N/A"
-			ImGui.Text($"{status.GameData.Value.Name}: {status.StatusId} From: {source} Stacks: {stackDisplay}");
+			ImGui.TableSetupScrollFreeze(0, 1);
+			ImGui.TableSetupColumn("Name");
+			ImGui.TableSetupColumn("ID");
+			ImGui.TableSetupColumn("Source");
+			ImGui.TableSetupColumn("Stacks");
+			ImGui.TableSetupColumn("Time");
+			ImGui.TableHeadersRow();
+
+			foreach (var status in Player.Object.StatusList)
+			{
+				if (Player.Object == null)
+				{
+					continue;
+				}
+
+				var source = status.SourceId == Player.Object.GameObjectId ? "You" : Svc.Objects.SearchById(status.SourceId) == null ? "None" : "Others";
+				var stacks = Player.Object.StatusStack(true, (StatusID)status.StatusId);
+				var stackDisplay = stacks == byte.MaxValue ? "N/A" : stacks.ToString();
+				var timeDisplay = status.RemainingTime <= 0f ? "Perm" : $"{status.RemainingTime:F1}s";
+
+				ImGui.TableNextRow();
+				_ = ImGui.TableNextColumn();
+				ImGui.TextUnformatted(status.GameData.Value.Name.ToString());
+				_ = ImGui.TableNextColumn();
+				ImGui.TextUnformatted(status.StatusId.ToString());
+				_ = ImGui.TableNextColumn();
+				ImGui.TextUnformatted(source);
+				_ = ImGui.TableNextColumn();
+				ImGui.TextUnformatted(stackDisplay);
+				_ = ImGui.TableNextColumn();
+				ImGui.TextUnformatted(timeDisplay);
+			}
 		}
 	}
 
@@ -4051,16 +4549,16 @@ public partial class RotationConfigWindow : Window
 		ImGui.Text($"Can Raise: {DataCenter.CanRaise()}");
 		ImGui.Text($"Death Target: {DataCenter.DeathTarget}");
 
-		IEnumerable<IBattleChara> deadPartyMembers = DataCenter.PartyMembers.GetDeath();
-		bool hasDeadParty = false;
-		using (var enumerator = deadPartyMembers.GetEnumerator())
+		var deadPartyMembersList = new List<IBattleChara>();
+		foreach (var member in DataCenter.PartyMembers.GetDeath())
 		{
-			if (enumerator.MoveNext()) hasDeadParty = true;
+			deadPartyMembersList.Add(member);
 		}
-		if (hasDeadParty)
+
+		if (deadPartyMembersList.Count > 0)
 		{
 			ImGui.Text("Dead Party Members:");
-			foreach (var member in deadPartyMembers)
+			foreach (var member in deadPartyMembersList)
 			{
 				ImGui.Text($"- {member.Name}");
 			}
@@ -4070,16 +4568,16 @@ public partial class RotationConfigWindow : Window
 			ImGui.Text("Dead Party Members: None");
 		}
 
-		IEnumerable<IBattleChara> deadAllianceMembers = DataCenter.AllianceMembers.GetDeath();
-		bool hasDeadAlliance = false;
-		using (var enumerator = deadAllianceMembers.GetEnumerator())
+		var deadAllianceMembersList = new List<IBattleChara>();
+		foreach (var member in DataCenter.AllianceMembers.GetDeath())
 		{
-			if (enumerator.MoveNext()) hasDeadAlliance = true;
+			deadAllianceMembersList.Add(member);
 		}
-		if (hasDeadAlliance)
+
+		if (deadAllianceMembersList.Count > 0)
 		{
 			ImGui.Text("Dead Alliance Members:");
-			foreach (var member in deadAllianceMembers)
+			foreach (var member in deadAllianceMembersList)
 			{
 				ImGui.Text($"- {member.Name}");
 			}
@@ -4106,6 +4604,9 @@ public partial class RotationConfigWindow : Window
 		{
 			ImGui.Text($"Fate ID: {DataCenter.PlayerFateId}");
 		}
+		ImGui.Spacing();
+		ImGui.Text($"In Field Operations: {DataCenter.IsInFieldOperations}");
+		ImGui.Text($"In Field Raid: {DataCenter.IsInFieldRaid}");
 		ImGui.Spacing();
 		ImGui.Text($"IsInBozjanFieldOp: {DataCenter.IsInBozjanFieldOp}");
 		ImGui.Text($"IsInBozjanFieldOpCE: {DataCenter.IsInBozjanFieldOpCE}");
@@ -4144,7 +4645,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.Text($"IsHostileCastingToTank: {DataCenter.IsHostileCastingToTank}");
 		ImGui.Text($"IsHostileCastingStop: {DataCenter.IsHostileCastingStop}");
 		ImGui.Spacing();
-		StatusID HellInACell = (StatusID)4734;
+		var HellInACell = (StatusID)4734;
 		var HasHellInACell = StatusHelper.PlayerHasStatus(false, HellInACell);
 		ImGui.Text($"HasHellInACell: {HasHellInACell}");
 		ImGui.Spacing();
@@ -4152,16 +4653,19 @@ public partial class RotationConfigWindow : Window
 		ImGui.Text($"IsTyrantCastingSpecialIndicator2: {DataCenter.IsTyrantCastingSpecialIndicator2()}");
 	}
 
-	private static unsafe void DrawParty()
+	private static void DrawParty()
 	{
 		ImGui.Text($"Number of Party Members: {DataCenter.PartyMembers.Count}");
 		ImGui.Text($"Number of Alliance Members: {DataCenter.AllianceMembers.Count}");
 		ImGui.Text($"Average Party HP Percent: {DataCenter.PartyMembersAverHP * 100}");
 		ImGui.Text($"Average Lowest Party HP Percent: {DataCenter.LowestPartyMembersAverHP * 100}");
-		int doomedCount = 0;
+		var doomedCount = 0;
 		foreach (var member in DataCenter.PartyMembers)
 		{
-			if (member.DoomNeedHealing()) doomedCount++;
+			if (member.DoomNeedHealing())
+			{
+				doomedCount++;
+			}
 		}
 		ImGui.Text($"Number of Party Members with Doomed To Heal status: {doomedCount}");
 
@@ -4169,8 +4673,8 @@ public partial class RotationConfigWindow : Window
 		// AST-only card target preview
 		if (Player.Object != null && Player.Object.IsJobs(Job.AST))
 		{
-			IBattleChara? spear = ActionTargetInfo.FindTargetByType(DataCenter.PartyMembers, TargetType.TheSpear, 0, SpecialActionType.None, TargetType.TheSpear, true);
-			IBattleChara? balance = ActionTargetInfo.FindTargetByType(DataCenter.PartyMembers, TargetType.TheBalance, 0, SpecialActionType.None, TargetType.TheBalance, true);
+			var spear = ActionTargetInfo.FindTargetByType(DataCenter.PartyMembers, TargetType.TheSpear, 0, SpecialActionType.None, TargetType.TheSpear, true);
+			var balance = ActionTargetInfo.FindTargetByType(DataCenter.PartyMembers, TargetType.TheBalance, 0, SpecialActionType.None, TargetType.TheBalance, true);
 			ImGui.Spacing();
 			ImGui.Text("AST Card Targets (Preview):");
 			ImGui.Text($"- The Spear: {spear?.Name ?? "None"}");
@@ -4178,14 +4682,14 @@ public partial class RotationConfigWindow : Window
 			ImGui.Spacing();
 		}
 
-		foreach (Dalamud.Game.ClientState.Party.IPartyMember p in Svc.Party)
+		foreach (var p in Svc.Party)
 		{
 			if (p.GameObject is not IBattleChara b)
 			{
 				continue;
 			}
 
-			string text = $"Name: {b.Name}, In Combat: {b.InCombat()}";
+			var text = $"Name: {b.Name}, In Combat: {b.InCombat()}";
 			if (b.TimeAlive() > 0)
 			{
 				text += $", Time Alive: {b.TimeAlive()}";
@@ -4205,7 +4709,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.Text($"NumberOfPartyMembersInRangeOf 5m: {DataCenter.NumberOfPartyMembersInRangeOf(5)}");
 		ImGui.Text($"AllTargets Count: {DataCenter.AllTargets.Count}");
 		ImGui.Text($"AllHostileTargets Count: {DataCenter.AllHostileTargets.Count}");
-		foreach (IBattleChara item in DataCenter.AllHostileTargets)
+		foreach (var item in DataCenter.AllHostileTargets)
 		{
 			ImGui.Text(item.Name.ToString());
 		}
@@ -4218,16 +4722,16 @@ public partial class RotationConfigWindow : Window
 		}
 		else
 		{
-			for (int i = 0; i < party.Count; i++)
+			for (var i = 0; i < party.Count; i++)
 			{
 				// Assuming RowRef<ClassJob> has a .Value property with a .Name or .Abbreviation
 				var classJob = party[i].Value;
-				string jobName = classJob.Abbreviation.ToString() ?? classJob.Name.ToString() ?? $"Job #{i}";
+				var jobName = classJob.Abbreviation.ToString() ?? classJob.Name.ToString() ?? $"Job #{i}";
 				ImGui.Text($"{i + 1}: {jobName}");
 			}
 		}
 		ImGui.Spacing();
-		float mitigationFraction = CustomRotation.GetCurrentMitigationPercent(); // 0.0–0.95
+		var mitigationFraction = CustomRotation.GetCurrentMitigationPercent(); // 0.0–0.95
 		ImGui.Text($"Current Mitigation Percent: {mitigationFraction * 100f:F1}%");
 		ImGui.Text($"Current Mitigation Percent RAW: {mitigationFraction}");
 
@@ -4245,7 +4749,7 @@ public partial class RotationConfigWindow : Window
 		ImGui.Text($"Kind: {target.GetObjectKind()}");
 		ImGui.Text($"SubKind: {target.GetBattleNPCSubKind()}");
 
-		IGameObject? owner = Svc.Objects.SearchById(target.OwnerId);
+		var owner = Svc.Objects.SearchById(target.OwnerId);
 		if (owner != null)
 		{
 			ImGui.Text($"Owner: {owner.Name}");
@@ -4259,11 +4763,26 @@ public partial class RotationConfigWindow : Window
 			ImGui.Text($"HP: {battleChara.CurrentHp} / {battleChara.MaxHp}");
 			ImGui.Text($"HealthRatio: {battleChara.GetHealthRatio()}");
 			ImGui.Text($"HitboxRadius: {battleChara.HitboxRadius}");
+			ImGui.Text($"Distance To Player: {battleChara.DistanceToPlayer()}");
 			ImGui.Spacing();
 			ImGui.Text($"NamePlate Icon ID: {battleChara.GetNamePlateIcon()}");
 			ImGui.Text($"Event Type: {battleChara.GetEventType()}");
 			ImGui.Text($"TargetCharaCondition: {battleChara.TargetCharaCondition()}");
 			//ImGui.Text($"GetMarkerNumber: {MarkingHelper.GetMarkerNumber((long)battleChara.GameObjectId)}");
+			var npcName = string.Empty;
+			var npcEnumName = string.Empty;
+			if (battleChara.NameId != 0)
+			{
+				var bnpcName = Service.GetSheet<Lumina.Excel.Sheets.BNpcName>().GetRow(battleChara.NameId);
+				npcName = bnpcName.Singular.ToString();
+
+				// Try to match to NPCName enum
+				if (Enum.IsDefined(typeof(NPCName), battleChara.NameId))
+				{
+					npcEnumName = $"{Enum.GetName(typeof(NPCName), battleChara.NameId)}";
+				}
+			}
+			ImGui.Text($"NPC Name: {npcEnumName}");
 			ImGui.Text($"Name Id: {battleChara.NameId}");
 			ImGui.Text($"Data Id: {battleChara.BaseId}");
 			ImGui.Spacing();
@@ -4278,20 +4797,24 @@ public partial class RotationConfigWindow : Window
 			ImGui.Spacing();
 			ImGui.Text($"FateID: {battleChara.FateId().ToString() ?? string.Empty}");
 			ImGui.Text($"EventType: {battleChara.GetEventType().ToString() ?? string.Empty}");
-			ImGui.Text($"IsBozjanCEFateMob: {battleChara.IsBozjanCEMob()}");
+			if (DataCenter.IsInBozja)
+			{
+				ImGui.Text($"IsBozjanCEFateMob: {battleChara.IsBozjanCEMob()}");
+			}
 			ImGui.Spacing();
-			ImGui.Text($"IsOccultCEMob: {battleChara.IsOccultCEMob()}");
-			ImGui.Text($"IsOccultFateMob: {battleChara.IsOccultFateMob()}");
-			ImGui.Text($"IsOCUndeadTarget: {battleChara.IsOCUndeadTarget()}");
-			ImGui.Text($"IsOCSlowgaImmuneTarget: {battleChara.IsOCSlowgaImmuneTarget()}");
-			ImGui.Text($"IsOCDoomImmuneTarget: {battleChara.IsOCDoomImmuneTarget()}");
-			ImGui.Text($"IsOCStunImmuneTarget: {battleChara.IsOCStunImmuneTarget()}");
-			ImGui.Text($"IsOCFreezeImmuneTarget: {battleChara.IsOCFreezeImmuneTarget()}");
-			ImGui.Text($"IsOCBlindImmuneTarget: {battleChara.IsOCBlindImmuneTarget()}");
-			ImGui.Text($"IsOCParalysisImmuneTarget: {battleChara.IsOCParalysisImmuneTarget()}");
-			ImGui.Spacing();
-			ImGui.Text($"IsM9SavageImmune: {battleChara.IsM9SavageImmune()}");
-			ImGui.Spacing();
+			if (DataCenter.IsInOccultCrescentOp)
+			{
+				ImGui.Text($"IsOccultCEMob: {battleChara.IsOccultCEMob()}");
+				ImGui.Text($"IsOccultFateMob: {battleChara.IsOccultFateMob()}");
+				ImGui.Text($"IsOCUndeadTarget: {battleChara.IsOCUndeadTarget()}");
+				ImGui.Text($"IsOCSlowgaImmuneTarget: {battleChara.IsOCSlowgaImmuneTarget()}");
+				ImGui.Text($"IsOCDoomImmuneTarget: {battleChara.IsOCDoomImmuneTarget()}");
+				ImGui.Text($"IsOCStunImmuneTarget: {battleChara.IsOCStunImmuneTarget()}");
+				ImGui.Text($"IsOCFreezeImmuneTarget: {battleChara.IsOCFreezeImmuneTarget()}");
+				ImGui.Text($"IsOCBlindImmuneTarget: {battleChara.IsOCBlindImmuneTarget()}");
+				ImGui.Text($"IsOCParalysisImmuneTarget: {battleChara.IsOCParalysisImmuneTarget()}");
+				ImGui.Spacing();
+			}
 			ImGui.Text($"Is Current Focus Target: {battleChara.IsFocusTarget()}");
 			ImGui.Text($"TTK: {battleChara.GetTTK()}");
 			ImGui.Text($"Is Boss TTK: {battleChara.IsBossFromTTK()}");
@@ -4308,7 +4831,6 @@ public partial class RotationConfigWindow : Window
 			ImGui.Text($"Is DPS: {battleChara.IsJobCategory(JobRole.AllDPS)}");
 			ImGui.Text($"Is Tank: {battleChara.IsJobCategory(JobRole.Tank)}");
 			ImGui.Text($"Is Alliance: {battleChara.IsAllianceMember()}");
-			ImGui.Text($"Distance To Player: {battleChara.DistanceToPlayer()}");
 			ImGui.Text($"CanProvoke: {battleChara.CanProvoke()}");
 			ImGui.Text($"StatusFlags: {battleChara.StatusFlags}");
 			ImGui.Text($"InView: {Svc.GameGui.WorldToScreen(battleChara.Position, out _)}");
@@ -4317,7 +4839,6 @@ public partial class RotationConfigWindow : Window
 			ImGui.Text($"BattleNPCSubKind: {battleChara.GetBattleNPCSubKind()}");
 			ImGui.Text($"Is Top Priority Hostile: {battleChara.IsTopPriorityHostile()}");
 			ImGui.Text($"Targetable: {battleChara.Struct()->Character.GameObject.TargetableStatus}");
-
 			if (DataCenter.IsInMaskedCarnivale)
 			{
 				ImGui.Spacing();
@@ -4344,12 +4865,42 @@ public partial class RotationConfigWindow : Window
 			}
 			ImGui.Spacing();
 			ImGui.Text($"Statuses:");
-			foreach (Dalamud.Game.ClientState.Statuses.IStatus status in battleChara.StatusList)
+			using var statusTable = ImRaii.Table("TargetStatusTable", 5,
+				ImGuiTableFlags.BordersInner | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.ScrollY,
+				new Vector2(0, 200 * Scale));
+			if (statusTable)
 			{
-				if (Player.Object != null)
+				ImGui.TableSetupScrollFreeze(0, 1);
+				ImGui.TableSetupColumn("Name");
+				ImGui.TableSetupColumn("ID");
+				ImGui.TableSetupColumn("Source");
+				ImGui.TableSetupColumn("Stacks");
+				ImGui.TableSetupColumn("Time");
+				ImGui.TableHeadersRow();
+
+				foreach (var status in battleChara.StatusList)
 				{
-					string source = status.SourceId == Player.Object.GameObjectId ? "You" : Svc.Objects.SearchById(status.SourceId) == null ? "None" : "Others";
-					ImGui.Text($"{status.GameData.Value.Name}: {status.StatusId} From: {source}");
+					if (Player.Object == null)
+					{
+						continue;
+					}
+
+					var source = status.SourceId == Player.Object.GameObjectId ? "You" : Svc.Objects.SearchById(status.SourceId) == null ? "None" : "Others";
+					var stacks = battleChara.StatusStack(true, (StatusID)status.StatusId);
+					var stackDisplay = stacks == byte.MaxValue ? "N/A" : stacks.ToString();
+					var timeDisplay = status.RemainingTime <= 0f ? "Perm" : $"{status.RemainingTime:F1}s";
+
+					ImGui.TableNextRow();
+					_ = ImGui.TableNextColumn();
+					ImGui.TextUnformatted(status.GameData.Value.Name.ToString());
+					_ = ImGui.TableNextColumn();
+					ImGui.TextUnformatted(status.StatusId.ToString());
+					_ = ImGui.TableNextColumn();
+					ImGui.TextUnformatted(source);
+					_ = ImGui.TableNextColumn();
+					ImGui.TextUnformatted(stackDisplay);
+					_ = ImGui.TableNextColumn();
+					ImGui.TextUnformatted(timeDisplay);
 				}
 			}
 		}
@@ -4467,11 +5018,11 @@ public partial class RotationConfigWindow : Window
 
 	private static bool IsFailed()
 	{
-		ImGuiStylePtr style = ImGui.GetStyle();
-		float min = style.WindowPadding.X + style.WindowBorderSize;
-		float columnWidth = ImGui.GetColumnWidth();
-		Vector2 windowSize = ImGui.GetWindowSize();
-		Vector2 cursor = ImGui.GetCursorPos();
+		var style = ImGui.GetStyle();
+		var min = style.WindowPadding.X + style.WindowBorderSize;
+		var columnWidth = ImGui.GetColumnWidth();
+		var windowSize = ImGui.GetWindowSize();
+		var cursor = ImGui.GetCursorPos();
 
 		return columnWidth > 0 && columnWidth <= min
 			|| windowSize.Y - cursor.Y <= min

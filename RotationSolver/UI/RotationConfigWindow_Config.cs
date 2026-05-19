@@ -148,10 +148,10 @@ public partial class RotationConfigWindow
 		ImGui.SameLine();
 		ImGui.TextWrapped(UiString.ConfigWindow_Param_HostileDesc.GetDescription());
 
-		for (int i = 0; i < Service.Config.TargetingTypes.Count; i++)
+		for (var i = 0; i < Service.Config.TargetingTypes.Count; i++)
 		{
-			TargetingType targetType = Service.Config.TargetingTypes[i];
-			string key = $"TargetingTypePopup_{i}";
+			var targetType = Service.Config.TargetingTypes[i];
+			var key = $"TargetingTypePopup_{i}";
 
 			void Delete()
 			{
@@ -175,9 +175,9 @@ public partial class RotationConfigWindow
 				(UiString.ConfigWindow_Actions_MoveUp.GetDescription(), Up, pairsArray0),
 				(UiString.ConfigWindow_Actions_MoveDown.GetDescription(), Down, pairsArray1));
 
-			string[] names = Enum.GetNames<TargetingType>();
-			int targetingType = (int)Service.Config.TargetingTypes[i];
-			string text = UiString.ConfigWindow_Param_HostileCondition.GetDescription();
+			var names = Enum.GetNames<TargetingType>();
+			var targetingType = (int)Service.Config.TargetingTypes[i];
+			var text = UiString.ConfigWindow_Param_HostileCondition.GetDescription();
 			ImGui.SetNextItemWidth(ImGui.CalcTextSize(text).X + (30 * Scale));
 			if (ImGui.Combo(text + "##HostileCondition" + i, ref targetingType, names, names.Length))
 			{
@@ -247,9 +247,9 @@ public partial class RotationConfigWindow
 
 		ImGui.Separator();
 
-		for (int i = 0; i < Service.Config.Events.Count; i++)
+		for (var i = 0; i < Service.Config.Events.Count; i++)
 		{
-			ActionEventInfo eve = Service.Config.Events[i];
+			var eve = Service.Config.Events[i];
 			eve.DisplayEvent();
 
 			ImGui.SameLine();

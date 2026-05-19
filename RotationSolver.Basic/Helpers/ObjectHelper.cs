@@ -13,6 +13,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Common.Component.BGCollision;
 using Lumina.Excel.Sheets;
 using RotationSolver.Basic.Configuration;
+using RotationSolver.Basic.Data;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -90,9 +91,9 @@ public static class ObjectHelper
 		}
 
 		// Removed the listed names.
-		if (OtherConfiguration.NoProvokeNames.TryGetValue(Svc.ClientState.TerritoryType, out string[]? ns1))
+		if (OtherConfiguration.NoProvokeNames.TryGetValue(Svc.ClientState.TerritoryType, out var ns1))
 		{
-			foreach (string n in ns1)
+			foreach (var n in ns1)
 			{
 				if (!string.IsNullOrEmpty(n) && GetCachedRegex(n).IsMatch(target.Name?.GetText() ?? string.Empty))
 				{
@@ -153,6 +154,17 @@ public static class ObjectHelper
 		}
 	}
 
+	/// <summary>
+	/// Checks if the battle character has the specified NPC name.
+	/// </summary>
+	/// <param name="battleChara">The battle character to check.</param>
+	/// <param name="npcName">The NPC name to compare against.</param>
+	/// <returns>True if the battle character's NameId matches the specified NPC name; otherwise, false.</returns>
+	public static bool IsNamed(this IBattleChara battleChara, NPCName npcName)
+	{
+		return battleChara != null && battleChara.NameId == (uint)npcName;
+	}
+
 	internal static bool IsOthersPlayersMob(this IBattleChara battleChara)
 	{
 		if (battleChara == null)
@@ -178,10 +190,22 @@ public static class ObjectHelper
 			return false;
 		}
 
+		// If the mob's owner is a party member it belongs to our party and can be attacked
+		if (Player.Object != null && battleChara.OwnerId != 0)
+		{
+			foreach (var p in Svc.Party)
+			{
+				if (p.GameObject?.GameObjectId == battleChara.OwnerId)
+				{
+					return false;
+				}
+			}
+		}
+
 		// SpecialType but no NamePlateIcon — check whether the mob's event type matches one of the
 		// player-owned content directors that can produce mobs belonging to OTHER players.
 		var ev = battleChara.GetEventType();
-		for (int i = 0; i < _eventType.Length; i++)
+		for (var i = 0; i < _eventType.Length; i++)
 		{
 			if (_eventType[i] == ev)
 			{
@@ -230,7 +254,7 @@ public static class ObjectHelper
 			return false;
 		}
 
-		foreach (Dalamud.Game.ClientState.Statuses.IStatus status in battleChara.StatusList)
+		foreach (var status in battleChara.StatusList)
 		{
 			if (StatusHelper.IsInvincible(status) && ((DataCenter.IsPvP && !Service.Config.IgnorePvPInvincibility) || !DataCenter.IsPvP))
 			{
@@ -240,9 +264,9 @@ public static class ObjectHelper
 
 		// In No Hostiles Names
 		if (OtherConfiguration.NoHostileNames != null &&
-			OtherConfiguration.NoHostileNames.TryGetValue(Svc.ClientState.TerritoryType, out string[]? ns1))
+			OtherConfiguration.NoHostileNames.TryGetValue(Svc.ClientState.TerritoryType, out var ns1))
 		{
-			foreach (string n in ns1)
+			foreach (var n in ns1)
 			{
 				if (!string.IsNullOrEmpty(n) && GetCachedRegex(n).IsMatch(battleChara.Name.TextValue))
 				{
@@ -262,11 +286,11 @@ public static class ObjectHelper
 
 		if (DataCenter.IsInBozjanFieldOp)
 		{
-			bool isInCE = DataCenter.IsInBozjanFieldOpCE;
+			var isInCE = DataCenter.IsInBozjanFieldOpCE;
 
 			if (isInCE)
 			{
-				if (!battleChara.IsBozjanCEMob() && battleChara.GetBattleNPCSubKind() != BattleNpcSubKind.BattleNpcPart)
+				if (!battleChara.IsBozjanCEMob() && battleChara.GetBattleNPCSubKind() != BattleNpcSubKind.BNpcPart)
 				{
 					return false;
 				}
@@ -302,7 +326,7 @@ public static class ObjectHelper
             }
         }*/
 
-		if (Service.Config.TargetQuestThings2 && battleChara.IsOthersPlayersMob())
+		if (Service.Config.TargetQuestThings3 && battleChara.IsOthersPlayersMob())
 		{
 			return false;
 		}
@@ -316,7 +340,7 @@ public static class ObjectHelper
 
 			const float sipRange = 25f;
 
-			bool sipInRange = false;
+			var sipInRange = false;
 			foreach (var o in Svc.Objects)
 			{
 				if (o is IBattleChara c && c.IsEnemy() && c.IsTargetable)
@@ -351,7 +375,7 @@ public static class ObjectHelper
 		}
 
 		//Special cases for Black Star and Mythic Idol, which do not have valid target objects but are still attackable.
-		if (battleChara.NameId == 13726 || battleChara.NameId == 13636)
+		if (battleChara.IsNamed(NPCName.BlackStar) || battleChara.IsNamed(NPCName.MythicIdol))
 		{
 			return true;
 		}
@@ -407,7 +431,7 @@ public static class ObjectHelper
 		}
 
 		// Out of combat: if any previously engaged targets are nearby, only attack those; otherwise, only the nearest single enemy.
-		bool hasEngagedNearby = false;
+		var hasEngagedNearby = false;
 		var hostiles = DataCenter.AllHostileTargets;
 		for (int i = 0, n = hostiles.Count; i < n; i++)
 		{
@@ -425,12 +449,16 @@ public static class ObjectHelper
 		}
 
 		IBattleChara? nearest = null;
-		float best = float.MaxValue;
+		var best = float.MaxValue;
 		for (int i = 0, n = hostiles.Count; i < n; i++)
 		{
 			var h = hostiles[i];
-			if (h == null) continue;
-			float d = h.DistanceToPlayer();
+			if (h == null)
+			{
+				continue;
+			}
+
+			var d = h.DistanceToPlayer();
 			if (d < best)
 			{
 				best = d;
@@ -489,9 +517,9 @@ public static class ObjectHelper
 			return false;
 		}
 
-		if (battleChara.NameId == 9441)
+		if (battleChara.IsNamed(NPCName.CastrumGate))
 		{
-			return true; // Special case for Bottom gate in CLL
+			return true;
 		}
 
 		return false;
@@ -506,7 +534,7 @@ public static class ObjectHelper
 
 		// Use a StringBuilder for efficient string manipulation
 		StringBuilder output = new(input.Length);
-		foreach (char c in input)
+		foreach (var c in input)
 		{
 			// Exclude control characters and private use area characters
 			if (!char.IsControl(c) && (c < '\uE000' || c > '\uF8FF'))
@@ -539,7 +567,7 @@ public static class ObjectHelper
 
 	internal static uint TargetCharaCondition(this IBattleChara obj)
 	{
-		uint statusId = obj.OnlineStatus.RowId;
+		var statusId = obj.OnlineStatus.RowId;
 		if (statusId != 0)
 		{
 			return statusId;
@@ -550,7 +578,7 @@ public static class ObjectHelper
 
 	internal static bool IsConditionCannotTarget(this IBattleChara obj)
 	{
-		uint statusId = obj.OnlineStatus.RowId;
+		var statusId = obj.OnlineStatus.RowId;
 		if (statusId == 15 || statusId == 5)
 		{
 			return true;
@@ -603,9 +631,14 @@ public static class ObjectHelper
 	internal static unsafe bool CanBeRaised(this IBattleChara battleChara)
 	{
 		if (battleChara == null)
+		{
 			return false;
+		}
+
 		if (!battleChara.IsTargetable)
+		{
 			return false;
+		}
 
 		return ActionManager.CanUseActionOnTarget((uint)ActionID.RaisePvE, (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)battleChara.Struct());
 	}
@@ -635,7 +668,7 @@ public static class ObjectHelper
 			return false;
 		}
 
-		foreach (Dalamud.Game.ClientState.Party.IPartyMember p in Svc.Party)
+		foreach (var p in Svc.Party)
 		{
 			if (p.GameObject?.GameObjectId == Player.Object.GameObjectId)
 			{
@@ -676,7 +709,7 @@ public static class ObjectHelper
 			return false;
 		}
 
-		foreach (Dalamud.Game.ClientState.Party.IPartyMember p in Svc.Party)
+		foreach (var p in Svc.Party)
 		{
 			if (p.GameObject?.GameObjectId == battleChara.GameObjectId)
 			{
@@ -744,7 +777,7 @@ public static class ObjectHelper
 
 	internal static bool IsPlayerCharacterChocobo(this IBattleChara battleChara)
 	{
-		return battleChara.GetBattleNPCSubKind() == BattleNpcSubKind.Chocobo;
+		return battleChara.GetBattleNPCSubKind() == BattleNpcSubKind.Buddy;
 	}
 
 	internal static bool IsFocusTarget(this IBattleChara battleChara)
@@ -755,7 +788,10 @@ public static class ObjectHelper
 	internal static bool PlayerIsTargetOnSelf()
 	{
 		if (Player.Object == null)
+		{
 			return false;
+		}
+
 		return Player.Object.TargetObject?.TargetObject == Player.Object;
 	}
 
@@ -767,13 +803,24 @@ public static class ObjectHelper
 	internal static bool PlayerIsAlive()
 	{
 		if (Player.Object == null)
+		{
 			return false;
+		}
+
 		if (Player.Object.IsDead)
+		{
 			return false;
+		}
+
 		if (!Player.Object.IsTargetable)
+		{
 			return false;
+		}
+
 		if (Player.Object.CurrentHp == 0)
+		{
 			return false;
+		}
 
 		return true;
 	}
@@ -781,13 +828,24 @@ public static class ObjectHelper
 	internal static bool IsAlive(this IBattleChara battleChara)
 	{
 		if (battleChara == null)
+		{
 			return false;
+		}
+
 		if (battleChara.IsDead)
+		{
 			return false;
+		}
+
 		if (!battleChara.IsTargetable)
+		{
 			return false;
+		}
+
 		if (battleChara.CurrentHp == 0)
+		{
 			return false;
+		}
 
 		return true;
 	}
@@ -799,8 +857,29 @@ public static class ObjectHelper
 	/// <returns></returns>
 	public static unsafe ObjectKind GetObjectKind(this IGameObject obj)
 	{
-		FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* s = obj.Struct();
+		var s = obj.Struct();
 		return s == null ? default : (ObjectKind)s->ObjectKind;
+	}
+
+	/// <summary>
+	/// Gets the priority value for treasure hunt nameplate icons.
+	/// Lower values indicate higher priority (1 is highest priority).
+	/// </summary>
+	/// <param name="icon">The nameplate icon ID.</param>
+	/// <returns>
+	/// Priority value (1-5) for treasure hunt icons, or int.MaxValue if not a treasure hunt priority icon.
+	/// </returns>
+	internal static int GetNamePlateIconPriority(uint icon)
+	{
+		return icon switch
+		{
+			60687 => 1, // Treasure hunt icon 1
+			60688 => 2, // Treasure hunt icon 2
+			60689 => 3, // Treasure hunt icon 3
+			60690 => 4, // Treasure hunt icon 4
+			60691 => 5, // Treasure hunt icon 5
+			_ => int.MaxValue
+		};
 	}
 
 	/// <summary>
@@ -817,7 +896,7 @@ public static class ObjectHelper
 			return false;
 		}
 
-		foreach (uint id in DataCenter.PrioritizedNameIds)
+		foreach (var id in DataCenter.PrioritizedNameIds)
 		{
 			if (battleChara.NameId == id)
 			{
@@ -836,6 +915,8 @@ public static class ObjectHelper
 	/// </returns>
 	internal static bool IsTopPriorityHostile(this IBattleChara battleChara)
 	{
+		var icon = battleChara.GetNamePlateIcon();
+
 		if (battleChara == null)
 		{
 			return false;
@@ -844,6 +925,19 @@ public static class ObjectHelper
 		if (battleChara.IsAllianceMember() || battleChara.IsParty())
 		{
 			return false;
+		}
+
+		if (Service.Config.Treasuredungeonnumbered && DataCenter.IsInTreasureHunt)
+		{
+			if (icon == 60687 || icon == 60688 || icon == 60689 || icon == 60690 || icon == 60691)
+			{
+				return true;
+			}
+		}
+
+		if (Service.Config.Treasuredungeontimed && battleChara.TreasureDungeonPrio())
+		{
+			return true;
 		}
 
 		if (DataCenter.IsInFate && battleChara.IsForlorn())
@@ -924,7 +1018,7 @@ public static class ObjectHelper
 		// Ensure StatusList is not null before iterating
 		if (battleChara.StatusList != null)
 		{
-			foreach (Dalamud.Game.ClientState.Statuses.IStatus status in battleChara.StatusList)
+			foreach (var status in battleChara.StatusList)
 			{
 				if (StatusHelper.IsPriority(status))
 				{
@@ -935,10 +1029,10 @@ public static class ObjectHelper
 
 		if (Service.Config.ChooseAttackMark)
 		{
-			long[] targets = MarkingHelper.GetAttackSignTargets();
+			var targets = MarkingHelper.GetAttackSignTargets();
 			if (targets != null)
 			{
-				foreach (long id in targets)
+				foreach (var id in targets)
 				{
 					if (id != 0 && id == (long)battleChara.GameObjectId && battleChara.IsEnemy())
 					{
@@ -953,8 +1047,6 @@ public static class ObjectHelper
 			return true;
 		}
 
-		uint icon = battleChara.GetNamePlateIcon();
-
 		if (Service.Config.TargetHuntingRelicLevePriority && (icon == 60092 || icon == 60094 || icon == 60096 || icon == 60097 || icon == 60098 || icon == 71244))
 		{
 			return true;
@@ -967,7 +1059,7 @@ public static class ObjectHelper
 		//71244 Leve Target
 
 		// Quest
-		if (Service.Config.TargetQuestPriority && (icon == 71204 || icon == 71144 || icon == 71224 || icon == 71344 || battleChara.GetEventType() == EventHandlerContent.Quest))
+		if (Service.Config.TargetQuestPriority && (icon == 71204 || icon == 71144 || icon == 71224 || icon == 71344 || (battleChara.GetEventType() == EventHandlerContent.Quest) && battleChara.GetNamePlateIcon() != 0))
 		{
 			return true;
 		}
@@ -977,7 +1069,7 @@ public static class ObjectHelper
 		//71344 Major Quest
 
 		// Check if the object is a BattleNpcPart
-		if (Service.Config.PrioEnemyParts && battleChara.GetBattleNPCSubKind() == BattleNpcSubKind.BattleNpcPart)
+		if (Service.Config.PrioEnemyParts && battleChara.GetBattleNPCSubKind() == BattleNpcSubKind.BNpcPart)
 		{
 			return true;
 		}
@@ -1014,32 +1106,32 @@ public static class ObjectHelper
 			if (CharnelCell)
 			{
 				// Heel (on target) vs Hell (on player) pairs
-				StatusID HeelInACell1 = (StatusID)4739;
-				StatusID HellInACell1 = (StatusID)4731;
+				var HeelInACell1 = StatusID.HeelOfTheCell;
+				var HellInACell1 = StatusID.HellInACell;
 
-				StatusID HeelInACell2 = (StatusID)4740;
-				StatusID HellInACell2 = (StatusID)4732;
+				var HeelInACell2 = StatusID.HeelOfTheCell_4740;
+				var HellInACell2 = StatusID.HellInACell_4732;
 
-				StatusID HeelInACell3 = (StatusID)4741;
-				StatusID HellInACell3 = (StatusID)4733;
+				var HeelInACell3 = StatusID.HeelOfTheCell_4741;
+				var HellInACell3 = StatusID.HellInACell_4733;
 
-				StatusID HeelInACell4 = (StatusID)4742;
-				StatusID HellInACell4 = (StatusID)4734;
+				var HeelInACell4 = StatusID.HeelOfTheCell_4742;
+				var HellInACell4 = StatusID.HellInACell_4734;
 
-				StatusID HeelInACell5 = (StatusID)4743;
-				StatusID HellInACell5 = (StatusID)4735;
+				var HeelInACell5 = StatusID.HeelOfTheCell_4743;
+				var HellInACell5 = StatusID.HellInACell_4735;
 
-				StatusID HeelInACell6 = (StatusID)4744;
-				StatusID HellInACell6 = (StatusID)4736;
+				var HeelInACell6 = StatusID.HeelOfTheCell_4744;
+				var HellInACell6 = StatusID.HellInACell_4736;
 
-				StatusID HeelInACell7 = (StatusID)4745;
-				StatusID HellInACell7 = (StatusID)4737;
+				var HeelInACell7 = StatusID.HeelOfTheCell_4745;
+				var HellInACell7 = StatusID.HellInACell_4737;
 
-				StatusID HeelInACell8 = (StatusID)4746;
-				StatusID HellInACell8 = (StatusID)4738;
+				var HeelInACell8 = StatusID.HeelOfTheCell_4746;
+				var HellInACell8 = StatusID.HellInACell_4738;
 
 				// Iterate all Heel/Hell pairs; priority if target has Heel and player does have corresponding Hell
-				foreach (var (heel, hell) in new (StatusID heel, StatusID hell)[]
+				foreach ((var heel, var hell) in new (StatusID heel, StatusID hell)[]
 				{
 					(HeelInACell1, HellInACell1),
 					(HeelInACell2, HellInACell2),
@@ -1064,7 +1156,7 @@ public static class ObjectHelper
 
 			if (DeadlyDoornail)
 			{
-				JobRole role = Player.Object?.ClassJob.Value.GetJobRole() ?? JobRole.None;
+				var role = Player.Object?.ClassJob.Value.GetJobRole() ?? JobRole.None;
 
 				if (role == JobRole.RangedPhysical)
 				{
@@ -1112,7 +1204,7 @@ public static class ObjectHelper
 
 			if (FatalFlail)
 			{
-				JobRole role = Player.Object?.ClassJob.Value.GetJobRole() ?? JobRole.None;
+				var role = Player.Object?.ClassJob.Value.GetJobRole() ?? JobRole.None;
 
 				if (role == JobRole.Melee)
 				{
@@ -1247,8 +1339,8 @@ public static class ObjectHelper
 		{
 			if (battleChara.NameId == 14052)
 			{
-				StatusID CellBlockCPrisoner = (StatusID)4544;
-				StatusID CellBlockDPrisoner = (StatusID)4545;
+				var CellBlockCPrisoner = (StatusID)4544;
+				var CellBlockDPrisoner = (StatusID)4545;
 
 				if (StatusHelper.PlayerHasStatus(false, CellBlockCPrisoner) || StatusHelper.PlayerHasStatus(false, CellBlockDPrisoner))
 				{
@@ -1272,6 +1364,126 @@ public static class ObjectHelper
 			if (battleChara.NameId == 13978)
 			{
 				return true;
+			}
+		}
+
+		return false;
+	}
+
+	internal static bool TreasureDungeonPrio(this IBattleChara battleChara)
+	{
+		if (DataCenter.IsInTreasureHunt)
+		{
+			if (DataCenter.IsInTheLostCanalsofUznair)
+			{
+				if (battleChara.IsNamed(NPCName.NamazuStickywhisker))
+				{
+					return true;
+				}
+			}
+
+			if (DataCenter.IsInTheShiftingAltarsofUznair)
+			{
+				if (battleChara.IsNamed(NPCName.GoldWhisker))
+				{
+					return true;
+				}
+
+				if (battleChara.IsNamed(NPCName.GoldWhisker_7625))
+				{
+					return true;
+				}
+			}
+
+			if (DataCenter.IsInTheHiddenCanalsofUznair)
+			{
+				if (battleChara.IsNamed(NPCName.NamazuStickywhisker))
+				{
+					return true;
+				}
+
+				if (battleChara.IsNamed(NPCName.Abharamu))
+				{
+					return true;
+				}
+			}
+
+			if (DataCenter.IsInTheDungeonsofLyheGhiah)
+			{
+				if (battleChara.IsNamed(NPCName.FuathTrickster))
+				{
+					return true;
+				}
+
+				if (battleChara.IsNamed(NPCName.TheKeeperOfTheKeys))
+				{
+					return true;
+				}
+			}
+
+			if (DataCenter.IsInTheShiftingOubliettesofLyheGhiah)
+			{
+				if (battleChara.IsNamed(NPCName.FuathTrickster_9774))
+				{
+					return true;
+				}
+
+				if (battleChara.IsNamed(NPCName.TheKeeperOfTheKeys_9773))
+				{
+					return true;
+				}
+			}
+
+			if (DataCenter.IsInTheExcitatron6000)
+			{
+				if (battleChara.IsNamed(NPCName.RainbowGolem))
+				{
+					return true;
+				}
+
+				if (battleChara.IsNamed(NPCName.GoldenSupporter))
+				{
+					return true;
+				}
+			}
+
+			if (DataCenter.IsInTheShiftingGymnasionAgonon)
+			{
+				if (battleChara.IsNamed(NPCName.GymnasiouLampas))
+				{
+					return true;
+				}
+
+				if (battleChara.IsNamed(NPCName.GymnasiouLyssa))
+				{
+					return true;
+				}
+			}
+
+			if (DataCenter.IsInCenoteJaJaGural)
+			{
+				if (battleChara.IsNamed(NPCName.AlpacaOfFortune))
+				{
+					return true;
+				}
+
+				if (battleChara.IsNamed(NPCName.UolonOfFortune))
+				{
+					return true;
+				}
+			}
+
+			if (DataCenter.IsInVaultOneiron)
+			{
+				if (battleChara.IsNamed(NPCName.Vaultkeeper))
+				{
+					return true;
+				}
+
+				if (battleChara.IsNamed(NPCName.GoldyCat))
+				{
+					return true;
+				}
 			}
 		}
 
@@ -1550,17 +1762,25 @@ public static class ObjectHelper
 				if (ret == typeof(TetherInfo[]) || typeof(System.Collections.IEnumerable).IsAssignableFrom(ret))
 				{
 					var res = m.Invoke(null, null);
-					if (res == null) continue;
+					if (res == null)
+					{
+						continue;
+					}
 
 					if (res is TetherInfo[] arr)
+					{
 						return arr;
+					}
 
 					if (res is System.Collections.IEnumerable ie)
 					{
 						var list = new List<TetherInfo>();
 						foreach (var o in ie)
 						{
-							if (o is TetherInfo ti) list.Add(ti);
+							if (o is TetherInfo ti)
+							{
+								list.Add(ti);
+							}
 						}
 						return list;
 					}
@@ -1580,15 +1800,25 @@ public static class ObjectHelper
 	/// </summary>
 	public static IReadOnlyList<TetherInfo> GetTethersFor(this IGameObject obj)
 	{
-		if (obj == null) return [];
+		if (obj == null)
+		{
+			return [];
+		}
+
 		var all = GetAllTethers();
-		ulong id = obj.GameObjectId;
+		var id = obj.GameObjectId;
 		var result = new List<TetherInfo>();
 		foreach (var t in all)
 		{
-			if (t == null) continue;
+			if (t == null)
+			{
+				continue;
+			}
+
 			if (ExtractTetherId(t, out _, out var src, out var tgt) && (src == id || tgt == id))
+			{
 				result.Add(t);
+			}
 		}
 		return result;
 	}
@@ -1598,15 +1828,25 @@ public static class ObjectHelper
 	/// </summary>
 	public static IReadOnlyList<TetherInfo> GetOutgoingTethers(this IGameObject obj)
 	{
-		if (obj == null) return [];
+		if (obj == null)
+		{
+			return [];
+		}
+
 		var all = GetAllTethers();
-		ulong id = obj.GameObjectId;
+		var id = obj.GameObjectId;
 		var result = new List<TetherInfo>();
 		foreach (var t in all)
 		{
-			if (t == null) continue;
+			if (t == null)
+			{
+				continue;
+			}
+
 			if (ExtractTetherId(t, out _, out var src, out _) && src == id)
+			{
 				result.Add(t);
+			}
 		}
 		return result;
 	}
@@ -1616,15 +1856,25 @@ public static class ObjectHelper
 	/// </summary>
 	public static IReadOnlyList<TetherInfo> GetIncomingTethers(this IGameObject obj)
 	{
-		if (obj == null) return [];
+		if (obj == null)
+		{
+			return [];
+		}
+
 		var all = GetAllTethers();
-		ulong id = obj.GameObjectId;
+		var id = obj.GameObjectId;
 		var result = new List<TetherInfo>();
 		foreach (var t in all)
 		{
-			if (t == null) continue;
+			if (t == null)
+			{
+				continue;
+			}
+
 			if (ExtractTetherId(t, out _, out _, out var tgt) && tgt == id)
+			{
 				result.Add(t);
+			}
 		}
 		return result;
 	}
@@ -1652,25 +1902,52 @@ public static class ObjectHelper
 			val = TryGetMemberValue(tType, t, tetherNames);
 			if (val != null)
 			{
-				if (val is uint ui) tetherId = ui;
-				else if (val is int i) tetherId = (uint)i;
-				else if (uint.TryParse(val.ToString(), out var parsed)) tetherId = parsed;
+				if (val is uint ui)
+				{
+					tetherId = ui;
+				}
+				else if (val is int i)
+				{
+					tetherId = (uint)i;
+				}
+				else if (uint.TryParse(val.ToString(), out var parsed))
+				{
+					tetherId = parsed;
+				}
 			}
 
 			val = TryGetMemberValue(tType, t, sourceNames);
 			if (val != null)
 			{
-				if (val is ulong ul) sourceObjectId = ul;
-				else if (val is uint u) sourceObjectId = u;
-				else if (ulong.TryParse(val.ToString(), out var pul)) sourceObjectId = pul;
+				if (val is ulong ul)
+				{
+					sourceObjectId = ul;
+				}
+				else if (val is uint u)
+				{
+					sourceObjectId = u;
+				}
+				else if (ulong.TryParse(val.ToString(), out var pul))
+				{
+					sourceObjectId = pul;
+				}
 			}
 
 			val = TryGetMemberValue(tType, t, targetNames);
 			if (val != null)
 			{
-				if (val is ulong ul2) targetObjectId = ul2;
-				else if (val is uint u2) targetObjectId = u2;
-				else if (ulong.TryParse(val.ToString(), out var pul2)) targetObjectId = pul2;
+				if (val is ulong ul2)
+				{
+					targetObjectId = ul2;
+				}
+				else if (val is uint u2)
+				{
+					targetObjectId = u2;
+				}
+				else if (ulong.TryParse(val.ToString(), out var pul2))
+				{
+					targetObjectId = pul2;
+				}
 			}
 
 			return sourceObjectId != 0 || targetObjectId != 0 || tetherId != 0;
@@ -1689,13 +1966,19 @@ public static class ObjectHelper
 			if (f != null)
 			{
 				var v = f.GetValue(instance);
-				if (v != null) return v;
+				if (v != null)
+				{
+					return v;
+				}
 			}
 			var p = tType.GetProperty(n, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
 			if (p != null)
 			{
 				var v = p.GetValue(instance);
-				if (v != null) return v;
+				if (v != null)
+				{
+					return v;
+				}
 			}
 		}
 		return null;
@@ -1706,15 +1989,24 @@ public static class ObjectHelper
 	/// </summary>
 	public static bool IsTetheredToPlayer(this IBattleChara battleChara)
 	{
-		if (battleChara == null || Player.Object == null) return false;
+		if (battleChara == null || Player.Object == null)
+		{
+			return false;
+		}
 
-		ulong playerId = Player.Object.GameObjectId;
+		var playerId = Player.Object.GameObjectId;
 		var tethers = GetTethersFor(battleChara);
 		foreach (var t in tethers)
 		{
-			if (t == null) continue;
+			if (t == null)
+			{
+				continue;
+			}
+
 			if (ExtractTetherId(t, out _, out var src, out var tgt) && (src == playerId || tgt == playerId))
+			{
 				return true;
+			}
 		}
 		return false;
 	}
@@ -1724,15 +2016,24 @@ public static class ObjectHelper
 	/// </summary>
 	public static bool IsTetheredToSpecificTarget(this IBattleChara battleChara, IBattleChara checkedtarget)
 	{
-		if (battleChara == null || checkedtarget == null) return false;
+		if (battleChara == null || checkedtarget == null)
+		{
+			return false;
+		}
 
-		ulong memberId = checkedtarget.GameObjectId;
+		var memberId = checkedtarget.GameObjectId;
 		var tethers = GetTethersFor(battleChara);
 		foreach (var t in tethers)
 		{
-			if (t == null) continue;
+			if (t == null)
+			{
+				continue;
+			}
+
 			if (ExtractTetherId(t, out _, out var src, out var tgt) && (src == memberId || tgt == memberId))
+			{
 				return true;
+			}
 		}
 		return false;
 	}
@@ -1762,7 +2063,7 @@ public static class ObjectHelper
 			}
 		}
 
-		bool baseCheck = battleChara.IsCasting && battleChara.IsCastInterruptible && battleChara.TotalCastTime >= 2;
+		var baseCheck = battleChara.IsCasting && battleChara.IsCastInterruptible && battleChara.TotalCastTime >= 2;
 		if (!baseCheck)
 		{
 			return false;
@@ -1773,12 +2074,12 @@ public static class ObjectHelper
 			return false;
 		}
 
-		if (_effectRangeCheck.TryGetValue(battleChara.CastActionId, out bool check))
+		if (_effectRangeCheck.TryGetValue(battleChara.CastActionId, out var check))
 		{
 			return check;
 		}
 
-		Lumina.Excel.Sheets.Action act = Service.GetSheet<Lumina.Excel.Sheets.Action>().GetRow(battleChara.CastActionId);
+		var act = Service.GetSheet<Lumina.Excel.Sheets.Action>().GetRow(battleChara.CastActionId);
 		return act.RowId == 0
 			? (_effectRangeCheck[battleChara.CastActionId] = false)
 			: (CastType)act.CastType == CastType.Cone || (CastType)act.CastType == CastType.Donut || (act.EffectRange > 0 && act.EffectRange < 8)
@@ -1798,7 +2099,9 @@ public static class ObjectHelper
 	/// <returns>True if the target is immune due to any special mechanic; otherwise, false.</returns>
 	public static bool IsSpecialImmune(this IBattleChara battleChara)
 	{
-		return battleChara.IsOrbonneImmune()
+		return battleChara.IsEnuoGauntletImmune()
+			|| battleChara.IsWindurstAlexanderImmune()
+			|| battleChara.IsOrbonneImmune()
 			|| battleChara.IsM9SavageImmune()
 			|| battleChara.IsColossusRubricatusImmune()
 			|| battleChara.IsTrueHeartImmune()
@@ -1818,6 +2121,120 @@ public static class ObjectHelper
 			|| battleChara.IsOmegaImmune()
 			|| battleChara.IsLimitlessBlue()
 			|| battleChara.IsHanselorGretelShielded();
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	public static bool IsEnuoGauntletImmune(this IBattleChara battleChara)
+	{
+		if (Player.Object == null)
+		{
+			return false;
+		}
+
+		if (Service.Config.TheUnmakingShadow && DataCenter.IsTheUnmaking)
+		{
+			var Looming = battleChara.NameId == 14752;
+			var Protective = battleChara.NameId == 14755;
+			var Aggressive = battleChara.NameId == 14756;
+			var Soothing = battleChara.NameId == 14757;
+
+			// GauntletThrown (on target) vs GauntletTaken (on player) pairs
+			var GauntletTaken1 = StatusID.GauntletTaken;
+			var GauntletThrown1 = StatusID.GauntletThrown;
+
+			var GauntletTaken2 = StatusID.GauntletTaken_5358;
+			var GauntletThrown2 = StatusID.GauntletThrown_5366;
+
+			var GauntletTaken3 = StatusID.GauntletTaken_5359;
+			var GauntletThrown3 = StatusID.GauntletThrown_5367;
+
+			var GauntletTaken4 = StatusID.GauntletTaken_5360;
+			var GauntletThrown4 = StatusID.GauntletThrown_5368;
+
+			var GauntletTaken5 = StatusID.GauntletTaken_5361;
+			var GauntletThrown5 = StatusID.GauntletThrown_5369;
+
+			var GauntletTaken6 = StatusID.GauntletTaken_5362;
+			var GauntletThrown6 = StatusID.GauntletThrown_5370;
+
+			var GauntletTaken7 = StatusID.GauntletTaken_5363;
+			var GauntletThrown7 = StatusID.GauntletThrown_5371;
+
+			var GauntletTaken8 = StatusID.GauntletTaken_5364;
+			var GauntletThrown8 = StatusID.GauntletThrown_5372;
+
+			if (Looming || Protective || Aggressive || Soothing)
+			{
+				// Iterate all GauntletTaken/GauntletThrown pairs; immune if target has GauntletThrown and player does NOT have corresponding GauntletTaken
+				foreach ((var taken, var thrown) in new (StatusID taken, StatusID thrown)[]
+				{
+					(GauntletTaken1, GauntletThrown1),
+					(GauntletTaken2, GauntletThrown2),
+					(GauntletTaken3, GauntletThrown3),
+					(GauntletTaken4, GauntletThrown4),
+					(GauntletTaken5, GauntletThrown5),
+					(GauntletTaken6, GauntletThrown6),
+					(GauntletTaken7, GauntletThrown7),
+					(GauntletTaken8, GauntletThrown8),
+				})
+				{
+					if (battleChara.HasStatus(false, thrown) && !StatusHelper.PlayerHasStatus(false, taken))
+					{
+						if (Service.Config.InDebug)
+						{
+							PluginLog.Information("IsEnuoGauntletImmune: Shadow immune due to GauntletTaken/GauntletThrown mismatch");
+						}
+						return true;
+					}
+
+					if (StatusHelper.PlayerHasStatus(false, taken) && !battleChara.HasStatus(false, thrown))
+					{
+						if (Service.Config.InDebug)
+						{
+							PluginLog.Information("IsEnuoGauntletImmune: Shadow immune due to GauntletTaken/GauntletThrown mismatch");
+						}
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	public static bool IsWindurstAlexanderImmune(this IBattleChara battleChara)
+	{
+		if (Player.Object == null)
+		{
+			return false;
+		}
+
+		if (Service.Config.AlexanderImmune && DataCenter.IsInWindurst)
+		{
+			if (battleChara.HasStatus(false, StatusID.PerfectDefense))
+			{
+				if (Service.Config.InDebug)
+				{
+					PluginLog.Information("IsWindurstAlexanderImmune: PerfectDefense detected");
+				}
+				return true;
+			}
+			if (battleChara.HasStatus(false, StatusID.PerfectDefense_5377))
+			{
+				if (Service.Config.InDebug)
+				{
+					PluginLog.Information("IsWindurstAlexanderImmune: PerfectDefense_5377 detected");
+				}
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/// <summary>
@@ -1868,34 +2285,34 @@ public static class ObjectHelper
 			var CharnelCell = battleChara.NameId == 14304;
 
 			// Heel (on target) vs Hell (on player) pairs
-			StatusID HeelInACell1 = (StatusID)4739;
-			StatusID HellInACell1 = (StatusID)4731;
+			var HeelInACell1 = (StatusID)4739;
+			var HellInACell1 = (StatusID)4731;
 
-			StatusID HeelInACell2 = (StatusID)4740;
-			StatusID HellInACell2 = (StatusID)4732;
+			var HeelInACell2 = (StatusID)4740;
+			var HellInACell2 = (StatusID)4732;
 
-			StatusID HeelInACell3 = (StatusID)4741;
-			StatusID HellInACell3 = (StatusID)4733;
+			var HeelInACell3 = (StatusID)4741;
+			var HellInACell3 = (StatusID)4733;
 
-			StatusID HeelInACell4 = (StatusID)4742;
-			StatusID HellInACell4 = (StatusID)4734;
+			var HeelInACell4 = (StatusID)4742;
+			var HellInACell4 = (StatusID)4734;
 
-			StatusID HeelInACell5 = (StatusID)4743;
-			StatusID HellInACell5 = (StatusID)4735;
+			var HeelInACell5 = (StatusID)4743;
+			var HellInACell5 = (StatusID)4735;
 
-			StatusID HeelInACell6 = (StatusID)4744;
-			StatusID HellInACell6 = (StatusID)4736;
+			var HeelInACell6 = (StatusID)4744;
+			var HellInACell6 = (StatusID)4736;
 
-			StatusID HeelInACell7 = (StatusID)4745;
-			StatusID HellInACell7 = (StatusID)4737;
+			var HeelInACell7 = (StatusID)4745;
+			var HellInACell7 = (StatusID)4737;
 
-			StatusID HeelInACell8 = (StatusID)4746;
-			StatusID HellInACell8 = (StatusID)4738;
+			var HeelInACell8 = (StatusID)4746;
+			var HellInACell8 = (StatusID)4738;
 
 			if (CharnelCell)
 			{
 				// Iterate all Heel/Hell pairs; immune if target has Heel and player does NOT have corresponding Hell
-				foreach (var (heel, hell) in new (StatusID heel, StatusID hell)[]
+				foreach ((var heel, var hell) in new (StatusID heel, StatusID hell)[]
 				{
 					(HeelInACell1, HellInACell1),
 					(HeelInACell2, HellInACell2),
@@ -2013,20 +2430,20 @@ public static class ObjectHelper
 	{
 		if (Service.Config.JailerImmune && DataCenter.TerritoryID == 1292)
 		{
-			StatusID CellJailerA = (StatusID)4546;
-			StatusID CellJailerB = (StatusID)4547;
-			StatusID CellJailerC = (StatusID)4548;
-			StatusID CellJailerD = (StatusID)4549;
+			var CellJailerA = (StatusID)4546;
+			var CellJailerB = (StatusID)4547;
+			var CellJailerC = (StatusID)4548;
+			var CellJailerD = (StatusID)4549;
 
 			var JailerA = battleChara.HasStatus(false, CellJailerA);
 			var JailerB = battleChara.HasStatus(false, CellJailerB);
 			var JailerC = battleChara.HasStatus(false, CellJailerC);
 			var JailerD = battleChara.HasStatus(false, CellJailerD);
 
-			StatusID CellBlockAPrisoner = (StatusID)4542;
-			StatusID CellBlockBPrisoner = (StatusID)4543;
-			StatusID CellBlockCPrisoner = (StatusID)4544;
-			StatusID CellBlockDPrisoner = (StatusID)4545;
+			var CellBlockAPrisoner = (StatusID)4542;
+			var CellBlockBPrisoner = (StatusID)4543;
+			var CellBlockCPrisoner = (StatusID)4544;
+			var CellBlockDPrisoner = (StatusID)4545;
 
 			var CellBlockA = StatusHelper.PlayerHasStatus(false, CellBlockAPrisoner);
 			var CellBlockB = StatusHelper.PlayerHasStatus(false, CellBlockBPrisoner);
@@ -2199,8 +2616,8 @@ public static class ObjectHelper
 
 	private static bool CheckDrakesAlive(uint targetNameId, uint dependentNameId)
 	{
-		bool targetAlive = false;
-		bool dependentAlive = false;
+		var targetAlive = false;
+		var dependentAlive = false;
 
 		var targets = DataCenter.AllHostileTargets;
 		for (int i = 0, count = targets.Count; i < count; i++)
@@ -2208,10 +2625,19 @@ public static class ObjectHelper
 			var obj = targets[i];
 			if (obj?.CurrentHp > 0)
 			{
-				if (obj.NameId == targetNameId) targetAlive = true;
-				else if (obj.NameId == dependentNameId) dependentAlive = true;
+				if (obj.NameId == targetNameId)
+				{
+					targetAlive = true;
+				}
+				else if (obj.NameId == dependentNameId)
+				{
+					dependentAlive = true;
+				}
 
-				if (targetAlive && dependentAlive) break;
+				if (targetAlive && dependentAlive)
+				{
+					break;
+				}
 			}
 		}
 
@@ -2227,15 +2653,11 @@ public static class ObjectHelper
 	{
 		if (Service.Config.M8SWindStone && DataCenter.TerritoryID == 1263)
 		{
-			// Numeric values used instead of name as Lumina does not provide name yet, and may update to change name
-			StatusID WindPack = (StatusID)4389; // Numeric value for "Rsv43891100S74Cfc3B0E74Cfc3B0", unable to hit Wolf of Wind
-			StatusID StonePack = (StatusID)4390; // Numeric value for "Rsv43901100S74Cfc3B0E74Cfc3B0", unable to hit Wolf of Stone
-
 			var WolfOfWind = battleChara.NameId == 13846;
 			var WolfOfStone = battleChara.NameId == 13847;
 
-			var WindPackPlayer = StatusHelper.PlayerHasStatus(false, WindPack);
-			var StonePackPlayer = StatusHelper.PlayerHasStatus(false, StonePack);
+			var WindPackPlayer = StatusHelper.PlayerHasStatus(false, StatusID.Windpack);
+			var StonePackPlayer = StatusHelper.PlayerHasStatus(false, StatusID.Stonepack);
 
 			if (WolfOfWind && WindPackPlayer)
 			{
@@ -2354,8 +2776,8 @@ public static class ObjectHelper
 	{
 		if (Service.Config.HanselorGretelShieldedImmune && DataCenter.TerritoryID == 966)
 		{
-			EnemyPositional strongOfShieldPositional = EnemyPositional.Front;
-			StatusID strongOfShieldStatus = StatusID.StrongOfShield;
+			var strongOfShieldPositional = EnemyPositional.Front;
+			var strongOfShieldStatus = StatusID.StrongOfShield;
 
 			if (battleChara.HasStatus(false, strongOfShieldStatus) &&
 					strongOfShieldPositional != battleChara.FindEnemyPositional())
@@ -2428,15 +2850,11 @@ public static class ObjectHelper
 	{
 		if (Service.Config.ForkedtowerDeadStar && DataCenter.IsInForkedTower)
 		{
-			var Triton = battleChara.NameId == 13730;
-			var Nereid = battleChara.NameId == 13731;
-			var Phobos = battleChara.NameId == 13732;
-
 			var PhobosicGravity = StatusHelper.PlayerHasStatus(false, StatusID.PhobosicGravity);
 			var TritonicGravity = StatusHelper.PlayerHasStatus(false, StatusID.TritonicGravity);
 			var NereidicGravity = StatusHelper.PlayerHasStatus(false, StatusID.NereidicGravity);
 
-			if (Triton && (NereidicGravity || PhobosicGravity))
+			if (battleChara.IsNamed(NPCName.Triton) && (NereidicGravity || PhobosicGravity))
 			{
 				if (Service.Config.InDebug)
 				{
@@ -2445,7 +2863,7 @@ public static class ObjectHelper
 				return true;
 			}
 
-			if (Nereid && (TritonicGravity || PhobosicGravity))
+			if (battleChara.IsNamed(NPCName.Nereid) && (TritonicGravity || PhobosicGravity))
 			{
 				if (Service.Config.InDebug)
 				{
@@ -2454,7 +2872,7 @@ public static class ObjectHelper
 				return true;
 			}
 
-			if (Phobos && (TritonicGravity || NereidicGravity))
+			if (battleChara.IsNamed(NPCName.Phobos) && (TritonicGravity || NereidicGravity))
 			{
 				if (Service.Config.InDebug)
 				{
@@ -2513,14 +2931,14 @@ public static class ObjectHelper
 	{
 		if (Service.Config.LimitlessBlueTargeting && (DataCenter.TerritoryID == 436 || DataCenter.TerritoryID == 447))
 		{
-			StatusID WillOfTheWater = StatusID.WillOfTheWater;
-			StatusID WillOfTheWind = StatusID.WillOfTheWind;
-			StatusID WhaleBack = StatusID.Whaleback;
+			var WillOfTheWater = StatusID.WillOfTheWater;
+			var WillOfTheWind = StatusID.WillOfTheWind;
+			var WhaleBack = StatusID.Whaleback;
 
-			bool Green = battleChara.NameId == 3654;
-			bool Blue = battleChara.NameId == 3655;
-			bool BismarkShell = battleChara.NameId == 3656;
-			bool BismarkCorona = battleChara.NameId == 3657;
+			var Green = battleChara.NameId == 3654;
+			var Blue = battleChara.NameId == 3655;
+			var BismarkShell = battleChara.NameId == 3656;
+			var BismarkCorona = battleChara.NameId == 3657;
 
 			if ((BismarkShell || BismarkCorona) &&
 					!StatusHelper.PlayerHasStatus(false, WhaleBack))
@@ -2602,11 +3020,11 @@ public static class ObjectHelper
 	{
 		if (DataCenter.TerritoryID == 508 || DataCenter.TerritoryID == 281 || DataCenter.TerritoryID == 359)
 		{
-			StatusID VoidArkMagicResistance = StatusID.MagicResistance;
-			StatusID VoidArkRangedResistance = StatusID.RangedResistance;
-			StatusID LeviMagicResistance = StatusID.MantleOfTheWhorl;
-			StatusID LeviRangedResistance = StatusID.VeilOfTheWhorl;
-			JobRole role = Player.Object?.ClassJob.Value.GetJobRole() ?? JobRole.None;
+			var VoidArkMagicResistance = StatusID.MagicResistance;
+			var VoidArkRangedResistance = StatusID.RangedResistance;
+			var LeviMagicResistance = StatusID.MantleOfTheWhorl;
+			var LeviRangedResistance = StatusID.VeilOfTheWhorl;
+			var role = Player.Object?.ClassJob.Value.GetJobRole() ?? JobRole.None;
 
 			if (battleChara.HasStatus(false, VoidArkMagicResistance, LeviMagicResistance) &&
 					(role == JobRole.RangedMagical || role == JobRole.Healer))
@@ -2641,12 +3059,12 @@ public static class ObjectHelper
 	{
 		if (Service.Config.TopOmegaMf && DataCenter.TerritoryID == 1122)
 		{
-			StatusID AntiOmegaF_Ultimate = StatusID.PacketFilterF_3500;
-			StatusID AntiOmegaM_Ultimate = StatusID.PacketFilterM_3499;
+			var AntiOmegaF_Ultimate = StatusID.PacketFilterF_3500;
+			var AntiOmegaM_Ultimate = StatusID.PacketFilterM_3499;
 
-			StatusID OmegaF = StatusID.OmegaF;
-			StatusID OmegaM = StatusID.Omega;
-			StatusID OmegaM2 = StatusID.OmegaM_3454;
+			var OmegaF = StatusID.OmegaF;
+			var OmegaM = StatusID.Omega;
+			var OmegaM2 = StatusID.OmegaM_3454;
 
 			if (battleChara.HasStatus(false, OmegaF) &&
 					StatusHelper.PlayerHasStatus(false, AntiOmegaF_Ultimate))
@@ -2681,14 +3099,14 @@ public static class ObjectHelper
 	{
 		if (Service.Config.O12SOmegaMf && (DataCenter.TerritoryID == 801 || DataCenter.TerritoryID == 805))
 		{
-			StatusID AntiOmegaF = StatusID.PacketFilterF;
-			StatusID AntiOmegaF_Extreme = StatusID.PacketFilterF_3500;
-			StatusID AntiOmegaM = StatusID.PacketFilterM;
-			StatusID AntiOmegaM_Extreme = StatusID.PacketFilterM_3499;
+			var AntiOmegaF = StatusID.PacketFilterF;
+			var AntiOmegaF_Extreme = StatusID.PacketFilterF_3500;
+			var AntiOmegaM = StatusID.PacketFilterM;
+			var AntiOmegaM_Extreme = StatusID.PacketFilterM_3499;
 
-			StatusID OmegaF = StatusID.OmegaF;
-			StatusID OmegaM = StatusID.OmegaM;
-			StatusID OmegaM2 = StatusID.OmegaM_3454;
+			var OmegaF = StatusID.OmegaF;
+			var OmegaM = StatusID.OmegaM;
+			var OmegaM2 = StatusID.OmegaM_3454;
 
 			if (battleChara.HasStatus(false, OmegaF) &&
 					StatusHelper.PlayerHasStatus(false, AntiOmegaF, AntiOmegaF_Extreme))
@@ -2787,9 +3205,11 @@ public static class ObjectHelper
 	public static int GetEffectiveHpPercent(this IBattleChara battleChara)
 	{
 		if (battleChara is not ICharacter character || character.MaxHp == 0)
+		{
 			return 0;
+		}
 
-		uint effectiveHp = character.CurrentHp + ObjectHelper.GetObjectShield(battleChara);
+		var effectiveHp = character.CurrentHp + ObjectHelper.GetObjectShield(battleChara);
 		return (int)Math.Floor((float)effectiveHp / character.MaxHp * 100f);
 	}
 
@@ -2828,12 +3248,12 @@ public static class ObjectHelper
 			LastPositions.Clear();
 		}
 
-		ulong id = battleChara.GameObjectId;
-		Vector3 currentPos = battleChara.Position;
-		if (LastPositions.TryGetValue(id, out Vector3 lastPos))
+		var id = battleChara.GameObjectId;
+		var currentPos = battleChara.Position;
+		if (LastPositions.TryGetValue(id, out var lastPos))
 		{
 			// You can adjust the threshold as needed
-			bool isMoving = Vector3.Distance(currentPos, lastPos) > 0.01f;
+			var isMoving = Vector3.Distance(currentPos, lastPos) > 0.01f;
 			LastPositions[id] = currentPos;
 			return isMoving;
 		}
@@ -2867,18 +3287,18 @@ public static class ObjectHelper
 		}
 
 		const int movingAverageWindow = 5;
-		ulong objId = battleChara.GameObjectId;
+		var objId = battleChara.GameObjectId;
 
-		DateTime startTime = DateTime.MinValue;
-		float initialHpRatio = 0f;
+		var startTime = DateTime.MinValue;
+		var initialHpRatio = 0f;
 
 		// Small fixed-size window for last ratios without copying the whole queue
-		float[] window = new float[movingAverageWindow];
-		int wCount = 0;
+		var window = new float[movingAverageWindow];
+		var wCount = 0;
 
-		foreach ((DateTime time, Dictionary<ulong, float> hpRatiosDict) in DataCenter.RecordedHP)
+		foreach ((var time, var hpRatiosDict) in DataCenter.RecordedHP)
 		{
-			if (hpRatiosDict != null && hpRatiosDict.TryGetValue(objId, out float ratio) && ratio != 1f)
+			if (hpRatiosDict != null && hpRatiosDict.TryGetValue(objId, out var ratio) && ratio != 1f)
 			{
 				if (startTime == DateTime.MinValue)
 				{
@@ -2904,23 +3324,27 @@ public static class ObjectHelper
 			return float.NaN;
 		}
 
-		float currentHealthRatio = battleChara.GetHealthRatio();
+		var currentHealthRatio = battleChara.GetHealthRatio();
 		if (float.IsNaN(currentHealthRatio))
 		{
 			return float.NaN;
 		}
 
-		float sum = 0f;
-		for (int i = 0; i < wCount; i++) sum += window[i];
-		float avg = wCount > 0 ? sum / wCount : 0f;
+		var sum = 0f;
+		for (var i = 0; i < wCount; i++)
+		{
+			sum += window[i];
+		}
 
-		float hpRatioDifference = initialHpRatio - avg;
+		var avg = wCount > 0 ? sum / wCount : 0f;
+
+		var hpRatioDifference = initialHpRatio - avg;
 		if (hpRatioDifference <= 0)
 		{
 			return float.NaN;
 		}
 
-		float elapsedTime = (float)(DateTime.Now - startTime).TotalSeconds;
+		var elapsedTime = (float)(DateTime.Now - startTime).TotalSeconds;
 		return elapsedTime / hpRatioDifference * (wholeTime ? 1 : currentHealthRatio);
 	}
 
@@ -3031,8 +3455,8 @@ public static class ObjectHelper
 			return false;
 		}
 
-		DateTime now = DateTime.Now;
-		foreach ((ulong id, DateTime time) in DataCenter.AttackedTargets)
+		var now = DateTime.Now;
+		foreach ((var id, var time) in DataCenter.AttackedTargets)
 		{
 			if (id == battleChara.GameObjectId)
 			{
@@ -3057,21 +3481,31 @@ public static class ObjectHelper
 	private static void MaybeResetLosCache()
 	{
 		if (Svc.Condition[ConditionFlag.BetweenAreas] || _losCache.Count > 4096)
+		{
 			_losCache.Clear();
+		}
 	}
 
 	// New overload to allow caller to supply eye position once per loop
 	internal static unsafe bool CanSeeFrom(this IBattleChara battleChara, Vector3 playerEyePos, float targetYOffset = 2.0f)
 	{
-		if (battleChara == null || Player.Object == null) return false;
+		if (battleChara == null || Player.Object == null)
+		{
+			return false;
+		}
+
 		var targetStruct = battleChara.Struct();
-		if (targetStruct == null) return false;
+		if (targetStruct == null)
+		{
+			return false;
+		}
 
 		MaybeResetLosCache();
 
-		Vector3 targetPos = battleChara.Position; targetPos.Y += targetYOffset;
-		ulong id = battleChara.GameObjectId;
-		long now = Environment.TickCount64;
+		var targetPos = battleChara.Position;
+		targetPos.Y += targetYOffset;
+		var id = battleChara.GameObjectId;
+		var now = Environment.TickCount64;
 
 		if (_losCache.TryGetValue(id, out var entry))
 		{
@@ -3083,18 +3517,21 @@ public static class ObjectHelper
 			}
 		}
 
-		Vector3 offset = targetPos - playerEyePos;
-		float maxDist = offset.Length();
-		if (maxDist < 0.01f) return true;
+		var offset = targetPos - playerEyePos;
+		var maxDist = offset.Length();
+		if (maxDist < 0.01f)
+		{
+			return true;
+		}
 
-		Vector3 direction = offset / maxDist;
+		var direction = offset / maxDist;
 
 		RaycastHit hit;
-		int* materialFilter = stackalloc int[] { 0x4000, 0, 0x4000, 0 };
+		var materialFilter = stackalloc int[] { 0x4000, 0, 0x4000, 0 };
 		var module = Framework.Instance()->BGCollisionModule;
-		bool blocked = module->RaycastMaterialFilter(&hit, &playerEyePos, &direction, maxDist, 1, materialFilter);
+		var blocked = module->RaycastMaterialFilter(&hit, &playerEyePos, &direction, maxDist, 1, materialFilter);
 
-		bool visible = !blocked;
+		var visible = !blocked;
 		_losCache[id] = new LosCacheEntry
 		{
 			PlayerPos = playerEyePos,
@@ -3108,8 +3545,13 @@ public static class ObjectHelper
 	// Backward-compatible existing API calls the overload
 	internal static unsafe bool CanSee(this IBattleChara battleChara, float playerYOffset = 2.0f, float targetYOffset = 2.0f)
 	{
-		if (battleChara == null || Player.Object == null) return false;
-		Vector3 playerPos = Player.Object.Position; playerPos.Y += playerYOffset;
+		if (battleChara == null || Player.Object == null)
+		{
+			return false;
+		}
+
+		var playerPos = Player.Object.Position;
+		playerPos.Y += playerYOffset;
 		return CanSeeFrom(battleChara, playerPos, targetYOffset);
 	}
 
@@ -3143,7 +3585,7 @@ public static class ObjectHelper
 			return 0; // This may need to be changed to 100
 		}
 
-		if (DataCenter.RefinedHP.TryGetValue(Player.Object.GameObjectId, out float hp))
+		if (DataCenter.RefinedHP.TryGetValue(Player.Object.GameObjectId, out var hp))
 		{
 			return hp;
 		}
@@ -3168,7 +3610,7 @@ public static class ObjectHelper
 			return 0; // This may need to be changed to 100
 		}
 
-		if (DataCenter.RefinedHP.TryGetValue(battleChara.GameObjectId, out float hp))
+		if (DataCenter.RefinedHP.TryGetValue(battleChara.GameObjectId, out var hp))
 		{
 			return hp;
 		}
@@ -3195,16 +3637,16 @@ public static class ObjectHelper
 			return EnemyPositional.None;
 		}
 
-		Vector3 pPosition = enemy.Position;
-		Vector3 faceVec = enemy.GetFaceVector();
+		var pPosition = enemy.Position;
+		var faceVec = enemy.GetFaceVector();
 
-		Vector3 dir = Player.Object.Position - pPosition;
+		var dir = Player.Object.Position - pPosition;
 		dir = Vector3.Normalize(dir);
 		faceVec = Vector3.Normalize(faceVec);
 
 		// Calculate the angle between the direction vector and the facing vector
 		double dotProduct = Vector3.Dot(faceVec, dir);
-		double angle = Math.Acos(dotProduct);
+		var angle = Math.Acos(dotProduct);
 
 		const double frontAngle = Math.PI / 4;
 		const double rearAngle = Math.PI * 3 / 4;
@@ -3235,7 +3677,7 @@ public static class ObjectHelper
 			return Vector3.Zero;
 		}
 
-		float rotation = battleChara.Rotation;
+		var rotation = battleChara.Rotation;
 		return new Vector3((float)Math.Sin(rotation), 0, (float)Math.Cos(rotation));
 	}
 
@@ -3271,8 +3713,14 @@ public static class ObjectHelper
 			return float.MaxValue;
 		}
 
-		float distance = Vector3.Distance(Player.Object.Position, battleChara.Position) - (Player.Object.HitboxRadius + battleChara.HitboxRadius);
-		return distance;
+		// Use XZ-plane (horizontal) distance only — the game engine measures action range
+		// purely on the horizontal plane, ignoring Y-axis differences.
+		var playerPos = Player.Object.Position;
+		var targetPos = battleChara.Position;
+		var dx = targetPos.X - playerPos.X;
+		var dz = targetPos.Z - playerPos.Z;
+		var distance = MathF.Sqrt(dx * dx + dz * dz) - (Player.Object.HitboxRadius + battleChara.HitboxRadius);
+		return MathF.Max(0f, distance);
 	}
 
 	/// <summary>
@@ -3292,7 +3740,9 @@ public static class ObjectHelper
 			return float.MaxValue;
 		}
 
-		return Vector3.Distance(pet.Position, battleChara.Position) - (battleChara.HitboxRadius);
+		var pdx = battleChara.Position.X - pet.Position.X;
+		var pdz = battleChara.Position.Z - pet.Position.Z;
+		return MathF.Max(0f, MathF.Sqrt(pdx * pdx + pdz * pdz) - battleChara.HitboxRadius);
 	}
 
 }

@@ -67,16 +67,16 @@ internal static partial class TargetUpdater
 		// Track party membership by id to avoid O(n^2) Contains checks
 		HashSet<ulong> partyIds = new(capacity: 32);
 
-		RaiseType raisetype = Service.Config.RaiseType;
+		var raisetype = Service.Config.RaiseType;
 
 		// Compute player eye position once
-		Vector3? playerEye = Player.Object?.Position;
+		var playerEye = Player.Object?.Position;
 		if (playerEye != null)
 		{
 			playerEye = new Vector3(playerEye.Value.X, playerEye.Value.Y + 2.0f, playerEye.Value.Z);
 		}
 
-		foreach (IBattleChara member in allTargets)
+		foreach (var member in allTargets)
 		{
 			try
 			{
@@ -91,13 +91,13 @@ internal static partial class TargetUpdater
 					if (member.IsTargetable && member.DistanceToPlayer() < 48 && member.CanSeeFrom(playerEye.Value))
 					{
 						// Valid hostile target
-						bool hasInvincible = false;
+						var hasInvincible = false;
 						var statusList = member.StatusList;
 
 						if (statusList != null)
 						{
 							var statusCount = statusList.Length;
-							for (int i = 0; i < statusCount; i++)
+							for (var i = 0; i < statusCount; i++)
 							{
 								var status = statusList[i];
 								if (status != null && status.StatusId != 0 && status.IsInvincible())
@@ -120,7 +120,7 @@ internal static partial class TargetUpdater
 				}
 				else if (member.IsParty())
 				{
-					FFXIVClientStructs.FFXIV.Client.Game.Character.Character* character = member.Character();
+					var character = member.Character();
 					if (character != null)
 					{
 						partyMembers.Add(member);
@@ -139,7 +139,7 @@ internal static partial class TargetUpdater
 					{
 						if (member.IsOtherPlayerOutOfDuty() && !partyIds.Contains(member.GameObjectId)) // Avoid O(n) Contains on list
 						{
-							FFXIVClientStructs.FFXIV.Client.Game.Character.Character* character = member.Character();
+							var character = member.Character();
 							if (character != null)
 							{
 								allianceMembers.Add(member);
@@ -149,7 +149,7 @@ internal static partial class TargetUpdater
 					}
 					else if (member.IsAllianceMember() && !partyIds.Contains(member.GameObjectId))
 					{
-						FFXIVClientStructs.FFXIV.Client.Game.Character.Character* character = member.Character();
+						var character = member.Character();
 						if (character != null)
 						{
 							allianceMembers.Add(member);
@@ -202,13 +202,13 @@ internal static partial class TargetUpdater
 	private static List<IBattleChara> GetAllTargets()
 	{
 		List<IBattleChara> allTargets = [];
-		bool skipDummyCheck = !Service.Config.DisableTargetDummys;
+		var skipDummyCheck = !Service.Config.DisableTargetDummys;
 
 		var objects = Svc.Objects;
 		if (objects != null)
 		{
-			int count = objects.Length;
-			for (int i = 0; i < count; i++)
+			var count = objects.Length;
+			for (var i = 0; i < count; i++)
 			{
 				var obj = objects[i];
 				if (obj is IBattleChara battleChara)
@@ -234,7 +234,7 @@ internal static partial class TargetUpdater
 
 	private static unsafe List<IBattleChara> GetAllianceMembers()
 	{
-		RaiseType raisetype = Service.Config.RaiseType;
+		var raisetype = Service.Config.RaiseType;
 
 		if (raisetype == RaiseType.PartyOnly)
 		{
@@ -252,19 +252,40 @@ internal static partial class TargetUpdater
 	private static unsafe List<IBattleChara> GetMembers(List<IBattleChara> source, bool isParty, bool isAlliance = false, bool IsOutDuty = false)
 	{
 		List<IBattleChara> members = [];
-		if (source == null) return members;
+		if (source == null)
+		{
+			return members;
+		}
 
-		foreach (IBattleChara member in source)
+		foreach (var member in source)
 		{
 			try
 			{
-				if (member.IsPet()) continue;
-				if (isParty && !member.IsParty()) continue;
-				if (isAlliance && (!ObjectHelper.IsAllianceMember(member) || member.IsParty())) continue;
-				if (IsOutDuty && (!ObjectHelper.IsOtherPlayerOutOfDuty(member) || member.IsParty())) continue;
+				if (member.IsPet())
+				{
+					continue;
+				}
 
-				FFXIVClientStructs.FFXIV.Client.Game.Character.Character* character = member.Character();
-				if (character == null) continue;
+				if (isParty && !member.IsParty())
+				{
+					continue;
+				}
+
+				if (isAlliance && (!ObjectHelper.IsAllianceMember(member) || member.IsParty()))
+				{
+					continue;
+				}
+
+				if (IsOutDuty && (!ObjectHelper.IsOtherPlayerOutOfDuty(member) || member.IsParty()))
+				{
+					continue;
+				}
+
+				var character = member.Character();
+				if (character == null)
+				{
+					continue;
+				}
 
 				members.Add(member);
 			}
@@ -280,34 +301,43 @@ internal static partial class TargetUpdater
 	{
 		List<IBattleChara> hostileTargets = [];
 		var allTargets = DataCenter.AllTargets;
-		if (allTargets == null || allTargets.Count == 0) return hostileTargets;
+		if (allTargets == null || allTargets.Count == 0)
+		{
+			return hostileTargets;
+		}
 
 		// Reserve capacity to minimize internal resizes
 		if (hostileTargets.Capacity < allTargets.Count)
+		{
 			hostileTargets.Capacity = allTargets.Count;
+		}
 
 		// Fix: Check if Player.Object is not null before using its Position
-		Vector3? playerEye = Player.Object?.Position;
+		var playerEye = Player.Object?.Position;
 		if (playerEye != null)
 		{
 			playerEye = new Vector3(playerEye.Value.X, playerEye.Value.Y + 2.0f, playerEye.Value.Z);
 		}
 
-		foreach (IBattleChara target in allTargets)
+		foreach (var target in allTargets)
 		{
 			// Only proceed if playerEye is available
 			if (playerEye == null)
+			{
 				continue;
+			}
 
 			if (!target.IsEnemy() || !target.IsTargetable || !target.CanSeeFrom(playerEye.Value) || target.DistanceToPlayer() >= 48)
+			{
 				continue;
+			}
 
-			bool hasInvincible = false;
+			var hasInvincible = false;
 			var statusList = target.StatusList;
 			if (statusList != null)
 			{
 				var statusCount = statusList.Length;
-				for (int i = 0; i < statusCount; i++)
+				for (var i = 0; i < statusCount; i++)
 				{
 					var status = statusList[i];
 					if (status != null && status.StatusId != 0 && StatusHelper.IsInvincible(status))
@@ -332,14 +362,19 @@ internal static partial class TargetUpdater
 	private static IBattleChara? GetFirstHostileTarget(Func<IBattleChara, bool> predicate)
 	{
 		var hostileTargets = DataCenter.AllHostileTargets;
-		if (hostileTargets == null) return null;
+		if (hostileTargets == null)
+		{
+			return null;
+		}
 
-		foreach (IBattleChara target in hostileTargets)
+		foreach (var target in hostileTargets)
 		{
 			try
 			{
 				if (predicate(target))
+				{
 					return target;
+				}
 			}
 			catch (Exception ex)
 			{
@@ -358,7 +393,7 @@ internal static partial class TargetUpdater
 
 		try
 		{
-			RaiseType raisetype = Service.Config.RaiseType;
+			var raisetype = Service.Config.RaiseType;
 
 			// Collect party deaths and track by id for O(1) membership tests
 			var validRaiseTargets = new List<IBattleChara>();
@@ -394,14 +429,24 @@ internal static partial class TargetUpdater
 				{
 					foreach (var member in DataCenter.AllianceMembers.GetDeath())
 					{
-						if (deathPartyIds.Contains(member.GameObjectId)) continue;
+						if (deathPartyIds.Contains(member.GameObjectId))
+						{
+							continue;
+						}
+
 						if (raisetype == RaiseType.PartyAndAllianceHealers)
 						{
-							if (member.IsJobCategory(JobRole.Healer)) validRaiseTargets.Add(member);
+							if (member.IsJobCategory(JobRole.Healer))
+							{
+								validRaiseTargets.Add(member);
+							}
 						}
 						else // PartyAndAllianceSupports
 						{
-							if (member.IsJobCategory(JobRole.Healer) || member.IsJobCategory(JobRole.Tank)) validRaiseTargets.Add(member);
+							if (member.IsJobCategory(JobRole.Healer) || member.IsJobCategory(JobRole.Tank))
+							{
+								validRaiseTargets.Add(member);
+							}
 						}
 					}
 				}
@@ -422,13 +467,19 @@ internal static partial class TargetUpdater
 			{
 				_raisePartyTargets.Delay(validRaiseTargets);
 				validRaiseTargets.Clear();
-				foreach (var p in _raisePartyTargets) validRaiseTargets.Add(p);
+				foreach (var p in _raisePartyTargets)
+				{
+					validRaiseTargets.Add(p);
+				}
 			}
 			else
 			{
 				_raiseAllTargets.Delay(validRaiseTargets);
 				validRaiseTargets.Clear();
-				foreach (var p in _raiseAllTargets) validRaiseTargets.Add(p);
+				foreach (var p in _raiseAllTargets)
+				{
+					validRaiseTargets.Add(p);
+				}
 			}
 
 			return GetPriorityDeathTarget(validRaiseTargets, raisetype);
@@ -452,7 +503,7 @@ internal static partial class TargetUpdater
 		List<IBattleChara> deathOffHealers = [];
 		List<IBattleChara> deathOthers = [];
 
-		foreach (IBattleChara chara in validRaiseTargets)
+		foreach (var chara in validRaiseTargets)
 		{
 			if (chara.IsJobCategory(JobRole.Tank))
 			{
@@ -522,13 +573,13 @@ internal static partial class TargetUpdater
 
 			// Single-pass selection over the delayed set to avoid extra list allocations
 			IBattleChara? closestDangerous = null;
-			float closestDangerousDist = float.MaxValue;
+			var closestDangerousDist = float.MaxValue;
 			IBattleChara? closestNonDangerous = null;
-			float closestNonDangerousDist = float.MaxValue;
+			var closestNonDangerousDist = float.MaxValue;
 
-			foreach (IBattleChara person in _dispelPartyTargets)
+			foreach (var person in _dispelPartyTargets)
 			{
-				bool hasDangerous = false;
+				var hasDangerous = false;
 				var statusList = person.StatusList;
 				if (statusList != null)
 				{
@@ -543,7 +594,7 @@ internal static partial class TargetUpdater
 					}
 				}
 
-				float dist = ObjectHelper.DistanceToPlayer(person);
+				var dist = ObjectHelper.DistanceToPlayer(person);
 				if (hasDangerous)
 				{
 					if (dist < closestDangerousDist)
@@ -559,7 +610,7 @@ internal static partial class TargetUpdater
 				}
 			}
 
-			bool allowNonDangerous = canDispelNonDangerous
+			var allowNonDangerous = canDispelNonDangerous
 									 || !DataCenter.HasHostilesInRange
 									 || Service.Config.DispelAll
 									 || DataCenter.IsPvP;
@@ -581,15 +632,15 @@ internal static partial class TargetUpdater
 			return;
 		}
 
-		foreach (IBattleChara member in members)
+		foreach (var member in members)
 		{
 			try
 			{
 				if (member.StatusList != null)
 				{
-					for (int i = 0; i < member.StatusList.Length; i++)
+					for (var i = 0; i < member.StatusList.Length; i++)
 					{
-						Dalamud.Game.ClientState.Statuses.IStatus? status = member.StatusList[i];
+						var status = member.StatusList[i];
 						if (status != null && status.CanDispel())
 						{
 							targetList.Add(member);
@@ -608,11 +659,11 @@ internal static partial class TargetUpdater
 	private static IBattleChara? GetClosestTarget(List<IBattleChara> targets)
 	{
 		IBattleChara? closestTarget = null;
-		float closestDistance = float.MaxValue;
+		var closestDistance = float.MaxValue;
 
-		foreach (IBattleChara target in targets)
+		foreach (var target in targets)
 		{
-			float distance = ObjectHelper.DistanceToPlayer(target);
+			var distance = ObjectHelper.DistanceToPlayer(target);
 			if (distance < closestDistance)
 			{
 				closestDistance = distance;
@@ -627,7 +678,7 @@ internal static partial class TargetUpdater
 	// Has performance implications for keeping too much data for too many targets as they're also all evaluated multiple times a frame for expected TTK
 	private static void UpdateTimeToKill()
 	{
-		DateTime now = DateTime.Now;
+		var now = DateTime.Now;
 		if (now - _lastUpdateTimeToKill < TimeToKillUpdateInterval)
 		{
 			return;
@@ -647,7 +698,7 @@ internal static partial class TargetUpdater
 		}
 
 		Dictionary<ulong, float> currentHPs = new(hostiles.Count);
-		for (int i = 0; i < hostiles.Count; i++)
+		for (var i = 0; i < hostiles.Count; i++)
 		{
 			var target = hostiles[i];
 			if (target != null && target.CurrentHp != 0)

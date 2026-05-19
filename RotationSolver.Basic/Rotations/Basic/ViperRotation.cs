@@ -113,9 +113,14 @@ public partial class ViperRotation
 	public static SerpentCombo SerpentCombo => JobGauge.SerpentCombo;
 
 	/// <summary>
-	/// Indicates if base no abilities are ready.
+	/// 
 	/// </summary>
-	public static bool NoAbilityReady => JobGauge.SerpentCombo.HasFlag(SerpentCombo.None);
+	public static byte SerpentComboByte => (byte)JobGauge.SerpentCombo;
+
+	/// <summary>
+	/// Gets Max stacks of Anguine Tribute.
+	/// </summary>
+	public static bool NoAbilityReady => SerpentComboByte == 0;
 
 	/// <summary>
 	/// Indicates if base Death Rattle oGCD is ready.
@@ -281,13 +286,25 @@ public partial class ViperRotation
 		get
 		{
 			if (!HasHunterAndSwift)
+			{
 				return null;
+			}
+
 			if (HuntersTime == null || SwiftTime == null)
+			{
 				return null;
+			}
+
 			if (HuntersTime < SwiftTime)
+			{
 				return "Hunter";
+			}
+
 			if (SwiftTime < HuntersTime)
+			{
 				return "Swift";
+			}
+
 			return "Equal";
 		}
 	}
@@ -481,7 +498,7 @@ public partial class ViperRotation
 
 	static partial void ModifyWrithingSnapPvE(ref ActionSetting setting)
 	{
-		setting.SpecialType = SpecialActionType.MeleeRange;
+		setting.SpecialType = SpecialActionType.MeleeRangedAttack;
 	}
 
 	static partial void ModifySlitherPvE(ref ActionSetting setting)

@@ -43,8 +43,8 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 
 		var disabledBase = CollectDisabledActionIds();
 
-		int hotBarIndex = 0;
-		foreach (nint intPtr in EnumerateHotbarAddons())
+		var hotBarIndex = 0;
+		foreach (var intPtr in EnumerateHotbarAddons())
 		{
 			var actionBar = (AddonActionBarBase*)intPtr;
 			if (actionBar == null || !IsVisible(actionBar->AtkUnitBase))
@@ -53,8 +53,8 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 				continue;
 			}
 
-			bool isCrossBar = hotBarIndex > 9;
-			int resolvedHotbarIndex = hotBarIndex;
+			var isCrossBar = hotBarIndex > 9;
+			var resolvedHotbarIndex = hotBarIndex;
 			if (isCrossBar)
 			{
 				if (hotBarIndex == 10)
@@ -92,12 +92,12 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 				hotBarIndex++;
 				continue;
 			}
-			Hotbar raptureHotbar = raptureModule->Hotbars[resolvedHotbarIndex];
+			var raptureHotbar = raptureModule->Hotbars[resolvedHotbarIndex];
 
-			int slotIndex = 0;
-			foreach (ActionBarSlot slot in actionBar->ActionBarSlotVector.AsSpan())
+			var slotIndex = 0;
+			foreach (var slot in actionBar->ActionBarSlotVector.AsSpan())
 			{
-				AtkComponentNode* iconAddon = slot.Icon;
+				var iconAddon = slot.Icon;
 				if ((nint)iconAddon == nint.Zero || !IsVisible(&iconAddon->AtkResNode))
 				{
 					slotIndex++;
@@ -110,7 +110,7 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 					continue;
 				}
 
-				HotbarSlot hotbarSlot = raptureHotbar.Slots[slotIndex];
+				var hotbarSlot = raptureHotbar.Slots[slotIndex];
 
 				if (hotbarSlot.ApparentSlotType != HotbarSlotType.Action || hotbarSlot.OriginalApparentSlotType != HotbarSlotType.Action)
 				{
@@ -132,7 +132,7 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 					adjusted = 0;
 				}
 
-				bool shouldRedden = adjusted != 0 && disabledBase.Contains((uint)slot.ActionId);
+				var shouldRedden = adjusted != 0 && disabledBase.Contains((uint)slot.ActionId);
 				if (slot.Icon != null && slot.Icon->Component != null)
 				{
 					ApplyIconReddening((AtkComponentIcon*)slot.Icon->Component, shouldRedden);
@@ -147,15 +147,22 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 
 	private static unsafe void ApplyIconReddening(AtkComponentIcon* iconComponent, bool redden)
 	{
-		if (iconComponent == null) return;
-		if (iconComponent->IconImage == null) return;
+		if (iconComponent == null)
+		{
+			return;
+		}
+
+		if (iconComponent->IconImage == null)
+		{
+			return;
+		}
 
 		if (redden)
 		{
 			var tint = Service.Config.HotbarDisabledTintColor;
-			byte r = (byte)Math.Clamp((int)(tint.X * 255f), 0, 255);
-			byte g = (byte)Math.Clamp((int)(tint.Y * 255f), 0, 255);
-			byte b = (byte)Math.Clamp((int)(tint.Z * 255f), 0, 255);
+			var r = (byte)Math.Clamp((int)(tint.X * 255f), 0, 255);
+			var g = (byte)Math.Clamp((int)(tint.Y * 255f), 0, 255);
+			var b = (byte)Math.Clamp((int)(tint.Z * 255f), 0, 255);
 			iconComponent->IconImage->Color.R = r;
 			iconComponent->IconImage->Color.G = g;
 			iconComponent->IconImage->Color.B = b;
@@ -170,16 +177,22 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 
 	private static unsafe void ResetAllHotbarIconColors()
 	{
-		foreach (nint intPtr in EnumerateHotbarAddons())
+		foreach (var intPtr in EnumerateHotbarAddons())
 		{
 			var actionBar = (AddonActionBarBase*)intPtr;
 			if (actionBar == null || !IsVisible(actionBar->AtkUnitBase))
-				continue;
-
-			foreach (ActionBarSlot slot in actionBar->ActionBarSlotVector.AsSpan())
 			{
-				AtkComponentIcon* iconComponent = (AtkComponentIcon*)slot.Icon->Component;
-				if (iconComponent == null || iconComponent->IconImage == null) continue;
+				continue;
+			}
+
+			foreach (var slot in actionBar->ActionBarSlotVector.AsSpan())
+			{
+				var iconComponent = (AtkComponentIcon*)slot.Icon->Component;
+				if (iconComponent == null || iconComponent->IconImage == null)
+				{
+					continue;
+				}
+
 				iconComponent->IconImage->Color.R = 0xFF;
 				iconComponent->IconImage->Color.G = 0xFF;
 				iconComponent->IconImage->Color.B = 0xFF;
@@ -190,7 +203,10 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 	private static unsafe bool IsVisible(AtkUnitBase unit)
 	{
 		if (!unit.IsVisible)
+		{
 			return false;
+		}
+
 		return unit.VisibilityFlags != 1 && IsVisible(unit.RootNode);
 	}
 
@@ -199,7 +215,10 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 		while (node != null)
 		{
 			if (!node->IsVisible())
+			{
 				return false;
+			}
+
 			node = node->ParentNode;
 		}
 		return true;
@@ -207,10 +226,25 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 
 	private static IEnumerable<nint> EnumerateHotbarAddons()
 	{
-		foreach (var a in GetAddons<AddonActionBar>()) yield return a;
-		foreach (var a in GetAddons<AddonActionBarX>()) yield return a;
-		foreach (var a in GetAddons<AddonActionCross>()) yield return a;
-		foreach (var a in GetAddons<AddonActionDoubleCrossBase>()) yield return a;
+		foreach (var a in GetAddons<AddonActionBar>())
+		{
+			yield return a;
+		}
+
+		foreach (var a in GetAddons<AddonActionBarX>())
+		{
+			yield return a;
+		}
+
+		foreach (var a in GetAddons<AddonActionCross>())
+		{
+			yield return a;
+		}
+
+		foreach (var a in GetAddons<AddonActionDoubleCrossBase>())
+		{
+			yield return a;
+		}
 	}
 
 	private static HashSet<uint> CollectDisabledActionIds()
@@ -222,7 +256,11 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 
 		void Collect(IEnumerable<IAction>? actions)
 		{
-			if (actions == null) return;
+			if (actions == null)
+			{
+				return;
+			}
+
 			foreach (var a in actions)
 			{
 				if (a is IBaseAction ba && !ba.IsEnabled)
@@ -239,14 +277,18 @@ public sealed class HotbarDisabledColor : DrawingHighlightHotbarBase
 	{
 		var attr = typeof(T).GetCustomAttribute<AddonAttribute>();
 		if (attr is not AddonAttribute on)
+		{
 			return [];
+		}
 
 		List<nint> result = [];
 		foreach (var str in on.AddonIdentifiers)
 		{
 			var ptr = Svc.GameGui.GetAddonByName(str, 1);
 			if (ptr != nint.Zero)
+			{
 				result.Add(ptr);
+			}
 		}
 		return result;
 	}

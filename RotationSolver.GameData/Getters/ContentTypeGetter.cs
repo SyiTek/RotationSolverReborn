@@ -20,10 +20,11 @@ internal class ContentTypeGetter(Lumina.GameData gameData)
 		{
 			return false;
 		}
-		bool allAscii = true;
-		foreach (char c in name)
+		var allAscii = true;
+		foreach (var c in name)
 		{
-			if (!char.IsAscii(c)) { allAscii = false; break; }
+			if (!char.IsAscii(c))
+			{ allAscii = false; break; }
 		}
 		if (!allAscii)
 		{

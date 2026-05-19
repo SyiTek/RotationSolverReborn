@@ -1,6 +1,6 @@
 ﻿namespace RotationSolver.RebornRotations.Ranged;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Ranged/MCH_Reborn.cs")]
 
 public sealed class MCH_Reborn : MachinistRotation
@@ -31,7 +31,7 @@ public sealed class MCH_Reborn : MachinistRotation
 	#region Countdown logic
 	protected override IAction? CountDownAction(float remainTime)
 	{
-		if (AirAnchorCountdown && remainTime < 1f && AirAnchorPvE.EnoughLevel && AirAnchorPvE.CanUse(out IAction? act))
+		if (AirAnchorCountdown && remainTime < 1f && AirAnchorPvE.EnoughLevel && AirAnchorPvE.CanUse(out var act))
 		{
 			return act;
 		}
@@ -109,7 +109,9 @@ public sealed class MCH_Reborn : MachinistRotation
 				&& !IsPreBurst)
 			{
 				if (HyperchargePvE.CanUse(out act, skipTTKCheck: true))
+				{
 					return true;
+				}
 			}
 		}
 
@@ -154,7 +156,7 @@ public sealed class MCH_Reborn : MachinistRotation
 
 		// Reassemble Logic
 		// Check next GCD action and conditions for Reassemble.
-		bool isReassembleUsable =
+		var isReassembleUsable =
 			//Reassemble current # of charges and double proc protection
 			ReassemblePvE.Cooldown.CurrentCharges > 0 && !HasReassembled &&
 			(nextGCD.IsTheSameTo(true, [ChainSawPvE, ExcavatorPvE])
@@ -198,13 +200,15 @@ public sealed class MCH_Reborn : MachinistRotation
 
 		if (IsBurst)
 		{
-			bool bmrBlockBarrel = BMRDowntimeWithin(GCDTime(2));
+			var bmrBlockBarrel = BMRDowntimeWithin(GCDTime(2));
 			if (!bmrBlockBarrel && BarrelStabilizerPvE.CanUse(out act))
+			{
 				return true;
+			}
 		}
 
-		bool LowLevelHyperCheck = !AutoCrossbowPvE.EnoughLevel && SpreadShotPvE.CanUse(out _);
-		bool bmrBlockWildfire = BMRDowntimeWithin(10f);
+		var LowLevelHyperCheck = !AutoCrossbowPvE.EnoughLevel && SpreadShotPvE.CanUse(out _);
+		var bmrBlockWildfire = BMRDowntimeWithin(10f);
 		if (IsBurst && !bmrBlockWildfire)
 		{
 			if (FullMetalFieldPvE.EnoughLevel)
@@ -474,7 +478,7 @@ public sealed class MCH_Reborn : MachinistRotation
 	// Logic for Hypercharge
 	private bool ToolChargeSoon(out IAction? act)
 	{
-		float REST_TIME = 8f;
+		var REST_TIME = 8f;
 		if
 			//Cannot AOE
 			(!SpreadShotPvE.CanUse(out _)
@@ -529,7 +533,7 @@ public sealed class MCH_Reborn : MachinistRotation
 		// Only check the current step
 		if (_currentStep < _stepPairs.Length)
 		{
-			var (from, to, _) = _stepPairs[_currentStep];
+			(var from, var to, var _) = _stepPairs[_currentStep];
 			foundStepPair = (LastSummonBatteryPower == from && Battery == to);
 		}
 		else
@@ -558,7 +562,9 @@ public sealed class MCH_Reborn : MachinistRotation
 	{
 		act = null;
 		if (!InCombat || IsRobotActive)
+		{
 			return false;
+		}
 
 		// Opener
 		if (Battery == 60 && IsLastGCD(false, ExcavatorPvE) && CombatTime < 15)

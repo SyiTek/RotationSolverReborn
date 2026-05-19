@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace RotationSolver.RebornRotations.Healer;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Healer/WHM_Reborn.cs")]
 
 public sealed class WHM_Reborn : WhiteMageRotation
@@ -78,7 +78,7 @@ public sealed class WHM_Reborn : WhiteMageRotation
 	protected override IAction? CountDownAction(float remainTime)
 	{
 		if (remainTime < StonePvE.Info.CastTime + CountDownAhead
-			&& StonePvE.CanUse(out IAction? act))
+			&& StonePvE.CanUse(out var act))
 		{
 			return act;
 		}
@@ -107,7 +107,7 @@ public sealed class WHM_Reborn : WhiteMageRotation
 	#region oGCD Logic
 	protected override bool EmergencyAbility(IAction nextGCD, out IAction? act)
 	{
-		bool useLastThinAirCharge = ThinAirLastChargeUsage == ThinAirUsageStrategy.UseAllCharges || (ThinAirLastChargeUsage == ThinAirUsageStrategy.ReserveLastChargeForRaise && nextGCD == RaisePvE);
+		var useLastThinAirCharge = ThinAirLastChargeUsage == ThinAirUsageStrategy.UseAllCharges || (ThinAirLastChargeUsage == ThinAirUsageStrategy.ReserveLastChargeForRaise && nextGCD == RaisePvE);
 		if (((nextGCD is IBaseAction action && action.Info.MPNeed >= ThinAirNeed && IsLastAction() == IsLastGCD()) || ((MergedStatus.HasFlag(AutoStatus.Raise) || (nextGCD == RaisePvE)) && IsLastAction() == IsLastGCD())) &&
 			ThinAirPvE.CanUse(out act, usedUp: useLastThinAirCharge))
 		{
@@ -292,8 +292,8 @@ public sealed class WHM_Reborn : WhiteMageRotation
 			return true;
 		}
 
-		int hasMedica2 = 0;
-		foreach (IBattleChara n in PartyMembers)
+		var hasMedica2 = 0;
+		foreach (var n in PartyMembers)
 		{
 			if (n.HasStatus(true, StatusID.MedicaIi))
 			{
@@ -301,8 +301,8 @@ public sealed class WHM_Reborn : WhiteMageRotation
 			}
 		}
 
-		int partyCount = 0;
-		foreach (IBattleChara _ in PartyMembers)
+		var partyCount = 0;
+		foreach (var _ in PartyMembers)
 		{
 			partyCount++;
 		}
@@ -388,8 +388,8 @@ public sealed class WHM_Reborn : WhiteMageRotation
 
 		//if (NotInCombatDelay && RegenDefense.CanUse(out act)) return true;
 
-		bool liliesNearlyFull = Lily == 2 && LilyTime < LilyOvercapTime;
-		bool liliesFullNoBlood = Lily == 3;
+		var liliesNearlyFull = Lily == 2 && LilyTime < LilyOvercapTime;
+		var liliesFullNoBlood = Lily == 3;
 
 		if (!IsInHighEndDuty || !UseOpenerHighEnd || (IsInHighEndDuty && UseOpenerHighEnd && (HasBuffs || HasPresenceOfMind || ((liliesNearlyFull || liliesFullNoBlood) && !CombatElapsedLessGCD(3)))))
 		{
@@ -516,12 +516,14 @@ public sealed class WHM_Reborn : WhiteMageRotation
 	{
 		get
 		{
-			int aliveHealerCount = 0;
-			IEnumerable<IBattleChara> healers = PartyMembers.GetJobCategory(JobRole.Healer);
-			foreach (IBattleChara h in healers)
+			var aliveHealerCount = 0;
+			var healers = PartyMembers.GetJobCategory(JobRole.Healer);
+			foreach (var h in healers)
 			{
 				if (!h.IsDead)
+				{
 					aliveHealerCount++;
+				}
 			}
 
 			return base.CanHealSingleSpell && (GCDHeal || aliveHealerCount == 1);
@@ -531,12 +533,14 @@ public sealed class WHM_Reborn : WhiteMageRotation
 	{
 		get
 		{
-			int aliveHealerCount = 0;
-			IEnumerable<IBattleChara> healers = PartyMembers.GetJobCategory(JobRole.Healer);
-			foreach (IBattleChara h in healers)
+			var aliveHealerCount = 0;
+			var healers = PartyMembers.GetJobCategory(JobRole.Healer);
+			foreach (var h in healers)
 			{
 				if (!h.IsDead)
+				{
 					aliveHealerCount++;
+				}
 			}
 
 			return base.CanHealAreaSpell && (GCDHeal || aliveHealerCount == 1);

@@ -77,9 +77,14 @@ public class ActionTimelineManager : IDisposable
 	private static TimelineItemType GetActionType(uint actionId, ActionType type)
 	{
 		if (Svc.Data.GetExcelSheet<Action>()?.TryGetRow(actionId, out var action) != true)
+		{
 			return TimelineItemType.OGCD; // Default or fallback type
+		}
 
-		if (actionId == 3) return TimelineItemType.OGCD; // Sprint
+		if (actionId == 3)
+		{
+			return TimelineItemType.OGCD; // Sprint
+		}
 
 		var isRealGcd = action.CooldownGroup == GCDCooldownGroup || action.AdditionalCooldownGroup == GCDCooldownGroup;
 		return action.ActionCategory.Value.RowId == 1 // AutoAttack
@@ -90,7 +95,11 @@ public class ActionTimelineManager : IDisposable
 
 	private void AddItem(TimelineItem item)
 	{
-		if (item == null) return;
+		if (item == null)
+		{
+			return;
+		}
+
 		if (_items.Count >= 2048)
 		{
 			_items.Dequeue();
@@ -106,7 +115,10 @@ public class ActionTimelineManager : IDisposable
 
 	private void UpdateEndTime(DateTime endTime)
 	{
-		if (endTime > EndTime) EndTime = endTime;
+		if (endTime > EndTime)
+		{
+			EndTime = endTime;
+		}
 	}
 
 	public List<TimelineItem> GetItems(DateTime time, out DateTime lastEndTime)
@@ -129,8 +141,15 @@ public class ActionTimelineManager : IDisposable
 
 	private void ActionFromSelf(ActionEffectSet set)
 	{
-		if (!Player.Available) return;
-		if (set.Source?.GameObjectId != Player.Object?.GameObjectId) return;
+		if (!Player.Available)
+		{
+			return;
+		}
+
+		if (set.Source?.GameObjectId != Player.Object?.GameObjectId)
+		{
+			return;
+		}
 
 		var now = DateTime.Now;
 		var type = GetActionType(set.Header.ActionID, set.Header.ActionType);
@@ -158,14 +177,20 @@ public class ActionTimelineManager : IDisposable
 		}
 
 		var effectItem = _lastItem;
-		if (effectItem?.Type is TimelineItemType.AutoAttack) return;
+		if (effectItem?.Type is TimelineItemType.AutoAttack)
+		{
+			return;
+		}
 
 		UpdateEndTime(effectItem?.EndTime ?? now);
 	}
 
 	private void CancelCasting()
 	{
-		if (_lastItem == null || _lastItem.CastingTime == 0) return;
+		if (_lastItem == null || _lastItem.CastingTime == 0)
+		{
+			return;
+		}
 
 		_lastItem.State = TimelineItemState.Canceled;
 		var maxTime = (float)(DateTime.Now - _lastItem.StartTime).TotalSeconds;
@@ -179,7 +204,10 @@ public class ActionTimelineManager : IDisposable
 
 		try
 		{
-			if (Player.Object == null || entityId != Player.Object.GameObjectId) return;
+			if (Player.Object == null || entityId != Player.Object.GameObjectId)
+			{
+				return;
+			}
 
 			// CancelAbility ActorControlCategory value
 			if (type == 15)
@@ -243,12 +271,19 @@ public class ActionTimelineManager : IDisposable
 			return session;
 		}
 
-		DateTime startTime = combatStartTime ?? items[0].StartTime;
-		DateTime endTime = items[0].EndTime;
-		for (int i = 1; i < items.Length; i++)
+		var startTime = combatStartTime ?? items[0].StartTime;
+		var endTime = items[0].EndTime;
+		for (var i = 1; i < items.Length; i++)
 		{
-			if (items[i].StartTime < startTime) startTime = items[i].StartTime;
-			if (items[i].EndTime > endTime) endTime = items[i].EndTime;
+			if (items[i].StartTime < startTime)
+			{
+				startTime = items[i].StartTime;
+			}
+
+			if (items[i].EndTime > endTime)
+			{
+				endTime = items[i].EndTime;
+			}
 		}
 
 		// Fill session info

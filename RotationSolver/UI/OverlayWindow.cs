@@ -50,7 +50,7 @@ internal class OverlayWindow : Window
 		}
 
 		// Save and disable AA fill for performance of large overlays
-		bool prevAAFill = ImGui.GetStyle().AntiAliasedFill;
+		var prevAAFill = ImGui.GetStyle().AntiAliasedFill;
 		ImGui.GetStyle().AntiAliasedFill = false;
 
 		try
@@ -64,7 +64,7 @@ internal class OverlayWindow : Window
 				_throttle.Restart();
 			}
 
-			ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+			var drawList = ImGui.GetWindowDrawList();
 			if (drawList.Handle == null)
 			{
 				PluginLog.Warning($"{nameof(OverlayWindow)}: Window draw list is null.");
@@ -74,7 +74,7 @@ internal class OverlayWindow : Window
 			var elements = _elements;
 			if (elements != null)
 			{
-				foreach (IDrawing2D item in elements)
+				foreach (var item in elements)
 				{
 					item.Draw();
 				}

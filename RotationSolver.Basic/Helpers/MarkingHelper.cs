@@ -40,7 +40,7 @@ namespace RotationSolver.Basic.Helpers
 		/// <returns>The object ID of the marker.</returns>
 		internal static unsafe long GetMarker(HeadMarker index)
 		{
-			MarkingController* instance = MarkingController.Instance();
+			var instance = MarkingController.Instance();
 			return instance == null || instance->Markers.Length == 0 ? 0 : instance->Markers[(int)index].ObjectId;
 		}
 
@@ -51,8 +51,8 @@ namespace RotationSolver.Basic.Helpers
 		{
 			get
 			{
-				long[] targets = GetAttackSignTargets();
-				for (int i = 0; i < targets.Length; i++)
+				var targets = GetAttackSignTargets();
+				for (var i = 0; i < targets.Length; i++)
 				{
 					if (targets[i] != 0)
 					{
@@ -100,11 +100,11 @@ namespace RotationSolver.Basic.Helpers
 		/// <returns>The filtered characters.</returns>
 		internal static unsafe IEnumerable<IBattleChara> FilterStopCharacters(IEnumerable<IBattleChara> charas)
 		{
-			long[] stopTargets = GetStopTargets();
+			var stopTargets = GetStopTargets();
 
-			int capacity = (charas as ICollection<IBattleChara>)?.Count ?? 0;
-			List<IBattleChara> result = capacity > 0 ? new List<IBattleChara>(capacity) : [];
-			foreach (IBattleChara b in charas)
+			var capacity = (charas as ICollection<IBattleChara>)?.Count ?? 0;
+			var result = capacity > 0 ? new List<IBattleChara>(capacity) : [];
+			foreach (var b in charas)
 			{
 				// Keep all player characters even if they are marked with stop markers
 				if (!b.IsEnemy())
@@ -113,9 +113,9 @@ namespace RotationSolver.Basic.Helpers
 					continue;
 				}
 
-				bool isStopTarget = false;
-				long charaId = (long)b.GameObjectId;
-				for (int i = 0; i < stopTargets.Length; i++)
+				var isStopTarget = false;
+				var charaId = (long)b.GameObjectId;
+				for (var i = 0; i < stopTargets.Length; i++)
 				{
 					if (stopTargets[i] != 0 && stopTargets[i] == charaId)
 					{

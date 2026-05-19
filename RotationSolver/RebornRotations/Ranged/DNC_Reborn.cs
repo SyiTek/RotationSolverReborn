@@ -1,6 +1,6 @@
 namespace RotationSolver.RebornRotations.Ranged;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Ranged/DNC_Reborn.cs")]
 
 public sealed class DNC_Reborn : DancerRotation
@@ -42,7 +42,7 @@ public sealed class DNC_Reborn : DancerRotation
 		if (remainTime <= 15)
 		{
 			// Attempt to use Standard Step if applicable
-			if (StandardStepPvE.CanUse(out IAction? act, skipAoeCheck: true))
+			if (StandardStepPvE.CanUse(out var act, skipAoeCheck: true))
 			{
 				return act;
 			}
@@ -163,7 +163,7 @@ public sealed class DNC_Reborn : DancerRotation
 				// Check for conditions to use Flourish
 				if ((HasDevilment && HasTechnicalFinish) || ((!HasDevilment) && (!HasTechnicalFinish)))
 				{
-					if (!HasThreefoldFanDance && FlourishPvE.CanUse(out act))
+					if (!HasThreefoldFanDance && TechnicalStepPvE.Cooldown.IsCoolingDown && !TechnicalStepPvE.Cooldown.WillHaveOneCharge(35) && FlourishPvE.CanUse(out act))
 					{
 						return true;
 					}
@@ -177,7 +177,7 @@ public sealed class DNC_Reborn : DancerRotation
 			return true;
 		}
 
-		bool hasProcs = HasSilkenFlow || HasSilkenSymmetry ||
+		var hasProcs = HasSilkenFlow || HasSilkenSymmetry ||
 					   HasFlourishingFlow || HasFlourishingSymmetry;
 
 		//Use all feathers on burst or if about to overcap
@@ -342,8 +342,8 @@ public sealed class DNC_Reborn : DancerRotation
 			return true;
 		}
 
-		bool standardReady = StandardStepPvE.Cooldown.ElapsedAfter(28);
-		bool technicalReady = TechnicalStepPvE.Cooldown.ElapsedAfter(118);
+		var standardReady = StandardStepPvE.Cooldown.ElapsedAfter(28);
+		var technicalReady = TechnicalStepPvE.Cooldown.ElapsedAfter(118);
 
 		if (!(standardReady || technicalReady) &&
 			(!shouldUseLastDance || !LastDancePvE.CanUse(out act, skipAoeCheck: true)))
@@ -434,7 +434,7 @@ public sealed class DNC_Reborn : DancerRotation
 		{
 			if (DancePartnerName != "")
 			{
-				foreach (IBattleChara player in PartyMembers)
+				foreach (var player in PartyMembers)
 				{
 					if (player.Name.ToString() == DancePartnerName)
 					{
@@ -459,8 +459,8 @@ public sealed class DNC_Reborn : DancerRotation
 	// Rewrite of method to hold dance finish until target is in range 14 yalms
 	private bool FinishTheDance(out IAction? act)
 	{
-		bool areDanceTargetsInRange = false;
-		foreach (IBattleChara hostile in AllHostileTargets)
+		var areDanceTargetsInRange = false;
+		foreach (var hostile in AllHostileTargets)
 		{
 			if (hostile.DistanceToPlayer() < 14)
 			{

@@ -29,7 +29,7 @@ public class ObjectListDelay<T> : IEnumerable<T> where T : IGameObject
 	public ObjectListDelay(Func<Vector2> getRange)
 		: this(() =>
 		{
-			Vector2 vec = getRange();
+			var vec = getRange();
 			return (vec.X, vec.Y);
 		})
 	{
@@ -43,14 +43,14 @@ public class ObjectListDelay<T> : IEnumerable<T> where T : IGameObject
 	{
 		List<T> outList = [];
 		Dictionary<ulong, DateTime> revealTime = [];
-		DateTime now = DateTime.Now;
+		var now = DateTime.Now;
 
-		foreach (T item in originData)
+		foreach (var item in originData)
 		{
-			if (!_revealTime.TryGetValue(item.GameObjectId, out DateTime time))
+			if (!_revealTime.TryGetValue(item.GameObjectId, out var time))
 			{
-				(float min, float max) = _getRange();
-				float delaySecond = min + ((float)_ran.NextDouble() * (max - min));
+				(var min, var max) = _getRange();
+				var delaySecond = min + ((float)_ran.NextDouble() * (max - min));
 				time = now + TimeSpan.FromMilliseconds(delaySecond * 1000);
 			}
 			revealTime[item.GameObjectId] = time;

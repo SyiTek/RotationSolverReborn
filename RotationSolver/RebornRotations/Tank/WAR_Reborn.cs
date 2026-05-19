@@ -1,6 +1,6 @@
 namespace RotationSolver.RebornRotations.Tank;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Tank/WAR_Reborn.cs")]
 
 public sealed class WAR_Reborn : WarriorRotation
@@ -21,6 +21,9 @@ public sealed class WAR_Reborn : WarriorRotation
 
 	[RotationConfig(CombatType.PvE, Name = "Use a stack of Onslaught when its about to overcap while standing still")]
 	public bool YEETCooldown { get; set; } = false;
+
+	[RotationConfig(CombatType.PvE, Name = "Use Inner Release while moving")]
+	public bool InnerReleaseMoving { get; set; } = true;
 
 	[RotationConfig(CombatType.PvE, Name = "Use Primal Rend while moving (Dangerous)")]
 	public bool YEET { get; set; } = false;
@@ -49,7 +52,7 @@ public sealed class WAR_Reborn : WarriorRotation
 	#region Countdown Logic
 	protected override IAction? CountDownAction(float remainTime)
 	{
-		if (remainTime < 0.54f && TomahawkPvE.CanUse(out IAction? act))
+		if (remainTime < 0.54f && TomahawkPvE.CanUse(out var act))
 		{
 			return act;
 		}
@@ -78,11 +81,11 @@ public sealed class WAR_Reborn : WarriorRotation
 		if (!StatusHelper.PlayerWillStatusEndGCD(2, 0, true, StatusID.SurgingTempest)
 			|| !StormsEyePvE.EnoughLevel)
 		{
-			if (InnerReleasePvE.CanUse(out act))
+			if ((InnerReleaseMoving || !IsMoving) && InnerReleasePvE.CanUse(out act))
 			{
 				return true;
 			}
-			if (!InnerReleasePvE.Info.EnoughLevelAndQuest() && BerserkPvE.CanUse(out act))
+			if ((InnerReleaseMoving || !IsMoving) && !InnerReleasePvE.Info.EnoughLevelAndQuest() && BerserkPvE.CanUse(out act))
 			{
 				return true;
 			}
@@ -144,8 +147,12 @@ public sealed class WAR_Reborn : WarriorRotation
 
 	protected override bool GeneralAbility(IAction nextGCD, out IAction? act)
 	{
-		int _partyCount = 0;
-		foreach (var _ in PartyMembers) _partyCount++;
+		var _partyCount = 0;
+		foreach (var _ in PartyMembers)
+		{
+			_partyCount++;
+		}
+
 		if ((InCombat && Player?.GetHealthRatio() < HealIntuition && NumberOfHostilesInRange > 0) || (InCombat && _partyCount == 1 && NumberOfHostilesInRange > 0))
 		{
 			if (BloodwhettingPvE.CanUse(out act))
@@ -198,7 +205,7 @@ public sealed class WAR_Reborn : WarriorRotation
 	[RotationDesc(ActionID.RawIntuitionPvE, ActionID.VengeancePvE, ActionID.RampartPvE, ActionID.RawIntuitionPvE, ActionID.ReprisalPvE)]
 	protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
 	{
-		bool RawSingleTargets = SoloIntuition;
+		var RawSingleTargets = SoloIntuition;
 		act = null;
 
 		if (StatusHelper.PlayerHasStatus(true, StatusID.Holmgang_409) && Player?.GetHealthRatio() < 0.3f)
@@ -216,25 +223,41 @@ public sealed class WAR_Reborn : WarriorRotation
 			return false;
 		}
 
-		if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
+		if ((!RampartPvE.Cooldown.IsCoolingDown || RampartPvE.Cooldown.ElapsedAfter(60)) && DamnationPvE.CanUse(out act) && DamnationPvE.EnoughLevel)
 		{
 			return true;
 		}
 
-		if ((!RampartPvE.Cooldown.IsCoolingDown || RampartPvE.Cooldown.ElapsedAfter(60)) && !StatusHelper.PlayerHasStatus(true, StatusID.ArmsLength))
+		if ((!RampartPvE.Cooldown.IsCoolingDown || RampartPvE.Cooldown.ElapsedAfter(60)) && VengeancePvE.CanUse(out act) && !DamnationPvE.EnoughLevel)
 		{
-			if (DamnationPvE.EnoughLevel && DamnationPvE.CanUse(out act))
-			{
-				return true;
-			}
+			return true;
+		}
 
-			if (!DamnationPvE.EnoughLevel && VengeancePvE.CanUse(out act))
+		if (!VengeancePvE.EnoughLevel)
+		{
+			if (RampartPvE.CanUse(out act))
 			{
 				return true;
 			}
 		}
 
-		if (((VengeancePvE.Cooldown.IsCoolingDown && VengeancePvE.Cooldown.ElapsedAfter(60)) || !VengeancePvE.EnoughLevel) && RampartPvE.CanUse(out act))
+		if (VengeancePvE.EnoughLevel && !DamnationPvE.EnoughLevel)
+		{
+			if (VengeancePvE.Cooldown.IsCoolingDown && VengeancePvE.Cooldown.ElapsedAfter(30) && RampartPvE.CanUse(out act))
+			{
+				return true;
+			}
+		}
+
+		if (DamnationPvE.EnoughLevel)
+		{
+			if (DamnationPvE.Cooldown.IsCoolingDown && DamnationPvE.Cooldown.ElapsedAfter(30) && RampartPvE.CanUse(out act))
+			{
+				return true;
+			}
+		}
+
+		if (ReprisalPvE.CanUse(out act, skipAoeCheck: true))
 		{
 			return true;
 		}

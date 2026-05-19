@@ -39,7 +39,7 @@ internal static class HotbarHighlightManager
 
 	public static void Dispose()
 	{
-		foreach (DrawingHighlightHotbarBase item in new List<DrawingHighlightHotbarBase>(RotationSolverPlugin._drawingElements))
+		foreach (var item in new List<DrawingHighlightHotbarBase>(RotationSolverPlugin._drawingElements))
 		{
 			item.Dispose();
 #if DEBUG

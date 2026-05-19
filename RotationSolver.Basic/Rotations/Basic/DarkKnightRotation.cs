@@ -93,7 +93,7 @@ public partial class DarkKnightRotation
 	{
 		get
 		{
-			byte stacks = StatusHelper.PlayerStatusStack(true, StatusID.BloodWeapon);
+			var stacks = StatusHelper.PlayerStatusStack(true, StatusID.BloodWeapon);
 			return stacks == byte.MaxValue ? (byte)3 : stacks;
 		}
 	}
@@ -105,7 +105,7 @@ public partial class DarkKnightRotation
 	{
 		get
 		{
-			byte stacks = StatusHelper.PlayerStatusStack(true, StatusID.Delirium_3836);
+			var stacks = StatusHelper.PlayerStatusStack(true, StatusID.Delirium_3836);
 			return stacks == byte.MaxValue ? (byte)3 : stacks;
 		}
 	}
@@ -117,7 +117,7 @@ public partial class DarkKnightRotation
 	{
 		get
 		{
-			byte stacks = StatusHelper.PlayerStatusStack(true, StatusID.Delirium_1972);
+			var stacks = StatusHelper.PlayerStatusStack(true, StatusID.Delirium_1972);
 			return stacks == byte.MaxValue ? (byte)3 : stacks;
 		}
 	}
@@ -203,7 +203,7 @@ public partial class DarkKnightRotation
 
 	static partial void ModifyUnmendPvE(ref ActionSetting setting)
 	{
-		setting.SpecialType = SpecialActionType.MeleeRange;
+		setting.SpecialType = SpecialActionType.MeleeRangedAttack;
 	}
 
 	static partial void ModifySouleaterPvE(ref ActionSetting setting)

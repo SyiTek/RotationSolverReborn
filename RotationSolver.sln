@@ -1,17 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.1.11304.174 d18.0
+VisualStudioVersion = 18.1.11304.174
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8948C02A-914E-4A51-B1FE-2C608492EBF5}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		.gitignore = .gitignore
 		Directory.Build.props = Directory.Build.props
 		.config\dotnet-tools.json = .config\dotnet-tools.json
 		Resources\HostileCastingArea.json = Resources\HostileCastingArea.json
 		Resources\HostileCastingKnockback.json = Resources\HostileCastingKnockback.json
 		Resources\HostileCastingTank.json = Resources\HostileCastingTank.json
-		Resources\IncompatiblePlugins.json = Resources\IncompatiblePlugins.json
 		manifest.json = manifest.json
 		.github\workflows\publish.yaml = .github\workflows\publish.yaml
 		UpdateDownloads.ts = UpdateDownloads.ts
@@ -24,8 +24,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RotationSolver.SourceGenerators", "RotationSolver.SourceGenerators\RotationSolver.SourceGenerators.csproj", "{9DC5B596-ED7C-4FF7-AC3C-B3DB79BC3B86}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RotationSolver.GameData", "RotationSolver.GameData\RotationSolver.GameData.csproj", "{FE8D8078-67F6-473E-9076-B01C62F5B937}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RotationSolver.DocumentationGenerator", "RotationSolver.DocumentationGenerator\RotationSolver.DocumentationGenerator.csproj", "{17FAD28D-4AC9-42DE-94D0-98ED1BE86595}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,10 +47,6 @@ Global
 		{FE8D8078-67F6-473E-9076-B01C62F5B937}.Debug|x64.Build.0 = Debug|x64
 		{FE8D8078-67F6-473E-9076-B01C62F5B937}.Release|x64.ActiveCfg = Release|x64
 		{FE8D8078-67F6-473E-9076-B01C62F5B937}.Release|x64.Build.0 = Release|x64
-		{17FAD28D-4AC9-42DE-94D0-98ED1BE86595}.Debug|x64.ActiveCfg = Debug|x64
-		{17FAD28D-4AC9-42DE-94D0-98ED1BE86595}.Debug|x64.Build.0 = Debug|x64
-		{17FAD28D-4AC9-42DE-94D0-98ED1BE86595}.Release|x64.ActiveCfg = Release|x64
-		{17FAD28D-4AC9-42DE-94D0-98ED1BE86595}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

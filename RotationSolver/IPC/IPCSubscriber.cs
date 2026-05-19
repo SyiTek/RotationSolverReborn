@@ -138,10 +138,13 @@ namespace RotationSolver.IPC
 
 		public static bool DoThing(Func<SetResult> action)
 		{
-			SetResult result = action();
-			bool check = result.CheckResult();
+			var result = action();
+			var check = result.CheckResult();
 			if (!check && result == SetResult.InvalidLease)
+			{
 				check = action().CheckResult();
+			}
+
 			return check;
 		}
 
@@ -203,10 +206,14 @@ namespace RotationSolver.IPC
 		private static bool Register()
 		{
 			if (_curLease.HasValue)
+			{
 				return true;
+			}
 
 			if (!IsEnabled)
+			{
 				return false;
+			}
 
 			// Use Dalamud plugin info for internal and display names where available.
 			var internalName = Svc.PluginInterface.InternalName ?? "RotationSolver";

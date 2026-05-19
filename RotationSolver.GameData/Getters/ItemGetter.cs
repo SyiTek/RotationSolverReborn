@@ -29,8 +29,15 @@ internal class ItemGetter(Lumina.GameData gameData)
 	/// <returns>True if the item should be added; otherwise, false.</returns>
 	protected override bool AddToList(Item item)
 	{
-		if (item.ItemSearchCategory.RowId != 43) return false;
-		if (item.FilterGroup is not 10 and not 16 and not 19) return false;
+		if (item.ItemSearchCategory.RowId != 43)
+		{
+			return false;
+		}
+
+		if (item.FilterGroup is not 10 and not 16 and not 19)
+		{
+			return false;
+		}
 
 		return true;
 	}

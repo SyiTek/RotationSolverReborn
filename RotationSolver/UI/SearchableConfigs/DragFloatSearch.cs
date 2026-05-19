@@ -11,14 +11,14 @@ internal class DragFloatSearch : Searchable
 	{
 		get
 		{
-			string baseDesc = base.Description;
+			var baseDesc = base.Description;
 			return !string.IsNullOrEmpty(baseDesc) ? baseDesc + "\n" + Unit.ToString() : Unit.ToString();
 		}
 	}
 
 	public DragFloatSearch(PropertyInfo property) : base(property)
 	{
-		RangeAttribute? range = _property.GetCustomAttribute<RangeAttribute>();
+		var range = _property.GetCustomAttribute<RangeAttribute>();
 		if (range != null)
 		{
 			Min = range.MinValue;
@@ -43,17 +43,17 @@ internal class DragFloatSearch : Searchable
 
 	protected override void DrawMain()
 	{
-		float value = Value;
+		var value = Value;
 		ImGui.SetNextItemWidth(Scale * DRAG_WIDTH);
 
 		// Cache the hash code to avoid multiple calls
-		int hashCode = GetHashCode();
+		var hashCode = GetHashCode();
 
 		// Draw slider or drag float based on unit type
 		if (Unit == ConfigUnitType.Percent)
 		{
 			// Convert the value to percentage for display
-			float displayValue = value * 100f;
+			var displayValue = value * 100f;
 			if (ImGui.SliderFloat($"##Config_{ID}{hashCode}", ref displayValue, Min * 100f, Max * 100f, $"{displayValue:F1}{Unit.ToSymbol()}"))
 			{
 				// Convert the display value back to the original scale

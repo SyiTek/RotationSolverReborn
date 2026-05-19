@@ -30,9 +30,9 @@ internal static class MovingUpdater
 		}
 
 		// Config flags for special statuses/actions
-		bool cfgFlame = Service.Config?.PosFlameThrower == true;
-		bool cfgPassage = Service.Config?.PosPassageOfArms == true;
-		bool cfgImpro = Service.Config?.PosImprovisation == true;
+		var cfgFlame = Service.Config?.PosFlameThrower == true;
+		var cfgPassage = Service.Config?.PosPassageOfArms == true;
+		var cfgImpro = Service.Config?.PosImprovisation == true;
 
 		// Action
 		ActionID action;
@@ -50,13 +50,13 @@ internal static class MovingUpdater
 		}
 
 		// Special actions
-		bool specialActions = ActionManager.GetAdjustedCastTime(ActionType.Action, (uint)action) > 0
+		var specialActions = ActionManager.GetAdjustedCastTime(ActionType.Action, (uint)action) > 0
 							  || (cfgFlame && Service.GetAdjustedActionId(ActionID.FlameThrowerPvE) == action)
 							  || (cfgPassage && Service.GetAdjustedActionId(ActionID.PassageOfArmsPvE) == action)
 							  || (cfgImpro && Service.GetAdjustedActionId(ActionID.ImprovisationPvE) == action);
 
 		// Special statuses
-		bool specialStatus = (cfgFlame && StatusHelper.PlayerHasStatus(true, StatusID.Flamethrower))
+		var specialStatus = (cfgFlame && StatusHelper.PlayerHasStatus(true, StatusID.Flamethrower))
 							 || (cfgPassage && StatusHelper.PlayerHasStatus(true, StatusID.PassageOfArms))
 							 || (cfgImpro && StatusHelper.PlayerHasStatus(true, StatusID.Improvisation));
 

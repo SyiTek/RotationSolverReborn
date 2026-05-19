@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace RotationSolver.RebornRotations.Healer;
 
-[Rotation("Reborn", CombatType.PvE, GameVersion = "7.45")]
+[Rotation("Reborn", CombatType.PvE, GameVersion = "7.5")]
 [SourceCode(Path = "main/RebornRotations/Healer/SGE_Reborn.cs")]
 
 public sealed class SGE_Reborn : SageRotation
@@ -110,7 +110,7 @@ public sealed class SGE_Reborn : SageRotation
 	protected override IAction? CountDownAction(float remainTime)
 	{
 		if (OpenerSelection == OpenerStrategy.PneumaOpener && remainTime < PneumaPvE.Info.CastTime + CountDownAhead
-			&& PneumaPvE.CanUse(out IAction? act))
+			&& PneumaPvE.CanUse(out var act))
 		{
 			return act;
 		}
@@ -301,14 +301,14 @@ public sealed class SGE_Reborn : SageRotation
 	[RotationDesc(ActionID.TaurocholePvE, ActionID.DruocholePvE, ActionID.HolosPvE, ActionID.PhysisPvE, ActionID.PanhaimaPvE)]
 	protected override bool HealSingleAbility(IAction nextGCD, out IAction? act)
 	{
-		IEnumerable<IBattleChara> tankEnum = PartyMembers.GetJobCategory(JobRole.Tank);
+		var tankEnum = PartyMembers.GetJobCategory(JobRole.Tank);
 		List<IBattleChara> tank = [.. tankEnum];
 
 		if (nextGCD.IsTheSameTo(false, PneumaPvE, EukrasianDiagnosisPvE, DiagnosisPvE, PrognosisPvE))
 		{
-			for (int i = 0; i < tank.Count; i++)
+			for (var i = 0; i < tank.Count; i++)
 			{
-				IBattleChara t = tank[i];
+				var t = tank[i];
 				if (t.GetHealthRatio() < KrasisTankHeal)
 				{
 					if (KrasisPvE.CanUse(out act))
@@ -318,7 +318,7 @@ public sealed class SGE_Reborn : SageRotation
 				}
 			}
 
-			foreach (IBattleChara member in PartyMembers)
+			foreach (var member in PartyMembers)
 			{
 				if (member.GetHealthRatio() < KrasisHeal)
 				{
@@ -348,7 +348,7 @@ public sealed class SGE_Reborn : SageRotation
 			return true;
 		}
 
-		foreach (IBattleChara member in PartyMembers)
+		foreach (var member in PartyMembers)
 		{
 			if (SoteriaPvE.CanUse(out act) && member.HasStatus(true, StatusID.Kardion) && member.GetHealthRatio() < SoteriaHeal)
 			{
@@ -356,9 +356,9 @@ public sealed class SGE_Reborn : SageRotation
 			}
 		}
 
-		for (int i = 0; i < tank.Count; i++)
+		for (var i = 0; i < tank.Count; i++)
 		{
-			IBattleChara t = tank[i];
+			var t = tank[i];
 			if (Addersgall < 1 && t.GetHealthRatio() < OGCDTankHeal)
 			{
 				if (HaimaPvE.CanUse(out act))
@@ -412,8 +412,8 @@ public sealed class SGE_Reborn : SageRotation
 			return true;
 		}
 
-		bool found = false;
-		foreach (IBattleChara b in PartyMembers)
+		var found = false;
+		foreach (var b in PartyMembers)
 		{
 			if (b.HasStatus(true, StatusID.Kardion) && b.GetHealthRatio() < HealthSingleAbility)
 			{
@@ -701,9 +701,9 @@ public sealed class SGE_Reborn : SageRotation
 			return base.HealAreaGCD(out act);
 		}
 
-		bool tankBelowThreshold = false;
-		IEnumerable<IBattleChara> tanks = PartyMembers.GetJobCategory(JobRole.Tank);
-		foreach (IBattleChara t in tanks)
+		var tankBelowThreshold = false;
+		var tanks = PartyMembers.GetJobCategory(JobRole.Tank);
+		foreach (var t in tanks)
 		{
 			if (t.GetHealthRatio() < PneumaAOETankHeal)
 			{
@@ -803,7 +803,7 @@ public sealed class SGE_Reborn : SageRotation
 			return true;
 		}
 
-		foreach (IBattleChara member in PartyMembers)
+		foreach (var member in PartyMembers)
 		{
 			if (member.GetHealthRatio() < PneumaSTPartyHeal && !member.IsDead)
 			{
@@ -814,8 +814,8 @@ public sealed class SGE_Reborn : SageRotation
 			}
 		}
 
-		IEnumerable<IBattleChara> tanks = PartyMembers.GetJobCategory(JobRole.Tank);
-		foreach (IBattleChara tank in tanks)
+		var tanks = PartyMembers.GetJobCategory(JobRole.Tank);
+		foreach (var tank in tanks)
 		{
 			if (tank.GetHealthRatio() < PneumaSTTankHeal && !tank.IsDead)
 			{
@@ -889,12 +889,14 @@ public sealed class SGE_Reborn : SageRotation
 	{
 		get
 		{
-			int aliveHealerCount = 0;
-			IEnumerable<IBattleChara> healers = PartyMembers.GetJobCategory(JobRole.Healer);
-			foreach (IBattleChara h in healers)
+			var aliveHealerCount = 0;
+			var healers = PartyMembers.GetJobCategory(JobRole.Healer);
+			foreach (var h in healers)
 			{
 				if (!h.IsDead)
+				{
 					aliveHealerCount++;
+				}
 			}
 
 			return base.CanHealSingleSpell && (GCDHeal || aliveHealerCount == 1);
@@ -904,12 +906,14 @@ public sealed class SGE_Reborn : SageRotation
 	{
 		get
 		{
-			int aliveHealerCount = 0;
-			IEnumerable<IBattleChara> healers = PartyMembers.GetJobCategory(JobRole.Healer);
-			foreach (IBattleChara h in healers)
+			var aliveHealerCount = 0;
+			var healers = PartyMembers.GetJobCategory(JobRole.Healer);
+			foreach (var h in healers)
 			{
 				if (!h.IsDead)
+				{
 					aliveHealerCount++;
+				}
 			}
 
 			return base.CanHealAreaSpell && (GCDHeal || aliveHealerCount == 1);

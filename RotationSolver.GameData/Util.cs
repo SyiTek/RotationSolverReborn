@@ -15,15 +15,28 @@ internal static partial class Util
 	/// <returns>True if the job category represents a single job for combat; otherwise, false.</returns>
 	public static bool IsSingleJobForCombat(this ClassJobCategory jobCategory)
 	{
-		if (jobCategory.RowId == 68) return true; // ACN SMN SCH 
-		var str = jobCategory.Name.ToString().Replace(" ", "");
-		bool allUpper = true;
-		foreach (char c in str)
+		if (jobCategory.RowId == 68)
 		{
-			if (!char.IsUpper(c)) { allUpper = false; break; }
+			return true; // ACN SMN SCH 
 		}
-		if (!allUpper) return false;
-		if (str.Length is not 3 and not 6) return false;
+
+		var str = jobCategory.Name.ToString().Replace(" ", "");
+		var allUpper = true;
+		foreach (var c in str)
+		{
+			if (!char.IsUpper(c))
+			{ allUpper = false; break; }
+		}
+		if (!allUpper)
+		{
+			return false;
+		}
+
+		if (str.Length is not 3 and not 6)
+		{
+			return false;
+		}
+
 		return true;
 	}
 
@@ -42,7 +55,7 @@ internal static partial class Util
 	public static string Space(this string str)
 	{
 		var result = new StringBuilder();
-		bool lower = false;
+		var lower = false;
 
 		foreach (var c in str)
 		{
@@ -65,11 +78,18 @@ internal static partial class Util
 	/// <returns>The string containing only ASCII characters.</returns>
 	public static string OnlyAscii(this string input)
 	{
-		if (string.IsNullOrEmpty(input)) return input;
-		var sb = new StringBuilder(input.Length);
-		foreach (char c in input)
+		if (string.IsNullOrEmpty(input))
 		{
-			if (char.IsAscii(c)) sb.Append(c);
+			return input;
+		}
+
+		var sb = new StringBuilder(input.Length);
+		foreach (var c in input)
+		{
+			if (char.IsAscii(c))
+			{
+				sb.Append(c);
+			}
 		}
 		return sb.ToString();
 	}
@@ -81,12 +101,12 @@ internal static partial class Util
 	/// <returns>The PascalCase string.</returns>
 	public static string ToPascalCase(this string input)
 	{
-		string cleaned = InvalidCharsRgx().Replace(WhiteSpace().Replace(input, "_"), string.Empty);
-		string[] parts = cleaned.Split(new char[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+		var cleaned = InvalidCharsRgx().Replace(WhiteSpace().Replace(input, "_"), string.Empty);
+		var parts = cleaned.Split(['_'], StringSplitOptions.RemoveEmptyEntries);
 		var sb = new StringBuilder();
-		foreach (string w0 in parts)
+		foreach (var w0 in parts)
 		{
-			string w = StartWithLowerCaseChar().Replace(w0, m => m.Value.ToUpper());
+			var w = StartWithLowerCaseChar().Replace(w0, m => m.Value.ToUpper());
 			w = FirstCharFollowedByUpperCasesOnly().Replace(w, m => m.Value.ToLower());
 			w = LowerCaseNextToNumber().Replace(w, m => m.Value.ToUpper());
 			w = UpperCaseInside().Replace(w, m => m.Value.ToLower());
@@ -124,12 +144,14 @@ internal static partial class Util
 	/// <returns>The generated property code.</returns>
 	public static string ArrayNames(string propertyName, string propertyType, string modifier, params string[] items)
 	{
+		var itemsPart = items.Length > 0 ? string.Join(", ", items) + "," : string.Empty;
+		var basePart = modifier.Contains("override") ? $"..base.{propertyName}," : string.Empty;
 		var thisItems = $"""
-            [
-                {string.Join(", ", items)},
-                {(modifier.Contains("override") ? $"..base.{propertyName}," : string.Empty)}
-            ]
-            """;
+			[
+				{itemsPart}
+				{basePart}
+			]
+			""";
 		return $$"""
         private {{propertyType}}[] _{{propertyName}} = null;
 
@@ -190,7 +212,9 @@ internal static partial class Util
 	public static string SanitizeXmlDescription(string description)
 	{
 		if (string.IsNullOrEmpty(description))
+		{
 			return description;
+		}
 
 		// Remove or replace problematic HTML-like tags that are not valid XML
 		// Handle colortype tags with parentheses and their remnants

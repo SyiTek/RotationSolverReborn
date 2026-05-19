@@ -178,7 +178,10 @@ public static class IActionHelper
 			foreach (var action in list)
 			{
 				if ((isAdjust && action.AdjustedID == (uint)id) ||
-					(!isAdjust && action.ID == (uint)id)) return action;
+					(!isAdjust && action.ID == (uint)id))
+				{
+					return action;
+				}
 			}
 		}
 
@@ -198,7 +201,7 @@ public static class IActionHelper
 			return false;
 		}
 
-		for (int i = 0; i < ids.Length; i++)
+		for (var i = 0; i < ids.Length; i++)
 		{
 			if (ids[i].Equals(id))
 			{
@@ -221,8 +224,8 @@ public static class IActionHelper
 			return [];
 		}
 
-		ActionID[] result = new ActionID[actions.Length];
-		for (int i = 0; i < actions.Length; i++)
+		var result = new ActionID[actions.Length];
+		for (var i = 0; i < actions.Length; i++)
 		{
 			result[i] = isAdjust ? (ActionID)actions[i].AdjustedID : (ActionID)actions[i].ID;
 		}

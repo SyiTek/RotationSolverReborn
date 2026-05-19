@@ -94,7 +94,9 @@ public partial class SageRotation
 			foreach (var m in DataCenter.PartyMembers)
 			{
 				if (m.HasStatus(true, StatusID.Kardion))
+				{
 					return false;
+				}
 			}
 			return true;
 		};
@@ -194,7 +196,9 @@ public partial class SageRotation
 			foreach (var m in DataCenter.PartyMembers)
 			{
 				if (m.HasStatus(true, StatusID.Kardion))
+				{
 					return true;
+				}
 			}
 			return false;
 		};

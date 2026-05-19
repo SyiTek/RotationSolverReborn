@@ -10,11 +10,11 @@ internal class ColorEditSearch(PropertyInfo property) : Searchable(property)
 
 	protected override void DrawMain()
 	{
-		Vector4 value = Value;
+		var value = Value;
 		ImGui.SetNextItemWidth(DRAG_WIDTH * 1.5f * Scale);
 
 		// Cache the hash code to avoid multiple calls
-		int hashCode = GetHashCode();
+		var hashCode = GetHashCode();
 
 		// Draw the color edit control
 		if (ImGui.ColorEdit4($"{Name}##Config_{ID}{hashCode}", ref value))
