@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Ranged;
 
-[Rotation("SezuraiDNC", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiDNC", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned DNC with BMR timeline integration, Technical Step burst, Esprit management, and proc optimization.")]
 [SourceCode(Path = "main/ExtraRotations/Ranged/SezuraiDNC.cs")]
 [ExtraRotation]

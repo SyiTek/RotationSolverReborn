@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Ranged;
 
-[Rotation("SezuraiMCH", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiMCH", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned MCH with double Hypercharge burst, proper FMF timing, reliable Queen deployment, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Ranged/SezuraiMCH.cs")]
 [ExtraRotation]

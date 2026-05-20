@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Tank;
 
-[Rotation("SezuraiWAR", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiWAR", CombatType.PvE, GameVersion = "7.5",
     Description = "BMR-smart Balance-aligned WAR with timeline-aware mitigation, downtime-aware burst, and Inner Release management.")]
 [SourceCode(Path = "main/ExtraRotations/Tank/SezuraiWAR.cs")]
 [ExtraRotation]
@@ -183,7 +183,7 @@ public sealed class SezuraiWAR : WarriorRotation
     // Default: Heavy Swing → Maim → Storm's Path (30 gauge per combo)
     // Refresh: Storm's Eye when Surging Tempest < 15s remaining
     // Fell Cleave at 60+ gauge to prevent overcap from Storm's Path (+30)
-    // Never Infuriate at 60+ gauge (grants +50, would overcap)
+    // Never Infuriate at 51+ gauge (grants +50, would overcap the 100 cap)
 
     protected override IAction? CountDownAction(float remainTime)
     {

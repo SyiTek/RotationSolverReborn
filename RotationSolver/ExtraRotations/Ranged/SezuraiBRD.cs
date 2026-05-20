@@ -3,7 +3,7 @@ using ECommons.DalamudServices;
 
 namespace RotationSolver.ExtraRotations.Ranged;
 
-[Rotation("SezuraiBRD", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiBRD", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned BRD with song cycle management, Radiant Finale burst windows, Pitch Perfect optimization, Empyreal Arrow drift prevention, and BMR timeline integration for proactive mitigation and downtime optimization.")]
 [SourceCode(Path = "main/ExtraRotations/Ranged/SezuraiBRD.cs")]
 [ExtraRotation]

@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("SezuraiSAM", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiSAM", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned SAM with Tendo burst, Higanbana management, Kenki optimization, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiSAM.cs")]
 [ExtraRotation]

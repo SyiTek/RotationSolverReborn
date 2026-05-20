@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace RotationSolver.ExtraRotations.Magical;
 
-[Rotation("SezuraiSMN", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiSMN", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned SMN with Searing Light burst, primal optimization, demi-summon management, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Magical/SezuraiSMN.cs")]
 [ExtraRotation]

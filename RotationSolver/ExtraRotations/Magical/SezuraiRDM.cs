@@ -27,7 +27,7 @@ namespace RotationSolver.ExtraRotations.Magical;
 ///   - Force melee combo / mana dump before downtime to preserve gauge value.
 ///   - Full debug panel with BMR timeline breakdown.
 /// </summary>
-[Rotation("SezuraiRDM", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiRDM", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned RDM with Embolden burst, mana balance optimization, double melee combo, Dawntrail abilities, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Magical/SezuraiRDM.cs")]
 [ExtraRotation]

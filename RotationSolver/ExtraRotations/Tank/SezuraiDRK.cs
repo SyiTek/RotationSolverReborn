@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Tank;
 
-[Rotation("SezuraiDRK", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiDRK", CombatType.PvE, GameVersion = "7.5",
     Description = "BMR-smart Balance-aligned DRK with 5/2 Edge plan, Delirium burst, MP optimization, Living Shadow alignment, and timeline-aware mitigation/downtime.")]
 [SourceCode(Path = "main/ExtraRotations/Tank/SezuraiDRK.cs")]
 [ExtraRotation]

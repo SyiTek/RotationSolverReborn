@@ -3,7 +3,7 @@ using RotationSolver.Updaters;
 
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("SezuraiMNK", CombatType.PvE, GameVersion = "7.4", Description = "The one who holds all weight.")]
+[Rotation("SezuraiMNK", CombatType.PvE, GameVersion = "7.5", Description = "The one who holds all weight.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiMNK.cs")]
 public sealed class SezuraiMNK : MonkRotation
 {

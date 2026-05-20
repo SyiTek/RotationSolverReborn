@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("SezuraiNIN", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiNIN", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned NIN with 60s burst around Kunai's Bane, mudra optimization, Kazematoi management, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiNIN.cs")]
 [ExtraRotation]
@@ -531,7 +531,7 @@ public sealed class SezuraiNIN : NinjaRotation
     //
     // === FILLER / SUSTAIN ===
     // Combo: Spinning Edge → Gust Slash → Aeolian Edge (rear) or Armor Crush (flank)
-    // Kazematoi: Aeolian Edge grants 2 stacks, spend for positional flexibility
+    // Kazematoi: Armor Crush builds 2 stacks (max 5), Aeolian Edge spends 1 — manage balance
     // Raiton as default ninjutsu between bursts (don't waste Suiton outside burst prep)
     // Spend Ninki on Bhavacakra at ~85+ to avoid overcap, pool for burst below that
     // Use Fleeting/Forked Raiju ASAP to avoid losing proc

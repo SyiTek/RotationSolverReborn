@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace RotationSolver.ExtraRotations.Healer;
 
-[Rotation("SezuraiSGE", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiSGE", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned SGE with Phlegma burst, Addersgall management, BMR timeline integration, and 3 healing modes.")]
 [SourceCode(Path = "main/ExtraRotations/Healer/SezuraiSGE.cs")]
 [ExtraRotation]

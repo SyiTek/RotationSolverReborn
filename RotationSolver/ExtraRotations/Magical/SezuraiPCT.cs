@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Magical;
 
-[Rotation("SezuraiPCT", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiPCT", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned PCT with Starry Muse 9-spell burst, " +
                   "motif management, canvas cycling, paint optimization, " +
                   "and BMR timeline integration (Tempera/Addle spreading, " +

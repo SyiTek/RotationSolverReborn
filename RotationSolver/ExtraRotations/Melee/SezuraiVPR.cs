@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("SezuraiVPR", CombatType.PvE, GameVersion = "7.41", Description = "Balance-aligned VPR with burst timing, 10-second rule, and opener. Start at REAR for opener.")]
+[Rotation("SezuraiVPR", CombatType.PvE, GameVersion = "7.5", Description = "Balance-aligned VPR with burst timing, 10-second rule, and opener. Start at REAR for opener.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiVPR.cs")]
 [ExtraRotation]
 public sealed class SezuraiVPR : ViperRotation

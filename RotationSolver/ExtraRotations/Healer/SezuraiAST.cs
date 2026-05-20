@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace RotationSolver.ExtraRotations.Healer;
 
-[Rotation("SezuraiAST", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiAST", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned AST with proper Divination timing, burst-aligned Oracle/Lord, and configurable healing.")]
 [SourceCode(Path = "main/ExtraRotations/Healer/SezuraiAST.cs")]
 [ExtraRotation]

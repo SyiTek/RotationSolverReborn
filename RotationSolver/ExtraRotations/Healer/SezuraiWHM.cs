@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace RotationSolver.ExtraRotations.Healer;
 
-[Rotation("SezuraiWHM", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiWHM", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned WHM with BMR timeline integration, Presence of Mind burst, Lily management, and 3 healing modes.")]
 [SourceCode(Path = "main/ExtraRotations/Healer/SezuraiWHM.cs")]
 [ExtraRotation]

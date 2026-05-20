@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Tank;
 
-[Rotation("SezuraiGNB", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiGNB", CombatType.PvE, GameVersion = "7.5",
     Description = "BMR-smart Balance-aligned GNB with timeline-aware mitigation, downtime-aware burst, Gnashing Fang combo, Reign combo, and cartridge optimization.")]
 [SourceCode(Path = "main/ExtraRotations/Tank/SezuraiGNB.cs")]
 [ExtraRotation]

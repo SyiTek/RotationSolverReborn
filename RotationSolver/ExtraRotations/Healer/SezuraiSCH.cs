@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace RotationSolver.ExtraRotations.Healer;
 
-[Rotation("SezuraiSCH", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiSCH", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned SCH with BMR timeline integration, Chain Stratagem burst, Energy Drain optimization, and 3 healing modes.")]
 [SourceCode(Path = "main/ExtraRotations/Healer/SezuraiSCH.cs")]
 [ExtraRotation]

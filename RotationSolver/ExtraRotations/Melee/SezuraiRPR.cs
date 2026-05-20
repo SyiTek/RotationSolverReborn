@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("SezuraiRPR", CombatType.PvE, GameVersion = "7.41", Description = "Balance-aligned RPR with double Enshroud burst, Arcane Circle alignment, gauge optimization, and BMR timeline integration.")]
+[Rotation("SezuraiRPR", CombatType.PvE, GameVersion = "7.5", Description = "Balance-aligned RPR with double Enshroud burst, Arcane Circle alignment, gauge optimization, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiRPR.cs")]
 [ExtraRotation]
 public sealed class SezuraiRPR : ReaperRotation

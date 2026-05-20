@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Melee;
 
-[Rotation("SezuraiDRG", CombatType.PvE, GameVersion = "7.41", Description = "Balance-aligned DRG with proper burst ordering, Life Surge targeting, Geirskogul timing, and BMR timeline integration.")]
+[Rotation("SezuraiDRG", CombatType.PvE, GameVersion = "7.5", Description = "Balance-aligned DRG with proper burst ordering, Life Surge targeting, Geirskogul timing, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Melee/SezuraiDRG.cs")]
 [ExtraRotation]
 public sealed class SezuraiDRG : DragoonRotation

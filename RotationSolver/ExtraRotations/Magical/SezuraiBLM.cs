@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Magical;
 
-[Rotation("SezuraiBLM", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiBLM", CombatType.PvE, GameVersion = "7.5",
     Description = "Balance-aligned BLM with optimized Fire/Ice phases, Flare Star management, Manafont double AF, movement tools, and BMR timeline integration.")]
 [SourceCode(Path = "main/ExtraRotations/Magical/SezuraiBLM.cs")]
 [ExtraRotation]

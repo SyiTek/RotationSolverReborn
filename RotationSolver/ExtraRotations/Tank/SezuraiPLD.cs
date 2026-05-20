@@ -1,6 +1,6 @@
 namespace RotationSolver.ExtraRotations.Tank;
 
-[Rotation("SezuraiPLD", CombatType.PvE, GameVersion = "7.41",
+[Rotation("SezuraiPLD", CombatType.PvE, GameVersion = "7.5",
     Description = "BMR-smart Balance-aligned PLD with timeline-aware mitigation, downtime-aware burst, FoF/Confiteor optimization, and proper defensive layering.")]
 [SourceCode(Path = "main/ExtraRotations/Tank/SezuraiPLD.cs")]
 [ExtraRotation]
