@@ -555,6 +555,7 @@ public sealed class SezuraiVPR : ViperRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // 1. AbilityPrio2: restrict GCDs if oGCDs are pending
         if (AbilityPrio2 && !NoAbilityReady)
         {

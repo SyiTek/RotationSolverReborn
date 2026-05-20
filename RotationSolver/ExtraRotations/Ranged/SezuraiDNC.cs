@@ -510,6 +510,7 @@ public sealed class SezuraiDNC : DancerRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // === DANCE COMPLETION ===
         // If we are mid-dance, finish the dance steps and then the Finish.
         // NEVER break a dance once started.

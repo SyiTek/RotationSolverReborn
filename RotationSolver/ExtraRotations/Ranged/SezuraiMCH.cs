@@ -421,6 +421,7 @@ public sealed class SezuraiMCH : MachinistRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // === OVERHEATED GCDs (highest priority during overheat) ===
         if (AutoCrossbowPvE.CanUse(out act))
             return true;

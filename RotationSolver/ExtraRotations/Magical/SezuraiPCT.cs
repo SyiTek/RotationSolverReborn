@@ -634,6 +634,7 @@ public sealed class SezuraiPCT : PictomancerRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // ============================================================
         // === BMR STATE COMPUTATION (used throughout GCD logic) ===
         // ============================================================

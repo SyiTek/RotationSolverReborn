@@ -557,6 +557,7 @@ public sealed class SezuraiDRG : DragoonRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         bool doomSpikeRightNow = DoomSpikeWhenever;
 
         // === AoE Combo (3+ targets) ===

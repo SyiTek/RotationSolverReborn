@@ -517,6 +517,7 @@ public sealed class SezuraiBLM : BlackMageRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // ============================================================
         // PRIORITY 0: FLARE STAR (6 Astral Soul stacks)
         // Flare Star is Dawntrail's new payoff spell. Must cast immediately

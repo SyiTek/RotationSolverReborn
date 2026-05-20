@@ -614,6 +614,7 @@ public sealed class SezuraiMNK : MonkRotation
     #region GCD Logic
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         RotationUpdater();
 
         // BMR-aware: If downtime is imminent, prioritize finishing blitz and spending resources

@@ -109,6 +109,10 @@ internal static class BossModUpdater
 
 			DataCenter.BMRForceCancelCast = BMRTimeline_IPCSubscriber.ForceCancelCast?.Invoke() ?? false;
 			DataCenter.BMRMaxCastTime = BMRTimeline_IPCSubscriber.MaxCastTime?.Invoke() ?? float.MaxValue;
+			DataCenter.BMRRecommendedPositional = BMRTimeline_IPCSubscriber.RecommendedPositional?.Invoke() ?? 0;
+			var arenaCenter = BMRTimeline_IPCSubscriber.ArenaCenter?.Invoke();
+			DataCenter.BMRArenaCenter = arenaCenter ?? default;
+			DataCenter.BMRArenaRadius = arenaCenter.HasValue ? (BMRTimeline_IPCSubscriber.ArenaRadius?.Invoke() ?? 0f) : 0f;
 		}
 		catch
 		{

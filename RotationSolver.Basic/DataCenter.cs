@@ -2395,6 +2395,9 @@ internal static class DataCenter
 	public static SpecialMode BMRSpecialModeType { get; set; } = SpecialMode.Normal;
 	public static bool BMRForceCancelCast { get; set; }
 	public static float BMRMaxCastTime { get; set; } = float.MaxValue;
+	public static int BMRRecommendedPositional { get; set; }
+	public static Vector3 BMRArenaCenter { get; set; }
+	public static float BMRArenaRadius { get; set; }
 
 	// Debug diagnostics
 	public static float BMRDebugTimelineRaidwide { get; set; } = float.MaxValue;
@@ -2491,6 +2494,9 @@ internal static class DataCenter
 		BMRSpecialModeType = 0;
 		BMRForceCancelCast = false;
 		BMRMaxCastTime = float.MaxValue;
+		BMRRecommendedPositional = 0;
+		BMRArenaCenter = default;
+		BMRArenaRadius = 0f;
 		BMRDebugTimelineRaidwide = float.MaxValue;
 		BMRDebugTimelineTankbuster = float.MaxValue;
 		BMRDebugHintsRaidwide = float.MaxValue;

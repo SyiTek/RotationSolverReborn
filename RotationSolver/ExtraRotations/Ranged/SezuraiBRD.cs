@@ -570,6 +570,7 @@ public sealed class SezuraiBRD : BardRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // === SPECIAL PROC GCDs (use before they expire) ===
 
         // Blast Arrow: follow-up to Apex Arrow, high potency. Use immediately.

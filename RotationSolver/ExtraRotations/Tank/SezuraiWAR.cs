@@ -112,7 +112,7 @@ public sealed class SezuraiWAR : WarriorRotation
         ImGui.Text($"HasPrimalRendReady: {HasPrimalRendReady}");
         ImGui.Text($"PrimalWrathReady: {PrimalWrathPvEReady}");
         ImGui.Text($"PrimalRuinationReady: {PrimalRuinationPvEReady}");
-        ImGui.Text($"InnerChaosPvEReady: {InnerChaosPvEeady}");
+        ImGui.Text($"InnerChaosPvEReady: {InnerChaosPvEReady}");
         ImGui.Text($"--- Gauge ---");
         ImGui.Text($"BeastGauge: {BeastGauge}");
         ImGui.Text($"OnslaughtCharges: {OnslaughtPvE.Cooldown.CurrentCharges}/{OnslaughtMax}");
@@ -617,6 +617,7 @@ public sealed class SezuraiWAR : WarriorRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // Gate: ensure Surging Tempest is active (or not yet unlocked) before
         // spending gauge on powerful GCDs. If it's about to fall off, let the
         // combo section below handle refreshing it first.

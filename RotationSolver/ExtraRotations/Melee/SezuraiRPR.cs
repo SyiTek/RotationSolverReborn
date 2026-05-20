@@ -596,6 +596,7 @@ public sealed class SezuraiRPR : ReaperRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // ======================================================================
         // 1. PERFECTIO (always finish - highest priority)
         // After Communio, Perfectio becomes available. Must be used immediately.

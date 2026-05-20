@@ -1308,6 +1308,38 @@ public partial class CustomRotation
 	/// </summary>
 	public static bool BMRCheckDashSafe(System.Numerics.Vector3 from, System.Numerics.Vector3 to)
 		=> DataCenter.IsDashSafe(from, to);
+
+	/// <summary>
+	/// BMR-recommended positional for this encounter: 0=any, 1=flank, 2=rear, 3=front.
+	/// </summary>
+	[Description("BMR recommended positional (0=any 1=flank 2=rear 3=front)")]
+	public static int BMRRecommendedPositional => DataCenter.BMRRecommendedPositional;
+
+	/// <summary>
+	/// Center of the arena according to BMR. (0,0,0) when unavailable.
+	/// </summary>
+	[Description("BMR arena center position")]
+	public static System.Numerics.Vector3 BMRArenaCenter => DataCenter.BMRArenaCenter;
+
+	/// <summary>
+	/// Radius of the arena according to BMR. 0 when unavailable.
+	/// </summary>
+	[Description("BMR arena radius")]
+	public static float BMRArenaRadius => DataCenter.BMRArenaRadius;
+
+	/// <summary>
+	/// True when a NoMovement mechanic (stop all movement) is incoming within the specified seconds.
+	/// </summary>
+	public static bool BMRNoMovementWithin(float seconds)
+		=> BMRActive && BMRSpecialModeType == SpecialMode.NoMovement && BMRSpecialModeIn is > 0f and < float.MaxValue && BMRSpecialModeIn <= seconds;
+
+	/// <summary>
+	/// True when Pyretic is currently the active special mode and it started within the last 0.5s
+	/// or is starting within 0.5s. Use this to block all GCDs during the Pyretic window.
+	/// </summary>
+	[Description("BMR Pyretic is active right now")]
+	public static bool BMRPyreticActive
+		=> BMRActive && BMRSpecialModeType == SpecialMode.Pyretic && BMRSpecialModeIn < 0.5f;
 	#endregion
 
 	/// <summary>

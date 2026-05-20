@@ -791,6 +791,7 @@ public sealed class SezuraiRDM : RedMageRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // Track whether we hold an instant-cast buff that should not be spent on a short spell
         bool hasInstantBuff = HasDualcast || HasSwift;
 

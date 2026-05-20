@@ -943,6 +943,7 @@ public sealed class SezuraiNIN : NinjaRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // 1. Phantom Kamaitachi: use during burst for alignment, or if buff is about to expire.
         // BMR: Also use before downtime so the proc is not wasted.
         if (!IsExecutingMudra && NoNinjutsu && !HasRaijuReady

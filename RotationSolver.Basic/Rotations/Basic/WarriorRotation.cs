@@ -53,7 +53,7 @@ public partial class WarriorRotation
 	/// <summary>
 	/// 
 	/// </summary>
-	public static bool InnerChaosPvEeady => Service.GetAdjustedActionId(ActionID.FellCleavePvE) == ActionID.InnerChaosPvE;
+	public static bool InnerChaosPvEReady => Service.GetAdjustedActionId(ActionID.FellCleavePvE) == ActionID.InnerChaosPvE;
 
 	/// <summary>
 	/// 
@@ -76,7 +76,7 @@ public partial class WarriorRotation
 		ImGui.Text("OnslaughtMax: " + OnslaughtMax.ToString());
 		ImGui.TextColored(ImGuiColors.DalamudViolet, "PvE Actions");
 		ImGui.Text("ChaoticCyclonePvEReady: " + ChaoticCyclonePvEReady.ToString());
-		ImGui.Text("InnerChaosPvEeady: " + InnerChaosPvEeady.ToString());
+		ImGui.Text("InnerChaosPvEReady: " + InnerChaosPvEReady.ToString());
 		ImGui.Text("PrimalWrathPvEReady: " + PrimalWrathPvEReady.ToString());
 		ImGui.Text("PrimalRuinationPvEReady: " + PrimalRuinationPvEReady.ToString());
 	}
@@ -320,7 +320,7 @@ public partial class WarriorRotation
 
 	static partial void ModifyChaoticCyclonePvE(ref ActionSetting setting)
 	{
-		setting.ActionCheck = () => BeastGauge >= 50 && InnerChaosPvEeady;
+		setting.ActionCheck = () => BeastGauge >= 50 && InnerChaosPvEReady;
 		setting.CreateConfig = () => new ActionConfig()
 		{
 			AoeCount = 2,
@@ -329,7 +329,7 @@ public partial class WarriorRotation
 
 	static partial void ModifyInnerChaosPvE(ref ActionSetting setting)
 	{
-		setting.ActionCheck = () => BeastGauge >= 50 && InnerChaosPvEeady;
+		setting.ActionCheck = () => BeastGauge >= 50 && InnerChaosPvEReady;
 		setting.CreateConfig = () => new ActionConfig()
 		{
 			AoeCount = 1,

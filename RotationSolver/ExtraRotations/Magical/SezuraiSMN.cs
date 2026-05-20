@@ -623,6 +623,7 @@ public sealed class SezuraiSMN : SummonerRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // ======================================================================
         // SMN GCD priority (120s cycle):
         //

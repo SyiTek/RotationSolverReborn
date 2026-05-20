@@ -725,6 +725,7 @@ public sealed class SezuraiAST : AstrologianRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // Reserve Swiftcast for Raise
         if ((HasSwift || IsLastAction(ActionID.SwiftcastPvE)) && SwiftLogic && MergedStatus.HasFlag(AutoStatus.Raise))
             return base.GeneralGCD(out act);

@@ -641,6 +641,7 @@ public sealed class SezuraiWHM : WhiteMageRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // --- Raise priority with Thin Air ---
         if (HasThinAir && MergedStatus.HasFlag(AutoStatus.Raise))
             return RaiseGCD(out act);

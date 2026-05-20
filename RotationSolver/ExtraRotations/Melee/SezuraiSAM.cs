@@ -636,6 +636,7 @@ public sealed class SezuraiSAM : SamuraiRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         bool isTargetBoss = CurrentTarget?.IsBossFromTTK() ?? false;
         bool isTargetDying = CurrentTarget?.IsDying() ?? false;
 

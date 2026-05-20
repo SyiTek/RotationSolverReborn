@@ -559,6 +559,7 @@ public sealed class SezuraiPLD : PaladinRotation
 
     protected override bool GeneralGCD(out IAction? act)
     {
+        if (BMRPyreticActive) { act = null; return false; }
         // === BMR DOWNTIME AWARENESS ===
         bool downtimeVeryClose = BMRActive && BMRDowntimeIn is > 0 and <= 3f;
         bool downtimeSoon = BMRActive && BMRDowntimeIn is > 0 and <= 10f;
