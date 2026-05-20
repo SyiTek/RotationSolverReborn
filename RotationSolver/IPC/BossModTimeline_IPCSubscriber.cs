@@ -5,10 +5,10 @@ using System.Numerics;
 
 namespace RotationSolver.IPC;
 
-internal static class BossModTimeline_IPCSubscriber
+internal static class BMRTimeline_IPCSubscriber
 {
     private static readonly EzIPCDisposalToken[] _disposalTokens =
-        EzIPC.Init(typeof(BossModTimeline_IPCSubscriber), "BossMod", SafeWrapper.AnyException);
+        EzIPC.Init(typeof(BMRTimeline_IPCSubscriber), "BossMod", SafeWrapper.AnyException);
 
     internal static bool IsEnabled => IPCSubscriber_Common.IsReady("BossModReborn")
                                       || IPCSubscriber_Common.IsReady("BossMod");
