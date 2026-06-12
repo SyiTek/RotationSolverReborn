@@ -588,7 +588,8 @@ public sealed class SezuraiSMN : SummonerRotation
 
             if (shouldSpend)
             {
-                // AoE: Painflare
+                // AoE: Painflare — 7.5 buffed it 150->220p, so it now beats Necrotize
+                // at 3+ targets (was 4+). Default AoeCount=3 matches the new breakpoint.
                 if (PainflarePvE.CanUse(out act))
                     return true;
                 // ST: Necrotize (upgraded Fester)

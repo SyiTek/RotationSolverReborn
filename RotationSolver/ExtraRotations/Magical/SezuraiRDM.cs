@@ -499,10 +499,15 @@ public sealed class SezuraiRDM : RedMageRotation
         // Manafication grants Magicked Swordplay (3 free melee stacks) + Prefulgence Ready.
         // In 7.4: Manafication no longer doubles mana, it purely grants free combo stacks.
         // Optimal: use shortly after Embolden for double combo.
+        // Balance rule: NEVER mid-melee-combo or with Scorch/Resolution pending — it breaks
+        // the finisher chain. Safe only when Verholy/Verflare is the next step (3 mana stacks).
         // BMR: Also use before downtime if Embolden is active (get value from Swordplay stacks before boss leaves)
-        if (HasEmbolden
-            || EmboldenPvE.Cooldown.HasOneCharge
-            || (EmboldenPvE.Cooldown.WillHaveOneCharge(4f) && !IsInMeleeCombo))
+        bool manaficationSafe = !InFinisherChain && (!IsInMeleeCombo || ManaStacks == 3);
+
+        if (manaficationSafe
+            && (HasEmbolden
+                || EmboldenPvE.Cooldown.HasOneCharge
+                || (EmboldenPvE.Cooldown.WillHaveOneCharge(4f) && !IsInMeleeCombo)))
         {
             if (InCombat && HasHostilesInMaxRange && ManaficationPvE.CanUse(out act))
                 return true;
@@ -512,6 +517,7 @@ public sealed class SezuraiRDM : RedMageRotation
         // If downtime is within 15s and we have Embolden or it won't come back before downtime,
         // use Manafication now to get free combo stacks we can spend before boss is untargetable.
         if (BmrDumpBeforeDowntime && BmrDowntimeWithin(15f)
+            && manaficationSafe
             && InCombat && HasHostilesInMaxRange
             && !CanMagickedSwordplay && !HasManafication
             && ManaficationPvE.CanUse(out act))
