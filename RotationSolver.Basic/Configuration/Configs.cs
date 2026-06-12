@@ -161,6 +161,11 @@ internal partial class Configs : IPluginConfiguration
 	Filter = DutySpecificUltimate)]
 	private static readonly bool _fruCrystalOfDarkness = true;
 
+	[ConditionBool, UI("Dancing Mad (Ultimate) - Hero/Villain logic.",
+	Description = "Treat bosses as immune if you don't have the corresponding status for it.",
+	Filter = DutySpecificUltimate)]
+	private static readonly bool _dmuBossImmune = true;
+
 	[ConditionBool, UI("The Ghimlyt Dark - Colossus Rubricatus ad.",
 	Description = "Treat Colossus Rubricatus as immune while its casting scripted action which leads to its death.",
 	Filter = DutySpecificDungeon)]
@@ -1046,7 +1051,7 @@ internal partial class Configs : IPluginConfiguration
 	/// This setting controls how many oGCDs RSR will try to fit in a single GCD window.
 	/// Lower numbers mean more oGCDs, but potentially more GCD clipping.
 	/// </markdown>
-	[JobConfig, Range(0.05f, 0.25f, ConfigUnitType.Percent)]
+	[JobConfig, Range(0.05f, 0.4f, ConfigUnitType.Percent)]
 	[UI("Action Ahead (Percent of your GCD time remaining on a GCD cycle before RSR will try to queue the next GCD)", Filter = BasicTimer,
 	Description = "This setting controls how many oGCDs RSR will try to fit in a single GCD window\nLower numbers mean more oGCDs, but potentially more GCD clipping")]
 	private readonly float _action6head = 0.25f;
