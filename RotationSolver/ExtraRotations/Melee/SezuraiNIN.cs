@@ -24,6 +24,10 @@ public sealed class SezuraiNIN : NinjaRotation
     [RotationConfig(CombatType.PvE, Name = "Auto remove Hidden status when combat starts")]
     public bool AutoUnhide { get; set; } = true;
 
+    [Range(2, 4, ConfigUnitType.None, 1)]
+    [RotationConfig(CombatType.PvE, Name = "Goka Mekkyaku minimum targets (set 2 for two-boss fights like M10S — Goka beats Hyosho at 2+ targets since 7.4)")]
+    public int GokaMinTargets { get; set; } = 3;
+
     [RotationConfig(CombatType.PvE, Name = "BMR: Hold burst for vulnerability windows (within 30s)")]
     public bool BmrHoldBurstForVuln { get; set; } = true;
 
@@ -233,8 +237,14 @@ public sealed class SezuraiNIN : NinjaRotation
         // If Kassatsu is active, prioritize empowered ninjutsu
         if (HasKassatsu)
         {
+            // Goka vs Hyosho: 7.4 buffed Goka Mekkyaku to beat Hyosho Ranryu at 2+
+            // stacked targets. Goka is a 5y point-blank AoE, so count hostiles there
+            // against the configurable threshold (default 3; set 2 for M10S two-boss).
+            bool gokaWins = NumberOfHostilesInRangeOf(5f) >= GokaMinTargets
+                || DeathBlossomPvE.CanUse(out _) || HakkeMujinsatsuPvE.CanUse(out _);
+
             // AoE: Goka Mekkyaku
-            if ((DeathBlossomPvE.CanUse(out _) || HakkeMujinsatsuPvE.CanUse(out _))
+            if (gokaWins
                 && GokaMekkyakuPvE.EnoughLevel && !IsLastAction(false, GokaMekkyakuPvE)
                 && GokaMekkyakuPvE.IsEnabled && ChiPvE.Info.IsQuestUnlocked())
             {
@@ -243,7 +253,7 @@ public sealed class SezuraiNIN : NinjaRotation
             }
 
             // ST: Hyosho Ranryu
-            if (!(DeathBlossomPvE.CanUse(out _) || HakkeMujinsatsuPvE.CanUse(out _))
+            if (!gokaWins
                 && HyoshoRanryuPvE.EnoughLevel && !IsLastAction(false, HyoshoRanryuPvE)
                 && HyoshoRanryuPvE.IsEnabled && JinPvE.Info.IsQuestUnlocked())
             {
@@ -252,7 +262,7 @@ public sealed class SezuraiNIN : NinjaRotation
             }
 
             // If Kassatsu but no Hyosho, fall through to Raiton
-            if (!(DeathBlossomPvE.CanUse(out _) || HakkeMujinsatsuPvE.CanUse(out _))
+            if (!gokaWins
                 && !HyoshoRanryuPvE.EnoughLevel && RaitonPvE.EnoughLevel
                 && RaitonPvE.IsEnabled && ChiPvE.Info.IsQuestUnlocked())
             {
